@@ -39,7 +39,7 @@ export default function OrgContent() {
             编辑
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="rounded-lg bg-surface-2/50 p-2.5 text-center">
             <div className="text-xs font-bold text-text">{orgInfo.size}</div>
             <div className="text-[9px] text-text-3">团队规模</div>

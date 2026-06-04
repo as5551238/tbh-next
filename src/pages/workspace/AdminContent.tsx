@@ -56,7 +56,7 @@ export default function AdminContent() {
           <span className="text-xs font-bold text-text-3 uppercase tracking-wider">系统健康</span>
           <span className="text-[10px] text-success font-semibold">正常运行</span>
         </div>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: '数据库', status: 'ok' },
             { label: 'API', status: 'ok' },

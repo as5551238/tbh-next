@@ -22,6 +22,10 @@ interface AppState {
   // Module sidebar
   modSidebarOpen: boolean;
   toggleModSidebar: () => void;
+
+  // Mobile drawer
+  mobileDrawerOpen: boolean;
+  setMobileDrawerOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -40,4 +44,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   modSidebarOpen: true,
   toggleModSidebar: () => set((s) => ({ modSidebarOpen: !s.modSidebarOpen })),
+
+  mobileDrawerOpen: false,
+  setMobileDrawerOpen: (open) => set({ mobileDrawerOpen: open }),
 }));

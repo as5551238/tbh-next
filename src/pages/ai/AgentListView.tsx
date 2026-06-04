@@ -46,7 +46,7 @@ export default function AgentListView() {
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-3 gap-3 mx-4 mt-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mx-4 mt-3">
         {[
           { label: '总任务完成', value: agents.reduce((s, a) => s + a.tasksCompleted, 0).toString(), icon: BarChart3 },
           { label: '平均可用率', value: (agents.reduce((s, a) => s + parseFloat(a.uptime), 0) / agents.length).toFixed(1) + '%', icon: Zap },

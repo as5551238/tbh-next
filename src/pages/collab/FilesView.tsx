@@ -115,7 +115,7 @@ export default function FilesView() {
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {filtered.map((file) => {
               const Icon = FILE_ICONS[file.type] ?? File;
               return (

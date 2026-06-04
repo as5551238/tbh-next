@@ -39,3 +39,37 @@ body {
     border: 1px solid rgba(39, 45, 66, 0.5);
   }
 }
+
+/* Mobile safe area */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mobile drawer animation */
+@keyframes slideInFromLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-in.slide-in-from-left {
+  animation: slideInFromLeft 0.2s ease-out;
+}
+
+/* Mobile responsive grid adjustments */
+@media (max-width: 768px) {
+  body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+  
+  input, textarea, select {
+    user-select: auto;
+  }
+}
+
+/* Touch-friendly spacing on mobile */
+@media (max-width: 768px) {
+  .mobile-p-2 {
+    padding: 0.5rem;
+  }
+}

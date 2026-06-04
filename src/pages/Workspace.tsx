@@ -43,7 +43,7 @@ function OverviewContent() {
       {/* KPIs */}
       <div>
         <div className="mb-2 text-xs font-bold text-text-3 uppercase tracking-wider">核心指标</div>
-        <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {cell.kpis.map((kpi) => {
             const TrendIcon = TREND_ICON[kpi.trend];
             return (
@@ -69,7 +69,7 @@ function OverviewContent() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <button onClick={() => setInterface('collab')} className="group flex items-center justify-between rounded-xl border border-border bg-surface p-4 transition-all hover:border-primary/30 hover:shadow-lg">
           <div><div className="text-xs font-semibold text-text">团队协作台</div><div className="text-[10px] text-text-3 mt-0.5">{cell.channels.length} 个频道活跃</div></div>
           <ArrowRight size={16} className="text-text-3 transition-transform group-hover:translate-x-1 group-hover:text-primary-2" />

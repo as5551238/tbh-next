@@ -25,7 +25,7 @@ export default function KpiDashView() {
       </div>
 
       {/* Health Score */}
-      <div className="mx-4 mt-3 grid grid-cols-4 gap-3">
+      <div className="mx-4 mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="col-span-1 rounded-xl border border-border bg-surface p-4 flex flex-col items-center justify-center">
           <div className="text-3xl font-extrabold text-text">{healthScore}</div>
           <div className="text-[9px] text-text-3 mt-0.5">健康分</div>
@@ -33,7 +33,7 @@ export default function KpiDashView() {
             <div className={cn('h-full rounded-full transition-all', healthScore >= 80 ? 'bg-success' : healthScore >= 60 ? 'bg-warn' : 'bg-danger')} style={{ width: `${healthScore}%` }} />
           </div>
         </div>
-        <div className="col-span-3 grid grid-cols-3 gap-3">
+        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="rounded-xl border border-border bg-surface p-3 text-center">
             <div className="text-2xl font-extrabold text-success">{goodCount}</div>
             <div className="text-[9px] text-text-3">达标</div>

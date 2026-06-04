@@ -38,7 +38,7 @@ export default function MembersContent() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="rounded-xl border border-border bg-surface p-3 text-center">
           <div className="text-xl font-extrabold text-success">4</div>
           <div className="text-[10px] text-text-3">在线</div>
