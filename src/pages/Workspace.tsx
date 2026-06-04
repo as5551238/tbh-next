@@ -8,6 +8,13 @@ import ScheduleContent from '@/pages/workspace/ScheduleContent';
 import NotificationsContent from '@/pages/workspace/NotificationsContent';
 import InsightContent from '@/pages/workspace/InsightContent';
 import ReportsContent from '@/pages/workspace/ReportsContent';
+import PredictionContent from '@/pages/workspace/PredictionContent';
+import DocsContent from '@/pages/workspace/DocsContent';
+import ExperienceContent from '@/pages/workspace/ExperienceContent';
+import MembersContent from '@/pages/workspace/MembersContent';
+import RolesContent from '@/pages/workspace/RolesContent';
+import OrgContent from '@/pages/workspace/OrgContent';
+import AdminContent from '@/pages/workspace/AdminContent';
 import ModulePageStub from '@/pages/ModulePageStub';
 
 const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
@@ -222,40 +229,6 @@ function KnowledgeContent() {
   );
 }
 
-/** Generic module stub for unimplemented modules */
-function GenericModule({ moduleId }: { moduleId: string }) {
-  const cell = useMatrixCell();
-  const names: Record<string, string> = {
-    schedule: '日程', notifications: '通知', insight: '数据洞察', reports: '报表中心',
-    prediction: '预测引擎', docs: '文档协作', experience: '经验库', members: '成员管理',
-    roles: '角色权限', org: '组织设置', admin: '系统配置',
-    channels: '频道列表', teamCal: '团队日历', approvals: '审批中心', announcements: '公告板',
-    collabDocs: '协作文档', meetings: '会议', files: '文件共享', directory: '通讯录', aiAgents: 'AI同事',
-    main: '工作助手', morning: '晨间聚焦', risk: '风险预警', agentList: 'Agent列表', agentConfig: 'Agent配置',
-    industryView: '行业视图', workflows: '工作流模板', kpiDash: 'KPI仪表盘',
-  };
-  const name = names[moduleId] ?? moduleId;
-  return (
-    <div className="flex flex-1 items-center justify-center p-8">
-      <div className="text-center max-w-md">
-        <div className="text-3xl mb-3">🚧</div>
-        <h2 className="text-lg font-bold text-text mb-2">{name}</h2>
-        <p className="text-sm text-text-3 mb-4">此模块正在开发中，即将上线</p>
-        <div className="rounded-xl border border-border bg-surface p-4 text-left">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">行业关联指标</div>
-          <div className="flex flex-wrap gap-1.5">
-            {cell.kpis.slice(0, 3).map((kpi) => (
-              <span key={kpi.name} className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] text-text-2">
-                {kpi.name}: {kpi.value}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const WORKSPACE_MODULES: Record<string, React.FC> = {
   overview: OverviewContent,
   goals: GoalsContent,
@@ -266,6 +239,13 @@ const WORKSPACE_MODULES: Record<string, React.FC> = {
   notifications: NotificationsContent,
   insight: InsightContent,
   reports: ReportsContent,
+  prediction: PredictionContent,
+  docs: DocsContent,
+  experience: ExperienceContent,
+  members: MembersContent,
+  roles: RolesContent,
+  org: OrgContent,
+  admin: AdminContent,
 };
 
 export default function Workspace() {
