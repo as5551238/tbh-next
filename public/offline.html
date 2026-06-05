@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBH Next - 离线</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0c12;
+      color: #eaecf4;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      padding: 2rem;
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, #7b6cf0, #00d4aa);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: #7b6cf0;
+    }
+    p {
+      color: #9ca3b8;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    button {
+      background: linear-gradient(135deg, #7b6cf0, #6b5ce0);
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.05); }
+    button:active { transform: scale(0.95); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">&#x1F310;</div>
+    <h1>当前处于离线状态</h1>
+    <p>无法连接到网络，部分功能暂时不可用。请检查网络连接后重试。</p>
+    <button onclick="window.location.reload()">重新连接</button>
+  </div>
+</body>
+</html>
