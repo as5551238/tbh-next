@@ -1,21 +1,18 @@
-import { Building2, Globe, Users, Calendar, Settings } from 'lucide-react';
+import { useOrgInfo } from '@/hooks/useMatrix';
+import { Building2, Globe, Users, Calendar, Settings, Loader2 } from 'lucide-react';
 
 export default function OrgContent() {
-  const orgInfo = {
-    name: '星辰科技',
-    industry: '信息技术',
-    size: '50-200人',
-    plan: '专业版',
-    created: '2025-03-15',
-  };
+  const { orgInfo, loading } = useOrgInfo();
 
-  const departments = [
-    { name: '产品部', head: '赵PM', members: 5, goals: 4, color: '#7b6cf0' },
-    { name: '研发部', head: '张工', members: 12, goals: 6, color: '#00d4aa' },
-    { name: '设计部', head: '刘设计', members: 3, goals: 2, color: '#ffc44d' },
-    { name: '运营部', head: '待定', members: 4, goals: 3, color: '#ff5c6a' },
-    { name: 'AI团队', head: 'AI同事', members: 1, goals: 0, color: '#00d4aa' },
-  ];
+  if (loading || !orgInfo) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
+      </div>
+    );
+  }
+
+  const departments = orgInfo.departments ?? [];
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -29,7 +26,7 @@ export default function OrgContent() {
       <div className="rounded-xl border border-border bg-surface p-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-xl font-bold text-primary-2">
-            星
+            {orgInfo.name[0]}
           </div>
           <div>
             <div className="text-base font-bold text-text">{orgInfo.name}</div>
@@ -88,9 +85,9 @@ export default function OrgContent() {
       <div className="space-y-2">
         <span className="text-xs font-bold text-text-3 uppercase tracking-wider">组织配置</span>
         {[
-          { label: '行业类型', value: '信息技术', icon: <Globe size={13} /> },
+          { label: '行业类型', value: orgInfo.industry, icon: <Globe size={13} /> },
           { label: '创建时间', value: orgInfo.created, icon: <Calendar size={13} /> },
-          { label: '订阅方案', value: '专业版 (年付)', icon: <Settings size={13} /> },
+          { label: '订阅方案', value: `${orgInfo.plan} (年付)`, icon: <Settings size={13} /> },
         ].map((s) => (
           <div key={s.label} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5">
             <span className="text-text-3">{s.icon}</span>

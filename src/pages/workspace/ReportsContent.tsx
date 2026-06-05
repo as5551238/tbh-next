@@ -1,31 +1,19 @@
-import { useMatrixCell } from '@/hooks/useMatrix';
-import { useAppStore } from '@/stores/appStore';
+import { useReports } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { BarChart3, Download, Calendar, Filter, TrendingUp, TrendingDown } from 'lucide-react';
-
-interface Report {
-  id: string;
-  name: string;
-  type: 'weekly' | 'monthly' | 'custom';
-  generatedAt: string;
-  generatedBy: string;
-  status: 'ready' | 'generating';
-  size: string;
-}
-
-const MOCK_REPORTS: Report[] = [
-  { id: 'R-001', name: '周报 - 产品部W23', type: 'weekly', generatedAt: '6月2日', generatedBy: 'AI产品分析师', status: 'ready', size: '2.1 MB' },
-  { id: 'R-002', name: '月度OKR进展报告', type: 'monthly', generatedAt: '6月1日', generatedBy: '系统', status: 'ready', size: '4.5 MB' },
-  { id: 'R-003', name: '竞品功能对比分析', type: 'custom', generatedAt: '5月30日', generatedBy: 'AI竞品侦探', status: 'ready', size: '1.8 MB' },
-  { id: 'R-004', name: '用户行为分析报告', type: 'custom', generatedAt: '5月28日', generatedBy: 'AI数据看门人', status: 'ready', size: '3.2 MB' },
-  { id: 'R-005', name: '周报 - 产品部W24', type: 'weekly', generatedAt: '生成中...', generatedBy: 'AI产品分析师', status: 'generating', size: '-' },
-];
+import { BarChart3, Download, Loader2 } from 'lucide-react';
 
 const TYPE_STYLES: Record<string, string> = { weekly: 'bg-primary/10 text-primary-2', monthly: 'bg-accent/10 text-accent', custom: 'bg-success/10 text-success' };
 
 export default function ReportsContent() {
-  const cell = useMatrixCell();
-  const industry = useAppStore((s) => s.industry);
+  const { reports, loading } = useReports();
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -36,7 +24,7 @@ export default function ReportsContent() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {MOCK_REPORTS.map((report) => (
+        {reports.map((report) => (
           <div key={report.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg',
             report.status === 'generating' && 'animate-pulse'
           )}>
@@ -52,8 +40,8 @@ export default function ReportsContent() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] text-text-3">
-                  <span>{report.generatedBy}</span>
-                  <span>{report.generatedAt}</span>
+                  <span>{report.generated_by}</span>
+                  <span>{report.generated_at}</span>
                   <span>{report.size}</span>
                 </div>
               </div>

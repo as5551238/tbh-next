@@ -6,7 +6,7 @@ import { TrendingUp, TrendingDown, Minus, Lightbulb, ArrowUpRight, ArrowDownRigh
 const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
 
 export default function InsightContent() {
-  const cell = useMatrixCell();
+  const { cell, loading } = useMatrixCell();
   const indColor = useIndustryColor();
   const industry = useAppStore((s) => s.industry);
 

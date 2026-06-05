@@ -32,7 +32,7 @@ export default function TopBar() {
   const toggleCtxPanel = useAppStore((s) => s.toggleCtxPanel);
 
   const indColor = useIndustryColor();
-  const cell = useMatrixCell();
+  const { cell, loading } = useMatrixCell();
 
   return (
     <div className="flex h-12 shrink-0 items-center border-b border-border bg-surface px-3 gap-3">

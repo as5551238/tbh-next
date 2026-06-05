@@ -1,30 +1,9 @@
 import { useAppStore } from '@/stores/appStore';
-import { useIndustryColor } from '@/hooks/useMatrix';
+import { useIndustryColor, useContacts } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Phone, Mail, MessageSquare, Search, User } from 'lucide-react';
+import { Phone, Mail, MessageSquare, Search, User, Loader2 } from 'lucide-react';
 
-interface Contact {
-  id: string;
-  name: string;
-  role: string;
-  department: string;
-  email: string;
-  phone: string;
-  status: 'online' | 'busy' | 'away' | 'offline';
-  avatar?: string;
-}
 
-const MOCK_CONTACTS: Contact[] = [
-  { id: 'C-001', name: '张明', role: '高级产品经理', department: '产品部', email: 'zhangming@team.com', phone: '138****1234', status: 'online' },
-  { id: 'C-002', name: '李工', role: '技术负责人', department: '研发部', email: 'ligong@team.com', phone: '139****5678', status: 'busy' },
-  { id: 'C-003', name: '王琳', role: 'UI设计师', department: '设计部', email: 'wanglin@team.com', phone: '137****9012', status: 'online' },
-  { id: 'C-004', name: '陈亮', role: '销售总监', department: '销售部', email: 'chenliang@team.com', phone: '136****3456', status: 'away' },
-  { id: 'C-005', name: '赵磊', role: '市场经理', department: '市场部', email: 'zhaolei@team.com', phone: '135****7890', status: 'offline' },
-  { id: 'C-006', name: '孙婷', role: '行政主管', department: '行政部', email: 'sunting@team.com', phone: '134****2345', status: 'online' },
-  { id: 'C-007', name: 'AI产品分析师', role: 'AI同事', department: 'AI Team', email: '-', phone: '-', status: 'online' },
-  { id: 'C-008', name: 'AI竞品侦探', role: 'AI同事', department: 'AI Team', email: '-', phone: '-', status: 'online' },
-  { id: 'C-009', name: 'AI数据看门人', role: 'AI同事', department: 'AI Team', email: '-', phone: '-', status: 'busy' },
-];
 
 const STATUS_STYLES: Record<string, string> = {
   online: 'bg-success',
@@ -42,29 +21,34 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function DirectoryView() {
   const indColor = useIndustryColor();
+  const { contacts, loading } = useContacts();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
 
-  const humanContacts = MOCK_CONTACTS.filter((c) => !c.role.includes('AI'));
-  const aiContacts = MOCK_CONTACTS.filter((c) => c.role.includes('AI'));
+  const humanContacts = contacts.filter((c) => !c.role.includes('AI'));
+  const aiContacts = contacts.filter((c) => c.role.includes('AI'));
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">通讯录</span>
-        <span className="text-[10px] text-text-3">{MOCK_CONTACTS.length} 人</span>
+        <span className="text-[10px] text-text-3">{contacts.length} 人</span>
         <div className="ml-auto flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
           <Search size={12} className="text-text-3" />
           <input
             type="text"
             placeholder="搜索联系人..."
+            aria-label="搜索联系人"
             className="bg-transparent text-xs text-text outline-none placeholder:text-text-3 w-40"
           />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Human Contacts */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+        ) : (
+        <>
         <div>
           <div className="text-[9px] font-bold uppercase tracking-wider text-text-3 mb-2">团队成员</div>
           <div className="grid grid-cols-2 gap-2">
@@ -122,6 +106,8 @@ export default function DirectoryView() {
             ))}
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

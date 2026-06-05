@@ -9,7 +9,7 @@ export default function KpiDashView() {
   const indColor = useIndustryColor();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
-  const cell = useMatrixCell();
+  const { cell, loading } = useMatrixCell();
 
   const goodCount = cell.kpis.filter((k) => k.status === 'good').length;
   const warnCount = cell.kpis.filter((k) => k.status === 'warn').length;
@@ -81,7 +81,7 @@ export default function KpiDashView() {
               {/* Sparkline placeholder */}
               <div className="mt-3 flex items-end gap-[3px] h-10">
                 {Array.from({ length: 14 }).map((_, i) => {
-                  const h = 20 + Math.random() * 80;
+                  const h = 20 + ((i * 37 + 13) % 80);
                   return <div key={i} className={cn('flex-1 rounded-t', i >= 11 ? 'bg-primary/30' : 'bg-surface-2')} style={{ height: `${h}%` }} />;
                 })}
               </div>

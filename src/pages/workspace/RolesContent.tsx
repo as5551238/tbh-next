@@ -1,43 +1,16 @@
-import { Shield, Plus, Users, Lock, Eye } from 'lucide-react';
+import { useRoles } from '@/hooks/useMatrix';
+import { Shield, Plus, Users, Lock, Eye, Loader2 } from 'lucide-react';
 
 export default function RolesContent() {
-  const roles = [
-    {
-      name: '管理员',
-      key: 'admin',
-      members: 1,
-      permissions: ['全部权限', '系统配置', '成员管理', '数据导出', 'API访问'],
-      color: '#ff5c6a',
-    },
-    {
-      name: '经理',
-      key: 'manager',
-      members: 1,
-      permissions: ['团队管理', '目标管理', '审批', '报表', '成员查看'],
-      color: '#ffc44d',
-    },
-    {
-      name: '成员',
-      key: 'member',
-      members: 3,
-      permissions: ['任务管理', '文档协作', '知识库', '个人数据'],
-      color: '#7b6cf0',
-    },
-    {
-      name: 'AI同事',
-      key: 'agent',
-      members: 1,
-      permissions: ['数据分析', '报表生成', '文档阅读', '通知发送'],
-      color: '#00d4aa',
-    },
-    {
-      name: '访客',
-      key: 'viewer',
-      members: 0,
-      permissions: ['只读访问', '公开文档查看'],
-      color: '#8892a4',
-    },
-  ];
+  const { roles, loading } = useRoles();
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">

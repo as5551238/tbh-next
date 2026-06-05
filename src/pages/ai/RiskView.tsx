@@ -1,27 +1,7 @@
-import { useMatrixCell } from '@/hooks/useMatrix';
+import { useRisks, useMatrixCell } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Clock, TrendingDown, ArrowRight, Shield } from 'lucide-react';
-
-interface Risk {
-  id: string;
-  title: string;
-  description: string;
-  level: 'critical' | 'high' | 'medium' | 'low';
-  source: string;
-  detectedAt: string;
-  status: 'active' | 'watching' | 'resolved';
-  affectedKpi?: string;
-}
-
-const MOCK_RISKS: Risk[] = [
-  { id: 'R-001', title: 'Q3路线图评审明天截止', description: '3个核心需求待确认，评审超期将影响Q3整体交付节奏', level: 'critical', source: 'AI产品分析师', detectedAt: '2小时前', status: 'active', affectedKpi: '需求交付周期' },
-  { id: 'R-002', title: '导出功能使用率持续走低', description: '使用率仅12%，远低于60%目标，用户反馈集中在操作复杂', level: 'high', source: 'AI数据看门人', detectedAt: '5小时前', status: 'watching', affectedKpi: '功能使用率' },
-  { id: 'R-003', title: 'Sprint完成率连续2周下降', description: '当前72%，目标85%，主要阻塞：跨部门依赖未对齐', level: 'medium', source: 'AI技术助手', detectedAt: '1天前', status: 'watching', affectedKpi: 'Sprint完成率' },
-  { id: 'R-004', title: 'NPS评分低于警戒线', description: '当前42，目标45，3个用户反馈差评集中在Onboarding流程', level: 'medium', source: 'AI产品分析师', detectedAt: '2天前', status: 'watching', affectedKpi: 'NPS' },
-  { id: 'R-005', title: '竞品XX发布新功能', description: '直接竞品发布了AI辅助决策模块，可能影响客户选择', level: 'low', source: 'AI竞品侦探', detectedAt: '3天前', status: 'active' },
-  { id: 'R-006', title: 'VPN中断风险', description: '6/12升级窗口与Sprint Review冲突', level: 'low', source: '系统监控', detectedAt: '4天前', status: 'resolved' },
-];
+import { AlertTriangle, Clock, TrendingDown, Shield, Loader2 } from 'lucide-react';
 
 const LEVEL_STYLES: Record<string, string> = {
   critical: 'bg-danger/10 text-danger border-l-danger',
@@ -33,11 +13,20 @@ const LEVEL_STYLES: Record<string, string> = {
 const LEVEL_DOT: Record<string, string> = { critical: 'bg-danger', high: 'bg-warn', medium: 'bg-primary-2', low: 'bg-text-3' };
 
 export default function RiskView() {
-  const cell = useMatrixCell();
+  const { risks, loading } = useRisks();
+  const { cell } = useMatrixCell();
   const industry = useAppStore((s) => s.industry);
 
-  const activeRisks = MOCK_RISKS.filter((r) => r.status !== 'resolved');
-  const criticalCount = MOCK_RISKS.filter((r) => r.level === 'critical' && r.status === 'active').length;
+  const activeRisks = risks.filter((r) => r.status !== 'resolved');
+  const criticalCount = risks.filter((r) => r.level === 'critical' && r.status === 'active').length;
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-2" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -60,7 +49,7 @@ export default function RiskView() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {MOCK_RISKS.map((risk) => (
+        {risks.map((risk) => (
           <div key={risk.id} className={cn('rounded-xl border border-border border-l-2 bg-surface p-4 transition-all hover:shadow-lg', LEVEL_STYLES[risk.level].split(' ').pop(),
             risk.status === 'resolved' && 'opacity-40'
           )}>
@@ -74,8 +63,8 @@ export default function RiskView() {
             <p className="text-xs text-text-2 mb-2 leading-relaxed">{risk.description}</p>
             <div className="flex flex-wrap items-center gap-3 text-[10px] text-text-3">
               <span>来源: {risk.source}</span>
-              <span className="flex items-center gap-1"><Clock size={9} />{risk.detectedAt}</span>
-              {risk.affectedKpi && <span className="flex items-center gap-1"><TrendingDown size={9} />影响: {risk.affectedKpi}</span>}
+              <span className="flex items-center gap-1"><Clock size={9} />{risk.detected_at}</span>
+              {risk.affected_kpi && <span className="flex items-center gap-1"><TrendingDown size={9} />影响: {risk.affected_kpi}</span>}
               <span className={cn('ml-auto', risk.status === 'active' ? 'text-danger' : risk.status === 'watching' ? 'text-warn' : 'text-success')}>
                 {risk.status === 'active' ? '活跃' : risk.status === 'watching' ? '观察中' : '已解决'}
               </span>

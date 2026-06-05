@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Bot, ToggleLeft, ToggleRight, Settings, Play, Pause, MessageSquare, BarChart3, RefreshCw } from 'lucide-react';
 
 export default function AiAgentsView() {
-  const cell = useMatrixCell();
+  const { cell, loading } = useMatrixCell();
   const indColor = useIndustryColor();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);

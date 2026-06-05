@@ -20,7 +20,7 @@ export default function IndustryView() {
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const indColor = useIndustryColor();
-  const cell = useMatrixCell();
+  const { cell, loading } = useMatrixCell();
   const perspective = INDUSTRY_PERSPECTIVES[industry] ?? INDUSTRY_PERSPECTIVES['IT业'];
 
   return (

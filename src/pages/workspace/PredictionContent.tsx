@@ -1,36 +1,18 @@
-import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
-import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight } from 'lucide-react';
+import { usePredictions, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
+import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight, Loader2 } from 'lucide-react';
 
 export default function PredictionContent() {
-  const cell = useMatrixCell();
+  const { cell, loading: cellLoading } = useMatrixCell();
   const indColor = useIndustryColor();
+  const { predictions, loading } = usePredictions();
 
-  const predictions = [
-    {
-      title: 'Q3 路线图延期风险',
-      probability: 72,
-      impact: 'high',
-      trend: 'up',
-      reason: '当前进度仅75%，关键路径上3个任务资源不足',
-      suggestion: '建议将导出优化任务拆分为两期，优先交付核心格式',
-    },
-    {
-      title: 'PRD标准化目标提前完成',
-      probability: 85,
-      impact: 'positive',
-      trend: 'up',
-      reason: '团队采纳率已达78%，模板v2.0获一致好评',
-      suggestion: '可将节省资源投入Q4标准化扩展',
-    },
-    {
-      title: '导出功能使用率下降',
-      probability: 45,
-      impact: 'medium',
-      trend: 'flat',
-      reason: '近2周数据波动，可能与竞品更新有关',
-      suggestion: '建议本周进行用户访谈确认原因',
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -68,7 +50,7 @@ export default function PredictionContent() {
       {/* Prediction Cards */}
       <div className="space-y-3">
         {predictions.map((p) => (
-          <div key={p.title} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg">
+          <div key={p.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-text">{p.title}</span>
               <div className="flex items-center gap-2">

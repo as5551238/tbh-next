@@ -1,6 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Use HashRouter on GitHub Pages (sub-directory hosting), BrowserRouter for local dev
+const Router = window.location.hostname === 'localhost' ? BrowserRouter : HashRouter;
 import App from './App';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
@@ -10,7 +13,7 @@ import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/setup" element={<RequireAuth><SupabaseSetupPage /></RequireAuth>} />
@@ -25,6 +28,6 @@ createRoot(document.getElementById('root')!).render(
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   </StrictMode>,
 );

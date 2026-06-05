@@ -1,27 +1,10 @@
 import { useState } from 'react';
+import { useSharedFiles } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { FileText, FileSpreadsheet, Image, FileArchive, Download, Upload, Search, Grid, List, Clock, HardDrive } from 'lucide-react';
+import { FileText, FileSpreadsheet, Image, FileArchive, Download, Upload, Search, Grid, List, Clock, HardDrive, Loader2 } from 'lucide-react';
 
-interface SharedFile {
-  id: string;
-  name: string;
-  type: 'doc' | 'sheet' | 'image' | 'archive' | 'pdf' | 'other';
-  size: string;
-  uploadedBy: string;
-  uploadedAt: string;
-  downloads: number;
-}
 
-const MOCK_FILES: SharedFile[] = [
-  { id: 'F-001', name: 'Q3路线图.pdf', type: 'pdf', size: '2.3 MB', uploadedBy: '我', uploadedAt: '1小时前', downloads: 8 },
-  { id: 'F-002', name: 'PRD模板v2.0.docx', type: 'doc', size: '156 KB', uploadedBy: '我', uploadedAt: '3小时前', downloads: 12 },
-  { id: 'F-003', name: '竞品功能对比.xlsx', type: 'sheet', size: '890 KB', uploadedBy: 'AI竞品侦探', uploadedAt: '1天前', downloads: 15 },
-  { id: 'F-004', name: '产品架构图.png', type: 'image', size: '1.2 MB', uploadedBy: '设计-周', uploadedAt: '2天前', downloads: 5 },
-  { id: 'F-005', name: '导出功能源码.zip', type: 'archive', size: '4.5 MB', uploadedBy: 'AI技术助手', uploadedAt: '3天前', downloads: 3 },
-  { id: 'F-006', name: '用户反馈6月.csv', type: 'sheet', size: '340 KB', uploadedBy: 'AI数据看门人', uploadedAt: '4天前', downloads: 7 },
-  { id: 'F-007', name: '会议纪要-06-03.pdf', type: 'pdf', size: '89 KB', uploadedBy: '行政-刘', uploadedAt: '5天前', downloads: 20 },
-];
 
 const FILE_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   doc: FileText,
@@ -42,18 +25,19 @@ const FILE_COLORS: Record<string, string> = {
 };
 
 export default function FilesView() {
+  const { files, loading } = useSharedFiles();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filtered = searchQuery
-    ? MOCK_FILES.filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : MOCK_FILES;
+    ? files.filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : files;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">文件共享</span>
-        <span className="text-[10px] text-text-3">{MOCK_FILES.length} 个文件</span>
+        <span className="text-[10px] text-text-3">{files.length} 个文件</span>
 
         <div className="ml-auto flex items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
@@ -63,6 +47,7 @@ export default function FilesView() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索文件..."
+              aria-label="搜索文件"
               className="bg-transparent text-xs text-text outline-none placeholder:text-text-3 w-32"
             />
           </div>
@@ -91,7 +76,10 @@ export default function FilesView() {
           <span className="text-primary-2 cursor-pointer">全部文件</span>
         </div>
 
-        {viewMode === 'list' ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+        ) : (
+        viewMode === 'list' ? (
           <div className="space-y-1">
             <div className="grid grid-cols-[1fr_80px_100px_60px_60px] gap-2 px-3 py-1.5 text-[9px] font-bold uppercase text-text-3">
               <span>文件名</span><span>大小</span><span>上传者</span><span>时间</span><span>下载</span>
@@ -107,8 +95,8 @@ export default function FilesView() {
                     <span className="text-xs text-text truncate">{file.name}</span>
                   </div>
                   <span className="text-[10px] text-text-3">{file.size}</span>
-                  <span className="text-[10px] text-text-3">{file.uploadedBy}</span>
-                  <span className="text-[10px] text-text-3">{file.uploadedAt}</span>
+                  <span className="text-[10px] text-text-3">{file.uploaded_by}</span>
+                  <span className="text-[10px] text-text-3">{file.uploaded_at}</span>
                   <span className="flex items-center gap-1 text-[10px] text-text-3"><Download size={9} />{file.downloads}</span>
                 </div>
               );
@@ -124,11 +112,12 @@ export default function FilesView() {
                     <Icon size={24} />
                   </div>
                   <div className="text-[11px] font-semibold text-text truncate">{file.name}</div>
-                  <div className="text-[9px] text-text-3 mt-0.5">{file.size} · {file.uploadedAt}</div>
+                  <div className="text-[9px] text-text-3 mt-0.5">{file.size} · {file.uploaded_at}</div>
                 </div>
               );
             })}
           </div>
+        )
         )}
       </div>
     </div>

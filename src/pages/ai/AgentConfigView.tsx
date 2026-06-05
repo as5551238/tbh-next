@@ -1,33 +1,25 @@
 import { useState } from 'react';
-import { useMatrixCell } from '@/hooks/useMatrix';
+import { useAgentConfigs, useMatrixCell } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { Settings, Bot, Save, RotateCcw } from 'lucide-react';
-
-interface AgentConfig {
-  id: string;
-  name: string;
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  systemPrompt: string;
-  schedule: string;
-  enabled: boolean;
-}
-
-const MOCK_CONFIGS: AgentConfig[] = [
-  { id: 'AG-001', name: '产品分析师', model: 'gpt-4o', temperature: 0.3, maxTokens: 4096, systemPrompt: '你是一位专业的产品分析师，负责PRD撰写和需求分析。始终基于数据做判断，保持客观中立。', schedule: '每日08:00自动运行', enabled: true },
-  { id: 'AG-002', name: '竞品侦探', model: 'claude-3.5-sonnet', temperature: 0.5, maxTokens: 4096, systemPrompt: '你是竞品监控专家，持续追踪竞品动态并提供深度分析。', schedule: '每日09:00自动运行', enabled: true },
-  { id: 'AG-003', name: '数据看门人', model: 'gpt-4o', temperature: 0.2, maxTokens: 2048, systemPrompt: '你是数据监控专家，追踪核心KPI指标，发现异常立即告警。', schedule: '每小时检测', enabled: true },
-];
+import { Settings, Bot, Save, RotateCcw, Loader2 } from 'lucide-react';
 
 export default function AgentConfigView() {
-  const [configs, setConfigs] = useState(MOCK_CONFIGS);
-  const [selectedId, setSelectedId] = useState(MOCK_CONFIGS[0].id);
-  const selected = configs.find((c) => c.id === selectedId)!;
+  const { configs, setConfigs, loading } = useAgentConfigs();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const resolvedId = selectedId ?? configs[0]?.id ?? '';
+  const selected = configs.find((c) => c.id === resolvedId);
 
-  function updateConfig(field: keyof AgentConfig, value: any) {
-    setConfigs((prev) => prev.map((c) => c.id === selectedId ? { ...c, [field]: value } : c));
+  function updateConfig(field: string, value: any) {
+    setConfigs((prev) => prev.map((c) => c.id === resolvedId ? { ...c, [field]: value } : c));
+  }
+
+  if (loading || !selected) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-2" />
+      </div>
+    );
   }
 
   return (
@@ -43,7 +35,7 @@ export default function AgentConfigView() {
               key={cfg.id}
               onClick={() => setSelectedId(cfg.id)}
               className={cn('flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors',
-                selectedId === cfg.id ? 'bg-primary/10 font-semibold text-primary-2' : 'text-text-2 hover:bg-surface-2'
+                resolvedId === cfg.id ? 'bg-primary/10 font-semibold text-primary-2' : 'text-text-2 hover:bg-surface-2'
               )}
             >
               <Bot size={14} className="shrink-0" />
@@ -71,8 +63,8 @@ export default function AgentConfigView() {
         <div className="p-4 space-y-4 max-w-2xl">
           {/* Model */}
           <div>
-            <label className="block text-[10px] font-bold text-text-3 mb-1.5">模型</label>
-            <select value={selected.model} onChange={(e) => updateConfig('model', e.target.value)}
+            <label htmlFor="agent-model" className="block text-[10px] font-bold text-text-3 mb-1.5">模型</label>
+            <select id="agent-model" value={selected.model} onChange={(e) => updateConfig('model', e.target.value)}
               className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-text outline-none focus:border-primary"
             >
               <option value="gpt-4o">GPT-4o</option>
@@ -83,8 +75,8 @@ export default function AgentConfigView() {
 
           {/* Temperature */}
           <div>
-            <label className="block text-[10px] font-bold text-text-3 mb-1.5">Temperature: {selected.temperature}</label>
-            <input type="range" min="0" max="1" step="0.1" value={selected.temperature}
+            <label htmlFor="agent-temperature" className="block text-[10px] font-bold text-text-3 mb-1.5">Temperature: {selected.temperature}</label>
+            <input id="agent-temperature" type="range" min="0" max="1" step="0.1" value={selected.temperature}
               onChange={(e) => updateConfig('temperature', parseFloat(e.target.value))}
               className="w-full accent-primary"
             />
@@ -93,16 +85,16 @@ export default function AgentConfigView() {
 
           {/* Max Tokens */}
           <div>
-            <label className="block text-[10px] font-bold text-text-3 mb-1.5">最大Token数</label>
-            <input type="number" value={selected.maxTokens} onChange={(e) => updateConfig('maxTokens', parseInt(e.target.value))}
+            <label htmlFor="agent-max-tokens" className="block text-[10px] font-bold text-text-3 mb-1.5">最大Token数</label>
+            <input id="agent-max-tokens" type="number" value={selected.max_tokens} onChange={(e) => updateConfig('max_tokens', parseInt(e.target.value))}
               className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-text outline-none focus:border-primary"
             />
           </div>
 
           {/* System Prompt */}
           <div>
-            <label className="block text-[10px] font-bold text-text-3 mb-1.5">系统提示词</label>
-            <textarea value={selected.systemPrompt} onChange={(e) => updateConfig('systemPrompt', e.target.value)}
+            <label htmlFor="agent-system-prompt" className="block text-[10px] font-bold text-text-3 mb-1.5">系统提示词</label>
+            <textarea id="agent-system-prompt" value={selected.system_prompt} onChange={(e) => updateConfig('system_prompt', e.target.value)}
               rows={4}
               className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-text outline-none focus:border-primary resize-none"
             />
@@ -110,8 +102,8 @@ export default function AgentConfigView() {
 
           {/* Schedule */}
           <div>
-            <label className="block text-[10px] font-bold text-text-3 mb-1.5">执行计划</label>
-            <input type="text" value={selected.schedule} onChange={(e) => updateConfig('schedule', e.target.value)}
+            <label htmlFor="agent-schedule" className="block text-[10px] font-bold text-text-3 mb-1.5">执行计划</label>
+            <input id="agent-schedule" type="text" value={selected.schedule} onChange={(e) => updateConfig('schedule', e.target.value)}
               className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-text outline-none focus:border-primary"
             />
           </div>

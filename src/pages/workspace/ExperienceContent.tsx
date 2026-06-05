@@ -1,44 +1,18 @@
-import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
-import { BookOpen, Sparkles, Tag, ThumbsUp, MessageSquare, Plus } from 'lucide-react';
+import { useExperiences, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
+import { BookOpen, Sparkles, Tag, ThumbsUp, MessageSquare, Plus, Loader2 } from 'lucide-react';
 
 export default function ExperienceContent() {
-  const cell = useMatrixCell();
+  const { cell, loading: cellLoading } = useMatrixCell();
   const indColor = useIndustryColor();
+  const { experiences, loading } = useExperiences();
 
-  const experiences = [
-    {
-      title: '敏捷迭代避坑指南',
-      tags: ['敏捷', '迭代', '流程'],
-      author: 'AI同事',
-      likes: 23,
-      comments: 8,
-      summary: '总结了3个季度敏捷迭代的7个常见陷阱及应对方案，被团队反复引用。',
-    },
-    {
-      title: '导出功能性能优化实战',
-      tags: ['性能', '导出', '优化'],
-      author: '张工',
-      likes: 15,
-      comments: 5,
-      summary: '从内存泄漏到批量导出，记录了完整的性能优化路径，导出速度提升4倍。',
-    },
-    {
-      title: 'PRD评审高效技巧',
-      tags: ['PRD', '评审', '协作'],
-      author: '我',
-      likes: 31,
-      comments: 12,
-      summary: '提炼自20+次PRD评审，3个关键问题模板让评审效率提升60%。',
-    },
-    {
-      title: '跨团队协作沟通模板',
-      tags: ['协作', '沟通', '模板'],
-      author: '李工',
-      likes: 19,
-      comments: 6,
-      summary: '标准化的跨团队沟通话术和邮件模板，减少协作摩擦。',
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -81,22 +55,22 @@ export default function ExperienceContent() {
 
       {/* Experience Cards */}
       <div className="space-y-3">
-        {experiences.map((exp) => (
-          <div key={exp.title} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
+        {experiences.map((e) => (
+          <div key={e.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-text">{exp.title}</span>
-              <span className="text-[10px] text-text-3">{exp.author}</span>
+              <span className="text-sm font-semibold text-text">{e.title}</span>
+              <span className="text-[10px] text-text-3">{e.author}</span>
             </div>
-            <p className="text-[11px] text-text-2 leading-relaxed mb-3">{exp.summary}</p>
+            <p className="text-[11px] text-text-2 leading-relaxed mb-3">{e.summary}</p>
             <div className="flex items-center justify-between">
               <div className="flex flex-wrap gap-1">
-                {exp.tags.map((t) => (
+                {e.tags.map((t) => (
                   <span key={t} className="rounded bg-primary/5 px-1.5 py-0.5 text-[9px] text-primary-2">{t}</span>
                 ))}
               </div>
               <div className="flex items-center gap-3 text-[10px] text-text-3">
-                <span className="flex items-center gap-1"><ThumbsUp size={10} />{exp.likes}</span>
-                <span className="flex items-center gap-1"><MessageSquare size={10} />{exp.comments}</span>
+                <span className="flex items-center gap-1"><ThumbsUp size={10} />{e.likes}</span>
+                <span className="flex items-center gap-1"><MessageSquare size={10} />{e.comments}</span>
               </div>
             </div>
           </div>

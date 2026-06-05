@@ -49,7 +49,7 @@ const MOCK_EVENTS: Record<number, CalEvent[]> = {
 
 export default function TeamCalView() {
   const industry = useAppStore((s) => s.industry);
-  const cell = useMatrixCell();
+  const { cell, loading } = useMatrixCell();
   const today = new Date();
   const currentDay = today.getDate();
   const currentMonth = today.getMonth();

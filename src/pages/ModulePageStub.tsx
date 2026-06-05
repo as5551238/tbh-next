@@ -8,7 +8,7 @@ interface ModulePageProps {
 }
 
 export default function ModulePageStub({ title, icon, description }: ModulePageProps) {
-  const cell = useMatrixCell();
+  const { cell, loading } = useMatrixCell();
   return (
     <div className="flex flex-1 items-center justify-center p-8">
       <div className="text-center max-w-md">

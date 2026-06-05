@@ -24,16 +24,14 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('recharts')) return 'charts';
             if (id.includes('@supabase')) return 'supabase';
             if (id.includes('react/') || id.includes('react-dom/')) return 'vendor';
-            if (id.includes('framer-motion')) return 'motion';
           }
         },
       },
     },
   },
   esbuild: {
-    drop: process.env.NODE_ENV === 'production' ? [] : [],
+    drop: process.env.NODE_ENV === 'production' ? ['console'] : [],
   },
 });

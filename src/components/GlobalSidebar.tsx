@@ -98,9 +98,9 @@ export default function GlobalSidebar() {
     <div className="flex w-16 flex-col items-center border-r border-border bg-surface py-3 z-50 shrink-0">
       {/* Logo */}
       <Tooltip label="TBH Next">
-        <div onClick={() => navigate('/workspace/overview')} className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-extrabold text-white cursor-pointer hover:scale-110 transition-transform">
+        <button onClick={() => navigate('/workspace/overview')} aria-label="返回首页" className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-extrabold text-white cursor-pointer hover:scale-110 transition-transform">
           T
-        </div>
+        </button>
       </Tooltip>
 
       {/* Main nav */}

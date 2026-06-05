@@ -108,12 +108,22 @@ function MobileDrawer() {
   const mobileDrawerOpen = useAppStore((s) => s.mobileDrawerOpen);
   const setMobileDrawerOpen = useAppStore((s) => s.setMobileDrawerOpen);
 
+  // Close on Escape
+  useEffect(() => {
+    if (!mobileDrawerOpen) return;
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMobileDrawerOpen(false);
+    }
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [mobileDrawerOpen, setMobileDrawerOpen]);
+
   if (!mobileDrawerOpen) return null;
 
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setMobileDrawerOpen(false)} />
-      <div className="fixed left-0 top-0 bottom-0 z-50 w-[260px] bg-surface border-r border-border shadow-2xl animate-in slide-in-from-left duration-200">
+      <div role="dialog" aria-modal="true" aria-label="模块导航" className="fixed left-0 top-0 bottom-0 z-50 w-[260px] bg-surface border-r border-border shadow-2xl animate-in slide-in-from-left duration-200">
         <ModuleSidebar />
       </div>
     </>

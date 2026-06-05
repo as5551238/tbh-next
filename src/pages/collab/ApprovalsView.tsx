@@ -1,29 +1,10 @@
 import { useState } from 'react';
-import { useMatrixCell } from '@/hooks/useMatrix';
+import { useMatrixCell, useApprovals } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Clock, AlertTriangle, ChevronRight, User } from 'lucide-react';
+import { CheckCircle2, Clock, AlertTriangle, ChevronRight, User, Loader2 } from 'lucide-react';
 
-interface ApprovalItem {
-  id: string;
-  title: string;
-  type: 'leave' | 'expense' | 'purchase' | 'access' | 'project';
-  requester: string;
-  department: string;
-  urgency: 'urgent' | 'normal' | 'low';
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-  amount?: string;
-}
 
-const MOCK_APPROVALS: ApprovalItem[] = [
-  { id: 'AP-001', title: 'Q3路线图预算申请', type: 'project', requester: '张明', department: '产品部', urgency: 'urgent', status: 'pending', createdAt: '2小时前', amount: '¥50,000' },
-  { id: 'AP-002', title: '服务器扩容审批', type: 'purchase', requester: '李工', department: '研发部', urgency: 'normal', status: 'pending', createdAt: '5小时前', amount: '¥120,000' },
-  { id: 'AP-003', title: '年假申请（6/15-6/19）', type: 'leave', requester: '王琳', department: '设计部', urgency: 'low', status: 'pending', createdAt: '1天前' },
-  { id: 'AP-004', title: '客户数据访问权限', type: 'access', requester: '陈亮', department: '销售部', urgency: 'normal', status: 'approved', createdAt: '2天前' },
-  { id: 'AP-005', title: '差旅报销（深圳出差）', type: 'expense', requester: '赵磊', department: '市场部', urgency: 'low', status: 'approved', createdAt: '3天前' },
-  { id: 'AP-006', title: '办公设备采购', type: 'purchase', requester: '孙婷', department: '行政部', urgency: 'normal', status: 'rejected', createdAt: '4天前', amount: '¥8,500' },
-];
 
 const TYPE_LABELS: Record<string, string> = { leave: '请假', expense: '报销', purchase: '采购', access: '权限', project: '项目' };
 const URGENCY_STYLES: Record<string, string> = { urgent: 'bg-danger/10 text-danger', normal: 'bg-warn/10 text-warn', low: 'bg-surface-2 text-text-3' };
@@ -31,12 +12,13 @@ const STATUS_STYLES: Record<string, string> = { pending: 'bg-warn/10 text-warn',
 const STATUS_LABELS: Record<string, string> = { pending: '待审批', approved: '已通过', rejected: '已驳回' };
 
 export default function ApprovalsView() {
-  const cell = useMatrixCell();
+  const { cell, loading: cellLoading } = useMatrixCell();
+  const { approvals, setApprovals, loading } = useApprovals();
   const industry = useAppStore((s) => s.industry);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
 
-  const filtered = filter === 'all' ? MOCK_APPROVALS : MOCK_APPROVALS.filter((a) => a.status === filter);
-  const pendingCount = MOCK_APPROVALS.filter((a) => a.status === 'pending').length;
+  const filtered = filter === 'all' ? approvals : approvals.filter((a) => a.status === filter);
+  const pendingCount = approvals.filter((a) => a.status === 'pending').length;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -74,7 +56,10 @@ export default function ApprovalsView() {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {filtered.map((item) => (
+        {loading ? (
+          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+        ) : (
+        filtered.map((item) => (
           <div key={item.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg',
             item.status === 'pending' && 'border-l-2 border-l-warn'
           )}>
@@ -93,7 +78,7 @@ export default function ApprovalsView() {
               <span className="flex items-center gap-1"><User size={10} />{item.requester} · {item.department}</span>
               <span>{TYPE_LABELS[item.type]}</span>
               {item.amount && <span>金额: {item.amount}</span>}
-              <span className="flex items-center gap-1"><Clock size={10} />{item.createdAt}</span>
+                <span className="flex items-center gap-1"><Clock size={10} />{item.created_at}</span>
             </div>
             {item.status === 'pending' && (
               <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -105,7 +90,8 @@ export default function ApprovalsView() {
               </div>
             )}
           </div>
-        ))}
+        ))
+        )}
       </div>
     </div>
   );

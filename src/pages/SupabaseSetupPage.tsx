@@ -42,8 +42,9 @@ export default function SupabaseSetupPage() {
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-2">Supabase URL</label>
+            <label htmlFor="supabase-url" className="mb-1.5 block text-xs font-semibold text-text-2">Supabase URL</label>
             <input
+              id="supabase-url"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -52,8 +53,9 @@ export default function SupabaseSetupPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-2">Anon Key</label>
+            <label htmlFor="supabase-anon-key" className="mb-1.5 block text-xs font-semibold text-text-2">Anon Key</label>
             <input
+              id="supabase-anon-key"
               type="password"
               value={anonKey}
               onChange={(e) => setAnonKey(e.target.value)}

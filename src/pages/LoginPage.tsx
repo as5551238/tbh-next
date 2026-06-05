@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { isAuthenticated, setAuth } from '@/lib/auth';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useAuth, demoLogin, supabaseLogin, supabaseSignup } from '@/lib/auth';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { user, login, isAuthenticated: authed } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const hasSupabase = isSupabaseConfigured();
 
-  if (isAuthenticated()) return <Navigate to="/" replace />;
+  // Already authenticated
+  if (authed || user) return <Navigate to="/" replace />;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,17 +30,7 @@ export default function LoginPage() {
     }
 
     try {
-      if (hasSupabase && supabase) {
-        if (mode === 'login') {
-          const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-          if (authError) throw authError;
-        } else {
-          const { error: authError } = await supabase.auth.signUp({ email, password });
-          if (authError) throw authError;
-        }
-      }
-      // Always set local auth flag (Supabase session handled by listener)
-      setAuth(true);
+      await login(email, password);
       navigate('/', { replace: true });
     } catch (err: any) {
       setError(err?.message ?? '登录失败');
@@ -46,9 +39,16 @@ export default function LoginPage() {
     }
   }
 
-  function handleDemoLogin() {
-    setAuth(true);
-    navigate('/', { replace: true });
+  async function handleDemoLogin() {
+    setLoading(true);
+    try {
+      await demoLogin('Demo User', 'demo@tbh-next.app', 'member');
+      navigate('/', { replace: true });
+    } catch (err: any) {
+      setError(err?.message ?? 'Demo 登录失败');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -74,14 +74,21 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === 'register' && (
+            <div>
+              <label htmlFor="login-name" className="mb-1.5 block text-xs font-semibold text-text-2">姓名</label>
+              <input id="login-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="你的名字"
+                className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all placeholder:text-text-3 focus:border-primary focus:ring-2 focus:ring-primary/20" />
+            </div>
+          )}
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-2">邮箱</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com"
+            <label htmlFor="login-email" className="mb-1.5 block text-xs font-semibold text-text-2">邮箱</label>
+            <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com"
               className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all placeholder:text-text-3 focus:border-primary focus:ring-2 focus:ring-primary/20" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-2">密码</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
+            <label htmlFor="login-password" className="mb-1.5 block text-xs font-semibold text-text-2">密码</label>
+            <input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
               className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all placeholder:text-text-3 focus:border-primary focus:ring-2 focus:ring-primary/20" />
           </div>
 

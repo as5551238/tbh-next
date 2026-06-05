@@ -1,27 +1,7 @@
 import { useState } from 'react';
-import { useMatrixCell } from '@/hooks/useMatrix';
+import { useNotifications } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Bell, Check, Trash2, ExternalLink, Filter } from 'lucide-react';
-
-interface Notification {
-  id: string;
-  title: string;
-  content: string;
-  type: 'alert' | 'update' | 'mention' | 'system';
-  source: string;
-  time: string;
-  read: boolean;
-  actionUrl?: string;
-}
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  { id: 'N-001', title: 'Q3路线图评审截止', content: '明天是Q3路线图评审截止日，3个需求待确认', type: 'alert', source: 'AI产品分析师', time: '10分钟前', read: false },
-  { id: 'N-002', title: '导出功能使用率下降', content: '本周使用率降至12%，较上周下降3个百分点', type: 'alert', source: 'AI数据看门人', time: '1小时前', read: false },
-  { id: 'N-003', title: '张明在PRD中@了你', content: '「导出功能技术方案」v2.1 需要你的评审意见', type: 'mention', source: '协作', time: '2小时前', read: false },
-  { id: 'N-004', title: 'Sprint Review会议提醒', content: '明天09:00 Sprint Review，请准备演示内容', type: 'system', source: '日历', time: '3小时前', read: true },
-  { id: 'N-005', title: 'PRD模板v2.0已更新', content: '你关注的「PRD模板」已更新至v2.0', type: 'update', source: '知识库', time: '5小时前', read: true },
-  { id: 'N-006', title: '竞品动态', content: 'XX产品发布了AI辅助决策功能', type: 'update', source: 'AI竞品侦探', time: '1天前', read: true },
-];
+import { Bell, Check, Trash2, Loader2 } from 'lucide-react';
 
 const TYPE_STYLES: Record<string, string> = {
   alert: 'bg-danger/10 text-danger',
@@ -31,22 +11,22 @@ const TYPE_STYLES: Record<string, string> = {
 };
 
 export default function NotificationsContent() {
-  const [notifs, setNotifs] = useState(MOCK_NOTIFICATIONS);
+  const { notifications: initialNotifs, setNotifications, loading } = useNotifications();
   const [filter, setFilter] = useState<'all' | 'unread' | 'alert'>('all');
-  const unreadCount = notifs.filter((n) => !n.read).length;
+  const unreadCount = initialNotifs.filter((n) => !n.read).length;
 
-  const filtered = filter === 'all' ? notifs : filter === 'unread' ? notifs.filter((n) => !n.read) : notifs.filter((n) => n.type === 'alert');
+  const filtered = filter === 'all' ? initialNotifs : filter === 'unread' ? initialNotifs.filter((n) => !n.read) : initialNotifs.filter((n) => n.type === 'alert');
 
   function markRead(id: string) {
-    setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
   }
 
   function markAllRead() {
-    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
   function removeNotif(id: string) {
-    setNotifs((prev) => prev.filter((n) => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   }
 
   return (
@@ -66,7 +46,9 @@ export default function NotificationsContent() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {filtered.map((notif) => (
+        {loading ? (
+          <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        ) : filtered.map((notif) => (
           <div key={notif.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg', !notif.read && 'border-l-2 border-l-primary')}>
             <div className="flex items-center gap-2 mb-1">
               <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold', TYPE_STYLES[notif.type])}>

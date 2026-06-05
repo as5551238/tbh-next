@@ -1,24 +1,25 @@
-import { useMatrixCell } from '@/hooks/useMatrix';
-import { FileText, Plus, Clock, Users, MoreHorizontal } from 'lucide-react';
+import { useDocs, useMatrixCell } from '@/hooks/useMatrix';
+import { cn } from '@/lib/utils';
+import { FileText, Plus, Clock, Users, MoreHorizontal, Loader2 } from 'lucide-react';
+
+const statusMap: Record<string, { label: string; cls: string }> = {
+  editing: { label: '编辑中', cls: 'bg-success/10 text-success' },
+  review: { label: '评审中', cls: 'bg-warn/10 text-warn' },
+  draft: { label: '草稿', cls: 'bg-surface-2 text-text-3' },
+  published: { label: '已发布', cls: 'bg-primary/10 text-primary-2' },
+};
 
 export default function DocsContent() {
-  const cell = useMatrixCell();
+  const { cell, loading: cellLoading } = useMatrixCell();
+  const { docs, loading } = useDocs();
 
-  const docs = [
-    { title: 'Q3产品路线图', type: '在线文档', editors: 3, updated: '10分钟前', status: 'editing', author: '我' },
-    { title: '导出功能技术方案', type: '在线文档', editors: 2, updated: '1小时前', status: 'editing', author: '张工' },
-    { title: '竞品分析报告', type: '在线文档', editors: 1, updated: '昨天', status: 'review', author: 'AI同事' },
-    { title: 'PRD模板v2.0', type: '模板', editors: 0, updated: '3天前', status: 'published', author: '我' },
-    { title: 'API接口文档', type: '在线文档', editors: 1, updated: '5天前', status: 'draft', author: '李工' },
-    { title: '新人onboarding手册', type: '在线文档', editors: 0, updated: '1周前', status: 'published', author: 'HR' },
-  ];
-
-  const statusMap: Record<string, { label: string; cls: string }> = {
-    editing: { label: '编辑中', cls: 'bg-success/10 text-success' },
-    review: { label: '评审中', cls: 'bg-warn/10 text-warn' },
-    draft: { label: '草稿', cls: 'bg-surface-2 text-text-3' },
-    published: { label: '已发布', cls: 'bg-primary/10 text-primary-2' },
-  };
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -61,7 +62,7 @@ export default function DocsContent() {
         {docs.map((d) => {
           const st = statusMap[d.status];
           return (
-            <div key={d.title} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
+            <div key={d.id} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                 <FileText size={15} className="text-primary-2" />
               </div>
@@ -81,7 +82,7 @@ export default function DocsContent() {
                   )}
                 </div>
               </div>
-              <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', st.cls)}>{st.label}</span>
+              {st && <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', st.cls)}>{st.label}</span>}
               <button className="opacity-0 group-hover:opacity-100 transition-opacity text-text-3 hover:text-text">
                 <MoreHorizontal size={14} />
               </button>
@@ -91,8 +92,4 @@ export default function DocsContent() {
       </div>
     </div>
   );
-}
-
-function cn(...classes: (string | undefined | false)[]) {
-  return classes.filter(Boolean).join(' ');
 }

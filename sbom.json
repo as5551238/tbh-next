@@ -1,0 +1,192 @@
+{
+  "$schema": "https://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "serialNumber": "urn:uuid:95d03d4a-7c23-4288-bc18-6bd163ca5c6a",
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "tbh-next",
+      "version": "0.1.0",
+      "purl": "pkg:npm/tbh-next@0.1.0"
+    },
+    "timestamp": "2026-06-05T04:11:28.897Z",
+    "tools": [
+      {
+        "name": "tbh-sbom-gen",
+        "version": "1.0.0"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "@supabase/supabase-js",
+      "version": "2.104.0",
+      "purl": "pkg:npm/@supabase/supabase-js@2.104.0"
+    },
+    {
+      "type": "library",
+      "name": "clsx",
+      "version": "2.1.1",
+      "purl": "pkg:npm/clsx@2.1.1"
+    },
+    {
+      "type": "library",
+      "name": "lucide-react",
+      "version": "1.8.0",
+      "purl": "pkg:npm/lucide-react@1.8.0"
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "19.2.5",
+      "purl": "pkg:npm/react@19.2.5"
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "19.2.5",
+      "purl": "pkg:npm/react-dom@19.2.5"
+    },
+    {
+      "type": "library",
+      "name": "react-router-dom",
+      "version": "6.30.4",
+      "purl": "pkg:npm/react-router-dom@6.30.4"
+    },
+    {
+      "type": "library",
+      "name": "tailwind-merge",
+      "version": "3.5.0",
+      "purl": "pkg:npm/tailwind-merge@3.5.0"
+    },
+    {
+      "type": "library",
+      "name": "zustand",
+      "version": "5.0.0",
+      "purl": "pkg:npm/zustand@5.0.0"
+    },
+    {
+      "type": "library",
+      "name": "@eslint/js",
+      "version": "9.39.4",
+      "purl": "pkg:npm/@eslint/js@9.39.4"
+    },
+    {
+      "type": "library",
+      "name": "@testing-library/jest-dom",
+      "version": "6.9.1",
+      "purl": "pkg:npm/@testing-library/jest-dom@6.9.1"
+    },
+    {
+      "type": "library",
+      "name": "@testing-library/react",
+      "version": "16.3.2",
+      "purl": "pkg:npm/@testing-library/react@16.3.2"
+    },
+    {
+      "type": "library",
+      "name": "@types/node",
+      "version": "24.12.2",
+      "purl": "pkg:npm/@types/node@24.12.2"
+    },
+    {
+      "type": "library",
+      "name": "@types/react",
+      "version": "19.2.14",
+      "purl": "pkg:npm/@types/react@19.2.14"
+    },
+    {
+      "type": "library",
+      "name": "@types/react-dom",
+      "version": "19.2.3",
+      "purl": "pkg:npm/@types/react-dom@19.2.3"
+    },
+    {
+      "type": "library",
+      "name": "@vitejs/plugin-react",
+      "version": "4.3.4",
+      "purl": "pkg:npm/@vitejs/plugin-react@4.3.4"
+    },
+    {
+      "type": "library",
+      "name": "autoprefixer",
+      "version": "10.5.0",
+      "purl": "pkg:npm/autoprefixer@10.5.0"
+    },
+    {
+      "type": "library",
+      "name": "esbuild",
+      "version": "0.25.0",
+      "purl": "pkg:npm/esbuild@0.25.0"
+    },
+    {
+      "type": "library",
+      "name": "eslint",
+      "version": "9.39.4",
+      "purl": "pkg:npm/eslint@9.39.4"
+    },
+    {
+      "type": "library",
+      "name": "eslint-plugin-react-hooks",
+      "version": "7.1.1",
+      "purl": "pkg:npm/eslint-plugin-react-hooks@7.1.1"
+    },
+    {
+      "type": "library",
+      "name": "eslint-plugin-react-refresh",
+      "version": "0.5.2",
+      "purl": "pkg:npm/eslint-plugin-react-refresh@0.5.2"
+    },
+    {
+      "type": "library",
+      "name": "globals",
+      "version": "17.5.0",
+      "purl": "pkg:npm/globals@17.5.0"
+    },
+    {
+      "type": "library",
+      "name": "jsdom",
+      "version": "25.0.1",
+      "purl": "pkg:npm/jsdom@25.0.1"
+    },
+    {
+      "type": "library",
+      "name": "postcss",
+      "version": "8.5.10",
+      "purl": "pkg:npm/postcss@8.5.10"
+    },
+    {
+      "type": "library",
+      "name": "tailwindcss",
+      "version": "3.4.1",
+      "purl": "pkg:npm/tailwindcss@3.4.1"
+    },
+    {
+      "type": "library",
+      "name": "tailwindcss-animate",
+      "version": "1.0.7",
+      "purl": "pkg:npm/tailwindcss-animate@1.0.7"
+    },
+    {
+      "type": "library",
+      "name": "typescript",
+      "version": "6.0.2",
+      "purl": "pkg:npm/typescript@6.0.2"
+    },
+    {
+      "type": "library",
+      "name": "vite",
+      "version": "5.4.21",
+      "purl": "pkg:npm/vite@5.4.21"
+    },
+    {
+      "type": "library",
+      "name": "vitest",
+      "version": "2.1.9",
+      "purl": "pkg:npm/vitest@2.1.9"
+    }
+  ]
+}

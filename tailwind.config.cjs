@@ -21,6 +21,9 @@ module.exports = {
         manuf: '#f5a623',
         edu: '#4ecdc4',
         finance: '#a78bfa',
+        text: '#eaecf4',
+        'text-2': '#9ca3b8',
+        'text-3': '#7d869e',
       },
       fontFamily: {
         sans: ['-apple-system', 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],

@@ -1,7 +1,7 @@
 import { useAppStore } from '@/stores/appStore';
-import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
+import { useMatrixCell, useIndustryColor, useGoals, useTasks, useProjects, useKnowledgeDocs } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, Target, CheckCircle2, FolderKanban, BarChart3, BookOpen, Brain, ArrowRight, Bot } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Target, CheckCircle2, FolderKanban, BarChart3, BookOpen, Brain, ArrowRight, Bot, Loader2 } from 'lucide-react';
 
 // Lazy-load heavier sub-views
 import ScheduleContent from '@/pages/workspace/ScheduleContent';
@@ -23,7 +23,7 @@ const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
 function OverviewContent() {
   const setInterface = useAppStore((s) => s.setInterface);
   const indColor = useIndustryColor();
-  const cell = useMatrixCell();
+  const { cell, loading } = useMatrixCell();
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -85,32 +85,29 @@ function OverviewContent() {
 
 /** Goals / OKR module */
 function GoalsContent() {
-  const cell = useMatrixCell();
-  const goals = [
-    { name: 'Q3 路线图定稿', progress: 75, status: 'on_track', keyResults: ['3个核心需求确认', '技术评审通过', '排期完成'] },
-    { name: '导出功能优化', progress: 30, status: 'at_risk', keyResults: ['使用率提升至60%', '3种格式支持', '用户NPS≥40'] },
-    { name: 'PRD标准化', progress: 90, status: 'on_track', keyResults: ['模板制定', '3个PRD评审', '团队采纳率80%'] },
-  ];
+  const { goals, loading } = useGoals();
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-3">
       <div className="flex items-center gap-2 mb-2">
         <Target size={18} className="text-primary-2" />
         <span className="text-sm font-bold">目标 OKR</span>
-        <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary-2">3 个进行中</span>
+        <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary-2">{goals.length} 个进行中</span>
       </div>
-      {goals.map((g) => (
-        <div key={g.name} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg">
+      {loading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+      ) : goals.map((g) => (
+        <div key={g.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-text">{g.name}</span>
-            <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', g.status === 'on_track' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
-              {g.status === 'on_track' ? '正常' : '风险'}
+            <span className="text-sm font-semibold text-text">{g.title}</span>
+            <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', g.status === 'active' || g.status === 'on_track' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
+              {g.status === 'active' || g.status === 'on_track' ? '正常' : '风险'}
             </span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-2 mb-3 overflow-hidden">
-            <div className={cn('h-full rounded-full transition-all', g.status === 'on_track' ? 'bg-success' : 'bg-warn')} style={{ width: `${g.progress}%` }} />
+            <div className={cn('h-full rounded-full transition-all', g.status === 'active' || g.status === 'on_track' ? 'bg-success' : 'bg-warn')} style={{ width: `${g.progress}%` }} />
           </div>
           <div className="space-y-1">
-            {g.keyResults.map((kr, i) => (
+            {g.key_results.map((kr, i) => (
               <div key={i} className="flex items-center gap-2 text-xs text-text-3">
                 <CheckCircle2 size={12} className={i < Math.ceil(g.progress / 40) ? 'text-success' : 'text-border'} />
                 <span>{kr}</span>
@@ -119,42 +116,31 @@ function GoalsContent() {
           </div>
         </div>
       ))}
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-        <div className="flex items-center gap-2 text-xs text-primary-2">
-          <Brain size={14} />
-          <span className="font-semibold">AI 建议</span>
-        </div>
-        <p className="mt-1 text-[11px] text-text-2">"导出功能优化"进度仅30%，建议本周优先投入资源。</p>
-      </div>
     </div>
   );
 }
 
 /** Tasks module */
 function TasksContent() {
-  const cell = useMatrixCell();
-  const tasks = [
-    { title: 'Q3路线图待确认需求评审', priority: 'urgent', assignee: '我', due: '明天', done: false },
-    { title: '导出功能使用率分析报告', priority: 'high', assignee: 'AI同事', due: '周五', done: false },
-    { title: 'PRD模板v2.0更新', priority: 'medium', assignee: '我', due: '下周', done: false },
-    { title: 'NPS问卷设计', priority: 'medium', assignee: '团队', due: '下周三', done: true },
-    { title: '竞品功能对比表', priority: 'low', assignee: 'AI同事', due: '下周五', done: true },
-  ];
+  const { tasks, loading } = useTasks();
   const priorityStyle: Record<string, string> = { urgent: 'bg-danger/10 text-danger', high: 'bg-warn/10 text-warn', medium: 'bg-primary/10 text-primary-2', low: 'bg-surface-2 text-text-3' };
+  const priorityLabel: Record<string, string> = { urgent: '紧急', high: '高', medium: '中', low: '低' };
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-2">
       <div className="flex items-center gap-2 mb-2">
         <CheckCircle2 size={18} className="text-primary-2" />
         <span className="text-sm font-bold">任务中心</span>
-        <span className="ml-auto text-[10px] text-text-3">5 项 · 2 完成 · 3 进行中</span>
+        <span className="ml-auto text-[10px] text-text-3">{tasks.length} 项 · {tasks.filter(t => t.done).length} 完成 · {tasks.filter(t => !t.done).length} 进行中</span>
       </div>
-      {tasks.map((t) => (
-        <div key={t.title} className={cn('flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2', t.done && 'opacity-50')}>
+      {loading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+      ) : tasks.map((t) => (
+        <div key={t.id} className={cn('flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2', t.done && 'opacity-50')}>
           <div className={cn('h-4 w-4 rounded border-2 shrink-0 flex items-center justify-center', t.done ? 'bg-success border-success' : 'border-border')}>
             {t.done && <CheckCircle2 size={12} className="text-white" />}
           </div>
           <span className={cn('flex-1 text-xs text-text', t.done && 'line-through')}>{t.title}</span>
-          <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', priorityStyle[t.priority])}>{t.priority === 'urgent' ? '紧急' : t.priority === 'high' ? '高' : t.priority === 'medium' ? '中' : '低'}</span>
+          <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', priorityStyle[t.priority] || priorityStyle.medium)}>{priorityLabel[t.priority] || t.priority}</span>
           <span className="text-[10px] text-text-3 shrink-0">{t.due}</span>
         </div>
       ))}
@@ -164,11 +150,7 @@ function TasksContent() {
 
 /** Projects module */
 function ProjectsContent() {
-  const projects = [
-    { name: '导出功能优化', status: 'active', progress: 30, members: 3, deadline: '7/15' },
-    { name: 'PRD标准化', status: 'active', progress: 90, members: 2, deadline: '6/30' },
-    { name: 'Q3路线图', status: 'review', progress: 75, members: 5, deadline: '6/20' },
-  ];
+  const { projects, loading } = useProjects();
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-3">
       <div className="flex items-center gap-2 mb-2">
@@ -176,19 +158,21 @@ function ProjectsContent() {
         <span className="text-sm font-bold">项目管理</span>
         <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">+ 新建项目</button>
       </div>
-      {projects.map((p) => (
-        <div key={p.name} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg">
+      {loading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+      ) : projects.map((p) => (
+        <div key={p.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-text">{p.name}</span>
             <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', p.status === 'active' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
-              {p.status === 'active' ? '进行中' : '评审中'}
+              {p.status === 'active' ? '进行中' : p.status === 'planned' ? '计划中' : '评审中'}
             </span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-2 mb-2 overflow-hidden">
             <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${p.progress}%` }} />
           </div>
           <div className="flex items-center justify-between text-[10px] text-text-3">
-            <span>👥 {p.members} 人</span>
+            <span>{p.members} 人</span>
             <span>截止 {p.deadline}</span>
           </div>
         </div>
@@ -199,12 +183,7 @@ function ProjectsContent() {
 
 /** Knowledge module */
 function KnowledgeContent() {
-  const docs = [
-    { title: 'Q3产品路线图', type: '文档', updated: '2小时前', author: '我' },
-    { title: '导出功能技术方案', type: '技术方案', updated: '1天前', author: 'AI同事' },
-    { title: '竞品分析：飞书/Notion/ClickUp', type: '研究', updated: '3天前', author: 'AI同事' },
-    { title: 'PRD模板v2.0', type: '模板', updated: '5天前', author: '我' },
-  ];
+  const { docs, loading } = useKnowledgeDocs();
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-2">
       <div className="flex items-center gap-2 mb-2">
@@ -216,8 +195,10 @@ function KnowledgeContent() {
         <BarChart3 size={14} className="text-text-3" />
         <span className="text-xs text-text-3">搜索知识库...</span>
       </div>
-      {docs.map((d) => (
-        <div key={d.title} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
+      {loading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+      ) : docs.map((d) => (
+        <div key={d.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0"><BookOpen size={14} className="text-primary-2" /></div>
           <div className="min-w-0 flex-1">
             <div className="text-xs font-semibold text-text truncate">{d.title}</div>
