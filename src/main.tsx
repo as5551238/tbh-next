@@ -8,6 +8,9 @@ import App from './App';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
 import SupabaseSetupPage from './pages/SupabaseSetupPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import AuditLogView from './pages/AuditLogView';
 import RequireAuth from './lib/auth';
 import './index.css';
 
@@ -31,6 +34,8 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/setup" element={<RequireAuth><SupabaseSetupPage /></RequireAuth>} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route path="/" element={<RequireAuth><App /></RequireAuth>}>
           <Route index element={<Navigate to="/workspace/overview" replace />} />
           <Route path="workspace" element={<Navigate to="/workspace/overview" replace />} />
@@ -39,6 +44,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="collab/:module" element={null} />
           <Route path="ai" element={<Navigate to="/ai/main" replace />} />
           <Route path="ai/:module" element={null} />
+          <Route path="audit" element={<AuditLogView />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
