@@ -219,67 +219,123 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_events ENABLE ROW LEVEL SECURITY;
 
--- Public read (anon + authenticated) for reference data
+-- ============================================================
+-- 13b. RLS Helper Functions (must be created before policies)
+-- ============================================================
+
+-- Check if current user is member of a team
+CREATE OR REPLACE FUNCTION is_team_member(team_uuid TEXT)
+RETURNS BOOLEAN AS $func$
+  SELECT EXISTS (
+    SELECT 1 FROM team_members
+    WHERE team_id = team_uuid AND member_id::uuid = auth.uid()
+  );
+$func$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Check if current user is admin/owner/leader of a team
+CREATE OR REPLACE FUNCTION is_team_admin(team_uuid TEXT)
+RETURNS BOOLEAN AS $func$
+  SELECT EXISTS (
+    SELECT 1 FROM team_members
+    WHERE team_id = team_uuid AND member_id::uuid = auth.uid()
+    AND role IN ('admin', 'owner', 'leader')
+  );
+$func$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Check if current user is admin of any team
+CREATE OR REPLACE FUNCTION is_any_team_admin()
+RETURNS BOOLEAN AS $func$
+  SELECT EXISTS (
+    SELECT 1 FROM team_members
+    WHERE member_id::uuid = auth.uid() AND role IN ('admin', 'owner', 'leader')
+  );
+$func$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Get all team IDs the current user belongs to
+CREATE OR REPLACE FUNCTION get_user_team_ids()
+RETURNS SETOF TEXT AS $func$
+  SELECT team_id FROM team_members WHERE member_id::uuid = auth.uid();
+$func$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- ============================================================
+-- 13c. RLS Policies
+-- ============================================================
+
+-- Reference data: public read, admin-only write
 CREATE POLICY "public_read_industries" ON industries FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "admin_insert_industries" ON industries FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_update_industries" ON industries FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_delete_industries" ON industries FOR DELETE TO authenticated USING (is_any_team_admin());
+
 CREATE POLICY "public_read_departments" ON departments FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "admin_insert_departments" ON departments FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_update_departments" ON departments FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_delete_departments" ON departments FOR DELETE TO authenticated USING (is_any_team_admin());
+
 CREATE POLICY "public_read_kpis" ON kpis FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "admin_insert_kpis" ON kpis FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_update_kpis" ON kpis FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_delete_kpis" ON kpis FOR DELETE TO authenticated USING (is_any_team_admin());
+
 CREATE POLICY "public_read_matrix_cells" ON matrix_cells FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "admin_insert_matrix_cells" ON matrix_cells FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_update_matrix_cells" ON matrix_cells FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_delete_matrix_cells" ON matrix_cells FOR DELETE TO authenticated USING (is_any_team_admin());
+
 CREATE POLICY "public_read_agents" ON agents FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "admin_insert_agents" ON agents FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_update_agents" ON agents FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_delete_agents" ON agents FOR DELETE TO authenticated USING (is_any_team_admin());
+
 CREATE POLICY "public_read_channels" ON channels FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "admin_insert_channels" ON channels FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_update_channels" ON channels FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
+CREATE POLICY "admin_delete_channels" ON channels FOR DELETE TO authenticated USING (is_any_team_admin());
 
--- Authenticated-only access for business data
--- Goals: read all, write own or admin/manager
-CREATE POLICY "auth_read_goals" ON goals FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert_goals" ON goals FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "auth_update_goals" ON goals FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_delete_goals" ON goals FOR DELETE TO authenticated USING (true);
+-- Business data: team-based access control
+-- Goals: team members can CRUD, only admins can delete
+CREATE POLICY "team_select_goals" ON goals FOR SELECT TO authenticated USING (is_team_member(team_id));
+CREATE POLICY "team_insert_goals" ON goals FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id));
+CREATE POLICY "team_update_goals" ON goals FOR UPDATE TO authenticated USING (is_team_member(team_id)) WITH CHECK (is_team_member(team_id));
+CREATE POLICY "team_delete_goals" ON goals FOR DELETE TO authenticated USING (is_team_admin(team_id));
 
--- Tasks: read all, write own or admin/manager
-CREATE POLICY "auth_read_tasks" ON tasks FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert_tasks" ON tasks FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "auth_update_tasks" ON tasks FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_delete_tasks" ON tasks FOR DELETE TO authenticated USING (true);
+-- Tasks: team members can CRUD, only admins can delete
+CREATE POLICY "team_select_tasks" ON tasks FOR SELECT TO authenticated USING (is_team_member(team_id));
+CREATE POLICY "team_insert_tasks" ON tasks FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id));
+CREATE POLICY "team_update_tasks" ON tasks FOR UPDATE TO authenticated USING (is_team_member(team_id)) WITH CHECK (is_team_member(team_id));
+CREATE POLICY "team_delete_tasks" ON tasks FOR DELETE TO authenticated USING (is_team_admin(team_id));
 
--- Projects: read all, write own or admin/manager
-CREATE POLICY "auth_read_projects" ON projects FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert_projects" ON projects FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "auth_update_projects" ON projects FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_delete_projects" ON projects FOR DELETE TO authenticated USING (true);
+-- Projects: team members can CRUD, only admins can delete
+CREATE POLICY "team_select_projects" ON projects FOR SELECT TO authenticated USING (is_team_member(team_id));
+CREATE POLICY "team_insert_projects" ON projects FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id));
+CREATE POLICY "team_update_projects" ON projects FOR UPDATE TO authenticated USING (is_team_member(team_id)) WITH CHECK (is_team_member(team_id));
+CREATE POLICY "team_delete_projects" ON projects FOR DELETE TO authenticated USING (is_team_admin(team_id));
 
--- Knowledge docs: read all, write own or admin/manager
-CREATE POLICY "auth_read_knowledge_docs" ON knowledge_docs FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert_knowledge_docs" ON knowledge_docs FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "auth_update_knowledge_docs" ON knowledge_docs FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_delete_knowledge_docs" ON knowledge_docs FOR DELETE TO authenticated USING (true);
+-- Knowledge docs: team-scoped access (team_id is UUID, cast to TEXT)
+CREATE POLICY "team_select_knowledge_docs" ON knowledge_docs FOR SELECT TO authenticated USING (is_team_member(team_id::text));
+CREATE POLICY "team_insert_knowledge_docs" ON knowledge_docs FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id::text));
+CREATE POLICY "team_update_knowledge_docs" ON knowledge_docs FOR UPDATE TO authenticated USING (is_team_member(team_id::text)) WITH CHECK (is_team_member(team_id::text));
+CREATE POLICY "team_delete_knowledge_docs" ON knowledge_docs FOR DELETE TO authenticated USING (is_team_admin(team_id::text));
 
--- Members: read all, write admin/manager only
-CREATE POLICY "auth_read_members" ON members FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert_members" ON members FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "auth_update_members" ON members FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_delete_members" ON members FOR DELETE TO authenticated USING (true);
+-- Members: team members can read, users can update own profile, admins can manage
+CREATE POLICY "team_select_members" ON members FOR SELECT TO authenticated USING (is_team_member(team_id));
+CREATE POLICY "team_insert_members" ON members FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id));
+CREATE POLICY "team_update_members" ON members FOR UPDATE TO authenticated USING (is_team_member(team_id)) WITH CHECK (is_team_member(team_id));
+CREATE POLICY "team_delete_members" ON members FOR DELETE TO authenticated USING (is_team_admin(team_id));
 
--- Anon read for public-facing data (goals, tasks for dashboard preview)
-CREATE POLICY "anon_read_goals" ON goals FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_read_tasks" ON tasks FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_read_projects" ON projects FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_read_knowledge_docs" ON knowledge_docs FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_read_members" ON members FOR SELECT TO anon USING (true);
+-- Messages: team-scoped read/write
+CREATE POLICY "team_select_messages" ON messages FOR SELECT TO authenticated USING (is_team_member(team_id::text));
+CREATE POLICY "team_insert_messages" ON messages FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id::text));
 
--- Audit logs: read-only for admins, no manual insert
-CREATE POLICY "auth_read_audit_logs" ON audit_logs FOR SELECT TO authenticated USING (true);
--- No INSERT/UPDATE/DELETE policy — only triggers can write audit_logs
+-- Audit logs: admin-only read, no manual insert/update/delete
+CREATE POLICY "admin_read_audit_logs" ON audit_logs FOR SELECT TO authenticated USING (is_any_team_admin());
 
--- Messages: authenticated can read/write in their channels
-CREATE POLICY "auth_read_messages" ON messages FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert_messages" ON messages FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "anon_read_messages" ON messages FOR SELECT TO anon USING (true);
-
--- Subscriptions: users can only read their own
+-- Subscriptions: users can only read/modify their own
 CREATE POLICY "auth_read_own_subscription" ON subscriptions FOR SELECT TO authenticated USING (user_id = auth.uid());
 CREATE POLICY "auth_insert_own_subscription" ON subscriptions FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
 CREATE POLICY "auth_update_own_subscription" ON subscriptions FOR UPDATE TO authenticated USING (user_id = auth.uid());
 
--- Usage events: users can read their own, insert their own
+-- Usage events: users can read/insert their own
 CREATE POLICY "auth_read_own_usage" ON usage_events FOR SELECT TO authenticated USING (user_id = auth.uid());
 CREATE POLICY "auth_insert_own_usage" ON usage_events FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
 
