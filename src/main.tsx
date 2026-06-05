@@ -8,6 +8,7 @@ import App from './App';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
 import SupabaseSetupPage from './pages/SupabaseSetupPage';
+import MyToday from './pages/MyToday';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import AuditLogView from './pages/AuditLogView';
@@ -37,7 +38,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/" element={<RequireAuth><App /></RequireAuth>}>
-          <Route index element={<Navigate to="/workspace/overview" replace />} />
+          <Route index element={<MyToday />} />
           <Route path="workspace" element={<Navigate to="/workspace/overview" replace />} />
           <Route path="workspace/:module" element={null} />
           <Route path="collab" element={<Navigate to="/collab/channels" replace />} />
