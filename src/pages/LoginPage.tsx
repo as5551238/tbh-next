@@ -100,12 +100,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {!hasSupabase && (
-          <button onClick={handleDemoLogin}
+        <button onClick={handleDemoLogin}
             className="mt-3 w-full rounded-xl border border-border bg-surface py-3 text-sm font-semibold text-text-2 transition-all hover:border-primary/30 hover:text-text">
-            体验 Demo 模式
+            体验 Demo 模式（无需注册）
           </button>
-        )}
 
         <p className="mt-4 text-center text-[11px] text-text-3">
           {hasSupabase ? 'Supabase 已连接 · 真实数据模式' : 'Supabase 未配置 · Demo 模式'}
