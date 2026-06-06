@@ -1,59 +1,104 @@
-import { useState } from 'react';
-import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
-import { useToast, ToastOverlay } from '@/hooks/useToast';
+import { useState, useEffect } from 'react';
+import { useMatrixCell, useIndustryColor, useAgentDetails } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { Bot, ToggleLeft, ToggleRight, Settings, MessageSquare, BarChart3, RefreshCw, X } from 'lucide-react';
+import { Bot, ToggleLeft, ToggleRight, Settings, MessageSquare, BarChart3, RefreshCw, X, Check, Loader2 } from 'lucide-react';
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
+import type { AgentDetailRow } from '@/lib/dataLayer';
+
+interface AgentItem {
+  id: string;
+  name: string;
+  desc: string;
+  status: string;
+  enabled: boolean;
+}
 
 export default function AiAgentsView() {
-  const { cell, loading } = useMatrixCell();
+  const { cell } = useMatrixCell();
   const indColor = useIndustryColor();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
+  const { agents: dbAgents, editAgent, addAgent, loading } = useAgentDetails();
 
-  const [agents, setAgents] = useState(cell.agents.map((a) => ({ ...a, enabled: true })));
+  // Merge cell.agents (matrix fallback) with DB agents
+  const [agents, setAgents] = useState<AgentItem[]>([]);
   const addModal = useModal();
   const statsModal = useModal();
   const [newAgentName, setNewAgentName] = useState('');
   const [newAgentDesc, setNewAgentDesc] = useState('');
-  const [selectedAgent, setSelectedAgent] = useState<typeof agents[0] | null>(null);
-  const [statsAgent, setStatsAgent] = useState<typeof agents[0] | null>(null);
+  const [statsAgent, setStatsAgent] = useState<AgentItem | null>(null);
   const [toast, setToast] = useState('');
+
+  useEffect(() => {
+    if (!loading && dbAgents.length > 0) {
+      setAgents(dbAgents.map((a) => ({
+        id: a.id,
+        name: a.name,
+        desc: a.desc,
+        status: a.status,
+        enabled: a.enabled,
+      })));
+    } else if (!loading && dbAgents.length === 0) {
+      // Fallback to cell.agents when DB is empty
+      setAgents(cell.agents.map((a, i) => ({
+        id: `cell-agent-${i}`,
+        name: a.name,
+        desc: a.desc ?? a.status,
+        status: a.status,
+        enabled: true,
+      })));
+    }
+  }, [loading, dbAgents, cell.agents]);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(''), 2500);
   }
 
-  function toggleAgent(name: string) {
-    setAgents((prev) => prev.map((a) => a.name === name ? { ...a, enabled: !a.enabled } : a));
+  function toggleAgent(id: string) {
+    const agent = agents.find((a) => a.id === id);
+    if (!agent) return;
+    const newEnabled = !agent.enabled;
+    setAgents((prev) => prev.map((a) => a.id === id ? { ...a, enabled: newEnabled } : a));
+    editAgent(id, { enabled: newEnabled });
   }
 
-  function handleAddAgent() {
+  async function handleAddAgent() {
     if (!newAgentName.trim()) return;
-    const newAgent = {
+    const row = await addAgent({
       name: newAgentName.trim(),
       desc: newAgentDesc.trim() || '自定义AI助手',
       status: '在线',
       enabled: true,
-    };
-    setAgents((prev) => [...prev, newAgent]);
+      model: 'default',
+      tasks_completed: 0,
+      uptime: '0h',
+      capabilities: [],
+    });
+    setAgents((prev) => [...prev, {
+      id: row.id,
+      name: row.name,
+      desc: row.desc,
+      status: row.status,
+      enabled: row.enabled,
+    }]);
     setNewAgentName('');
     setNewAgentDesc('');
     addModal.closeModal();
-    showToast(`AI同事"${newAgent.name}"已添加`);
+    showToast(`AI同事"${newAgentName.trim()}"已添加`);
   }
 
-  function handleAgentAction(name: string, action: string) {
-    const agent = agents.find((a) => a.name === name);
+  function handleAgentAction(id: string, action: string) {
+    const agent = agents.find((a) => a.id === id);
     if (!agent) return;
     if (action === 'restart') {
-      setAgents((prev) => prev.map((a) => a.name === name ? { ...a, status: '重启中...' } : a));
+      setAgents((prev) => prev.map((a) => a.id === id ? { ...a, status: '重启中...' } : a));
       setTimeout(() => {
-        setAgents((prev) => prev.map((a) => a.name === name ? { ...a, status: '在线' } : a));
-        showToast(`${name} 已重启完成`);
+        setAgents((prev) => prev.map((a) => a.id === id ? { ...a, status: '在线' } : a));
+        editAgent(id, { status: '在线' });
+        showToast(`${agent.name} 已重启完成`);
       }, 1500);
     } else if (action === 'chat') {
       setCurrentPage('main-chat');
@@ -87,8 +132,11 @@ export default function AiAgentsView() {
           </p>
         </div>
 
-        {agents.map((agent) => (
-          <div key={agent.name} className={cn('rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg',
+        {loading ? (
+          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+        ) : (
+        agents.map((agent) => (
+          <div key={agent.id} className={cn('rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg',
             !agent.enabled && 'opacity-50'
           )}>
             <div className="flex items-center gap-3">
@@ -107,7 +155,7 @@ export default function AiAgentsView() {
                 </div>
                 <div className="text-[11px] text-text-3">{agent.desc}</div>
               </div>
-              <button onClick={() => toggleAgent(agent.name)} className="shrink-0">
+              <button onClick={() => toggleAgent(agent.id)} className="shrink-0">
                 {agent.enabled ? (
                   <ToggleRight size={28} className="text-primary-2" />
                 ) : (
@@ -117,22 +165,23 @@ export default function AiAgentsView() {
             </div>
             {agent.enabled && (
               <div className="flex items-center gap-2 mt-3 ml-13">
-                <button onClick={() => handleAgentAction(agent.name, 'chat')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
+                <button onClick={() => handleAgentAction(agent.id, 'chat')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <MessageSquare size={10} />对话
                 </button>
-                <button onClick={() => handleAgentAction(agent.name, 'stats')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
+                <button onClick={() => handleAgentAction(agent.id, 'stats')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <BarChart3 size={10} />统计
                 </button>
-                <button onClick={() => handleAgentAction(agent.name, 'config')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
+                <button onClick={() => handleAgentAction(agent.id, 'config')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <Settings size={10} />配置
                 </button>
-                <button onClick={() => handleAgentAction(agent.name, 'restart')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
+                <button onClick={() => handleAgentAction(agent.id, 'restart')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <RefreshCw size={10} />重启
                 </button>
               </div>
             )}
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Add Agent Modal */}

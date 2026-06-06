@@ -394,6 +394,13 @@ export async function fetchApprovals(): Promise<ApprovalRow[]> {
   return data as ApprovalRow[];
 }
 
+export async function updateApproval(id: string, data: Partial<ApprovalRow>): Promise<ApprovalRow> {
+  if (!isSupabaseConfigured() || !supabase) return { id, ...data } as ApprovalRow;
+  const { data: row, error } = await supabase.from('approvals').update(data).eq('id', id).select().single();
+  if (error) throw new Error(`updateApproval: ${error.message}`);
+  return row as ApprovalRow;
+}
+
 // --- Announcements ---
 
 export async function fetchAnnouncements(): Promise<AnnouncementRow[]> {
@@ -795,19 +802,19 @@ export async function markAlertResolved(id: string): Promise<void> {
 export async function createAnnouncement(data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('announcements').insert(data);
-  if (error) console.warn('createAnnouncement:', error.message);
+  if (error) throw new Error(`createAnnouncement: ${error.message}`);
 }
 
 export async function updateAnnouncement(id: string, data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('announcements').update(data).eq('id', id);
-  if (error) console.warn('updateAnnouncement:', error.message);
+  if (error) throw new Error(`updateAnnouncement: ${error.message}`);
 }
 
 export async function deleteAnnouncement(id: string): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('announcements').delete().eq('id', id);
-  if (error) console.warn('deleteAnnouncement:', error.message);
+  if (error) throw new Error(`deleteAnnouncement: ${error.message}`);
 }
 
 // ======== Meetings CRUD ========
@@ -815,19 +822,19 @@ export async function deleteAnnouncement(id: string): Promise<void> {
 export async function createMeeting(data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('schedule_events').insert({ ...data, type: 'meeting' });
-  if (error) console.warn('createMeeting:', error.message);
+  if (error) throw new Error(`createMeeting: ${error.message}`);
 }
 
 export async function updateMeeting(id: string, data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('schedule_events').update(data).eq('id', id);
-  if (error) console.warn('updateMeeting:', error.message);
+  if (error) throw new Error(`updateMeeting: ${error.message}`);
 }
 
 export async function deleteMeeting(id: string): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('schedule_events').delete().eq('id', id);
-  if (error) console.warn('deleteMeeting:', error.message);
+  if (error) throw new Error(`deleteMeeting: ${error.message}`);
 }
 
 // ======== Shared Files CRUD ========
@@ -835,19 +842,19 @@ export async function deleteMeeting(id: string): Promise<void> {
 export async function createSharedFile(data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('shared_files').insert(data);
-  if (error) console.warn('createSharedFile:', error.message);
+  if (error) throw new Error(`createSharedFile: ${error.message}`);
 }
 
 export async function updateSharedFile(id: string, data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('shared_files').update(data).eq('id', id);
-  if (error) console.warn('updateSharedFile:', error.message);
+  if (error) throw new Error(`updateSharedFile: ${error.message}`);
 }
 
 export async function deleteSharedFile(id: string): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('shared_files').delete().eq('id', id);
-  if (error) console.warn('deleteSharedFile:', error.message);
+  if (error) throw new Error(`deleteSharedFile: ${error.message}`);
 }
 
 // ======== Contacts CRUD ========
@@ -855,19 +862,19 @@ export async function deleteSharedFile(id: string): Promise<void> {
 export async function createContact(data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('contacts').insert(data);
-  if (error) console.warn('createContact:', error.message);
+  if (error) throw new Error(`createContact: ${error.message}`);
 }
 
 export async function updateContact(id: string, data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('contacts').update(data).eq('id', id);
-  if (error) console.warn('updateContact:', error.message);
+  if (error) throw new Error(`updateContact: ${error.message}`);
 }
 
 export async function deleteContact(id: string): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('contacts').delete().eq('id', id);
-  if (error) console.warn('deleteContact:', error.message);
+  if (error) throw new Error(`deleteContact: ${error.message}`);
 }
 
 // ======== Schedule Events CRUD ========
@@ -875,19 +882,19 @@ export async function deleteContact(id: string): Promise<void> {
 export async function createScheduleEvent(data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('schedule_events').insert(data);
-  if (error) console.warn('createScheduleEvent:', error.message);
+  if (error) throw new Error(`createScheduleEvent: ${error.message}`);
 }
 
 export async function updateScheduleEvent(id: string, data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('schedule_events').update(data).eq('id', id);
-  if (error) console.warn('updateScheduleEvent:', error.message);
+  if (error) throw new Error(`updateScheduleEvent: ${error.message}`);
 }
 
 export async function deleteScheduleEvent(id: string): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('schedule_events').delete().eq('id', id);
-  if (error) console.warn('deleteScheduleEvent:', error.message);
+  if (error) throw new Error(`deleteScheduleEvent: ${error.message}`);
 }
 
 // ======== Docs CRUD ========
@@ -895,17 +902,39 @@ export async function deleteScheduleEvent(id: string): Promise<void> {
 export async function createDoc(data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('docs').insert(data);
-  if (error) console.warn('createDoc:', error.message);
+  if (error) throw new Error(`createDoc: ${error.message}`);
 }
 
 export async function updateDoc(id: string, data: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('docs').update(data).eq('id', id);
-  if (error) console.warn('updateDoc:', error.message);
+  if (error) throw new Error(`updateDoc: ${error.message}`);
 }
 
 export async function deleteDoc(id: string): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
   const { error } = await supabase.from('docs').delete().eq('id', id);
-  if (error) console.warn('deleteDoc:', error.message);
+  if (error) throw new Error(`deleteDoc: ${error.message}`);
+}
+
+// ======== Messages CRUD ========
+
+export async function createMessage(data: Record<string, unknown>): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const { error } = await supabase.from('messages').insert(data);
+  if (error) throw new Error(`createMessage: ${error.message}`);
+}
+
+// ======== Agent Detail CRUD ========
+
+export async function updateAgentDetail(id: string, data: Record<string, unknown>): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const { error } = await supabase.from('agent_details').update(data).eq('id', id);
+  if (error) throw new Error(`updateAgentDetail: ${error.message}`);
+}
+
+export async function createAgentDetail(data: Record<string, unknown>): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const { error } = await supabase.from('agent_details').insert(data);
+  if (error) throw new Error(`createAgentDetail: ${error.message}`);
 }

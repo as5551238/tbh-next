@@ -7,7 +7,6 @@ import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { AnnouncementRow } from '@/lib/dataLayer';
-import { createAnnouncement } from '@/lib/dataLayer';
 
 
 
@@ -30,7 +29,7 @@ const ANN_FIELDS: FieldDef[] = [
 
 export default function AnnouncementsView() {
   const indColor = useIndustryColor();
-  const { announcements, setAnnouncements, loading } = useAnnouncements();
+  const { announcements, addAnnouncement, editAnnouncement, loading } = useAnnouncements();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const detailModal = useModal();
@@ -38,10 +37,9 @@ export default function AnnouncementsView() {
   const [selected, setSelected] = useState<AnnouncementRow | null>(null);
   const [form, setForm] = useState({ title: '', content: '', priority: 'info' as string, department: dept });
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!form.title.trim() || !form.content.trim()) return;
-    const newAnn = {
-      id: `ann_${Date.now()}`,
+    await addAnnouncement({
       title: form.title.trim(),
       content: form.content.trim(),
       priority: form.priority,
@@ -51,9 +49,7 @@ export default function AnnouncementsView() {
       views: 0,
       comments: 0,
       time: '刚刚',
-    };
-    setAnnouncements((prev: AnnouncementRow[]) => [newAnn, ...prev]);
-    createAnnouncement({ id: newAnn.id, title: newAnn.title, content: newAnn.content, priority: newAnn.priority });
+    });
     setForm({ title: '', content: '', priority: 'info', department: dept });
     createModal.closeModal();
   }
@@ -95,7 +91,7 @@ export default function AnnouncementsView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="公告详情" fields={ANN_FIELDS} data={selected} onSave={(updated) => { if (selected) { const updatedAnn = { ...selected, ...updated } as AnnouncementRow; setSelected(updatedAnn); setAnnouncements((prev) => prev.map((a) => a.id === selected.id ? updatedAnn : a)); } }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="公告详情" fields={ANN_FIELDS} data={selected} onSave={(updated) => { if (selected) { editAnnouncement(selected.id, updated); } }} />
 
       {/* Create Announcement Modal */}
       {createModal.open && (

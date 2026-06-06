@@ -14,6 +14,16 @@ import {
   createProject, updateProject, deleteProject,
   createMember, updateMember, deleteMember,
   createKnowledgeDoc, updateKnowledgeDoc, deleteKnowledgeDoc,
+  createAnnouncement, updateAnnouncement, deleteAnnouncement,
+  createMeeting, updateMeeting, deleteMeeting,
+  createSharedFile, updateSharedFile, deleteSharedFile,
+  createContact, updateContact, deleteContact,
+  createDoc, updateDoc, deleteDoc,
+  createActionItem, updateActionItem, deleteActionItem,
+  createScheduleEvent, updateScheduleEvent, deleteScheduleEvent,
+  updateApproval,
+  createMessage,
+  updateAgentDetail, createAgentDetail,
   type GoalRow, type TaskRow, type ProjectRow, type MemberRow, type KnowledgeDocRow,
   type NotificationRow, type ReportRow, type ApprovalRow, type AnnouncementRow,
   type MeetingRow, type CollabDocRow, type SharedFileRow, type ContactRow,
@@ -21,6 +31,7 @@ import {
   type ScheduleEventRow, type OrgInfoRow, type RoleRow, type PredictionRow,
   type ExperienceRow, type DocRow,
 } from '@/lib/dataLayer';
+import type { ActionItemRow } from '@/lib/dataLayer';
 import type { MatrixCell } from '@/matrix/data';
 
 /**
@@ -277,7 +288,14 @@ export function useApprovals() {
     fetchApprovals().then((d) => { setApprovals(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { approvals, setApprovals, loading };
+
+  const editApproval = useCallback(async (id: string, data: Partial<ApprovalRow>) => {
+    const row = await updateApproval(id, data);
+    setApprovals((prev) => prev.map((a) => a.id === id ? row : a));
+    return row;
+  }, []);
+
+  return { approvals, loading, editApproval };
 }
 
 export function useAnnouncements() {
@@ -287,7 +305,26 @@ export function useAnnouncements() {
     fetchAnnouncements().then((d) => { setAnnouncements(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { announcements, setAnnouncements, loading };
+
+  const addAnnouncement = useCallback(async (data: Partial<AnnouncementRow>) => {
+    const id = `ann-${Date.now()}`;
+    const row = { id, ...data } as AnnouncementRow;
+    setAnnouncements((prev) => [row, ...prev]);
+    try { await createAnnouncement(data as Record<string, unknown>); } catch { /* optimistic */ }
+    return row;
+  }, []);
+
+  const editAnnouncement = useCallback(async (id: string, data: Partial<AnnouncementRow>) => {
+    setAnnouncements((prev) => prev.map((a) => a.id === id ? { ...a, ...data } : a));
+    try { await updateAnnouncement(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+  }, []);
+
+  const removeAnnouncement = useCallback(async (id: string) => {
+    setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    try { await deleteAnnouncement(id); } catch { /* optimistic */ }
+  }, []);
+
+  return { announcements, setAnnouncements, loading, addAnnouncement, editAnnouncement, removeAnnouncement };
 }
 
 export function useMeetings() {
@@ -297,7 +334,26 @@ export function useMeetings() {
     fetchMeetings().then((d) => { setMeetings(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { meetings, setMeetings, loading };
+
+  const addMeeting = useCallback(async (data: Partial<MeetingRow>) => {
+    const id = `mtg-${Date.now()}`;
+    const row = { id, ...data } as MeetingRow;
+    setMeetings((prev) => [row, ...prev]);
+    try { await createMeeting(data as Record<string, unknown>); } catch { /* optimistic */ }
+    return row;
+  }, []);
+
+  const editMeeting = useCallback(async (id: string, data: Partial<MeetingRow>) => {
+    setMeetings((prev) => prev.map((m) => m.id === id ? { ...m, ...data } : m));
+    try { await updateMeeting(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+  }, []);
+
+  const removeMeeting = useCallback(async (id: string) => {
+    setMeetings((prev) => prev.filter((m) => m.id !== id));
+    try { await deleteMeeting(id); } catch { /* optimistic */ }
+  }, []);
+
+  return { meetings, setMeetings, loading, addMeeting, editMeeting, removeMeeting };
 }
 
 export function useCollabDocs() {
@@ -307,7 +363,26 @@ export function useCollabDocs() {
     fetchCollabDocs().then((d) => { setDocs(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { docs, setDocs, loading };
+
+  const addDoc = useCallback(async (data: Partial<CollabDocRow>) => {
+    const id = `doc-${Date.now()}`;
+    const row = { id, ...data } as CollabDocRow;
+    setDocs((prev) => [row, ...prev]);
+    try { await createDoc(data as Record<string, unknown>); } catch { /* optimistic */ }
+    return row;
+  }, []);
+
+  const editDoc = useCallback(async (id: string, data: Partial<CollabDocRow>) => {
+    setDocs((prev) => prev.map((d) => d.id === id ? { ...d, ...data } : d));
+    try { await updateDoc(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+  }, []);
+
+  const removeDoc = useCallback(async (id: string) => {
+    setDocs((prev) => prev.filter((d) => d.id !== id));
+    try { await deleteDoc(id); } catch { /* optimistic */ }
+  }, []);
+
+  return { docs, setDocs, loading, addDoc, editDoc, removeDoc };
 }
 
 export function useSharedFiles() {
@@ -317,7 +392,26 @@ export function useSharedFiles() {
     fetchSharedFiles().then((d) => { setFiles(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { files, setFiles, loading };
+
+  const addFile = useCallback(async (data: Partial<SharedFileRow>) => {
+    const id = `file-${Date.now()}`;
+    const row = { id, ...data } as SharedFileRow;
+    setFiles((prev) => [row, ...prev]);
+    try { await createSharedFile(data as Record<string, unknown>); } catch { /* optimistic */ }
+    return row;
+  }, []);
+
+  const editFile = useCallback(async (id: string, data: Partial<SharedFileRow>) => {
+    setFiles((prev) => prev.map((f) => f.id === id ? { ...f, ...data } : f));
+    try { await updateSharedFile(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+  }, []);
+
+  const removeFile = useCallback(async (id: string) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+    try { await deleteSharedFile(id); } catch { /* optimistic */ }
+  }, []);
+
+  return { files, setFiles, loading, addFile, editFile, removeFile };
 }
 
 export function useContacts() {
@@ -327,7 +421,26 @@ export function useContacts() {
     fetchContacts().then((d) => { setContacts(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { contacts, setContacts, loading };
+
+  const addContact = useCallback(async (data: Partial<ContactRow>) => {
+    const id = `con-${Date.now()}`;
+    const row = { id, ...data } as ContactRow;
+    setContacts((prev) => [row, ...prev]);
+    try { await createContact(data as Record<string, unknown>); } catch { /* optimistic */ }
+    return row;
+  }, []);
+
+  const editContact = useCallback(async (id: string, data: Partial<ContactRow>) => {
+    setContacts((prev) => prev.map((c) => c.id === id ? { ...c, ...data } : c));
+    try { await updateContact(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+  }, []);
+
+  const removeContact = useCallback(async (id: string) => {
+    setContacts((prev) => prev.filter((c) => c.id !== id));
+    try { await deleteContact(id); } catch { /* optimistic */ }
+  }, []);
+
+  return { contacts, setContacts, loading, addContact, editContact, removeContact };
 }
 
 export function useAgentDetails() {
@@ -337,7 +450,21 @@ export function useAgentDetails() {
     fetchAgentDetails().then((d) => { setAgents(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { agents, setAgents, loading };
+
+  const editAgent = useCallback(async (id: string, data: Partial<AgentDetailRow>) => {
+    setAgents((prev) => prev.map((a) => a.id === id ? { ...a, ...data } : a));
+    try { await updateAgentDetail(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+  }, []);
+
+  const addAgent = useCallback(async (data: Partial<AgentDetailRow>) => {
+    const id = `agent-${Date.now()}`;
+    const row = { id, ...data } as AgentDetailRow;
+    setAgents((prev) => [row, ...prev]);
+    try { await createAgentDetail(data as Record<string, unknown>); } catch { /* optimistic */ }
+    return row;
+  }, []);
+
+  return { agents, setAgents, loading, editAgent, addAgent };
 }
 
 export function useAgentConfigs() {
@@ -377,7 +504,26 @@ export function useScheduleEvents() {
     fetchScheduleEvents().then((d) => { setEvents(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { events, setEvents, loading };
+
+  const addEvent = useCallback(async (data: Partial<ScheduleEventRow>) => {
+    const id = `evt-${Date.now()}`;
+    const row = { id, ...data } as ScheduleEventRow;
+    setEvents((prev) => [row, ...prev]);
+    try { await createScheduleEvent(data as Record<string, unknown>); } catch { /* optimistic */ }
+    return row;
+  }, []);
+
+  const editEvent = useCallback(async (id: string, data: Partial<ScheduleEventRow>) => {
+    setEvents((prev) => prev.map((e) => e.id === id ? { ...e, ...data } : e));
+    try { await updateScheduleEvent(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+  }, []);
+
+  const removeEvent = useCallback(async (id: string) => {
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+    try { await deleteScheduleEvent(id); } catch { /* optimistic */ }
+  }, []);
+
+  return { events, setEvents, loading, addEvent, editEvent, removeEvent };
 }
 
 export function useOrgInfo() {

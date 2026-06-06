@@ -6,6 +6,7 @@ import { useRealtime, usePresence } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
 import { Send, Bot, User, Hash, Users, ChevronDown, Circle } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
+import { createMessage } from '@/lib/dataLayer';
 
 interface ChatMsg {
   id: number;
@@ -88,6 +89,15 @@ export default function ChannelsView() {
     const userMsg: ChatMsg = { id: Date.now(), role: 'user', sender: user?.name ?? '我', text: msgInput.trim(), time: now };
 
     setMessages((prev) => [...prev, userMsg]);
+
+    // Persist user message to Supabase
+    createMessage({
+      channel: activeCh,
+      content: msgInput.trim(),
+      sender_type: 'user',
+      sender_name: user?.name ?? '我',
+    });
+
     setMsgInput('');
     setIsTyping(true);
     scrollToBottom();
@@ -117,6 +127,14 @@ export default function ChannelsView() {
         time: now,
       };
       setMessages((prev) => [...prev, aiMsg]);
+
+      // Persist AI message to Supabase
+      createMessage({
+        channel: activeCh,
+        content: res.text,
+        sender_type: 'ai',
+        sender_name: 'AI同事',
+      });
     } catch {
       setMessages((prev) => [
         ...prev,

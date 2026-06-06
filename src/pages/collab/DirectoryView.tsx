@@ -35,7 +35,7 @@ const CONTACT_FIELDS: FieldDef[] = [
 export default function DirectoryView() {
   const indColor = useIndustryColor();
   const setCurrentPage = useAppStore((s) => s.setCurrentPage);
-  const { contacts, loading } = useContacts();
+  const { contacts, editContact, loading } = useContacts();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const detailModal = useModal();
@@ -135,7 +135,7 @@ export default function DirectoryView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="联系人详情" fields={CONTACT_FIELDS} data={selected} onSave={(updated) => { setSelected(updated); }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="联系人详情" fields={CONTACT_FIELDS} data={selected} onSave={(updated) => { if (selected) { editContact(selected.id, updated); setSelected({ ...selected, ...updated } as ContactRow); } }} />
     </div>
   );
 }

@@ -21,7 +21,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function CollabDocsView() {
-  const { docs, setDocs, loading } = useCollabDocs();
+  const { docs, addDoc, editDoc, loading } = useCollabDocs();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const { user } = useAuth();
@@ -71,25 +71,22 @@ export default function CollabDocsView() {
   async function handleSave() {
     if (!activeDoc) return;
     setSaving(true);
-    setDocs((prev) => prev.map((d) => d.id === activeDoc ? { ...d, content: editContent, last_edited: new Date().toLocaleDateString('zh-CN'), last_edited_by: user?.email ?? '当前用户' } : d));
-    await new Promise((r) => setTimeout(r, 300));
+    await editDoc(activeDoc, { content: editContent, last_edited: new Date().toLocaleDateString('zh-CN'), last_edited_by: user?.email ?? '当前用户' });
     setSaving(false);
   }
 
-  function handleCreateDoc() {
+  async function handleCreateDoc() {
     if (!newTitle.trim()) return;
-    const newDoc = {
-      id: `cdoc-${Date.now()}`,
+    await addDoc({
       title: newTitle.trim(),
       type: newType,
-      status: 'editing' as const,
+      status: 'editing',
       content: `# ${newTitle.trim()}\n\n在此编辑文档内容...`,
       last_edited: new Date().toLocaleDateString('zh-CN'),
       last_edited_by: user?.email ?? '当前用户',
       editors: 1,
       viewers: 0,
-    };
-    setDocs((prev) => [newDoc, ...prev]);
+    });
     setNewTitle('');
     setNewType('doc');
     createModal.closeModal();

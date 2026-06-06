@@ -5,7 +5,7 @@ import { Video, MapPin, Users, Clock, Calendar, Check, Loader2, X } from 'lucide
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
-import { createMeeting, type MeetingRow } from '@/lib/dataLayer';
+import type { MeetingRow } from '@/lib/dataLayer';
 
 const MEETING_FIELDS: FieldDef[] = [
   { key: 'title', label: '会议主题', type: 'text', editable: false },
@@ -20,7 +20,7 @@ const MEETING_FIELDS: FieldDef[] = [
 ];
 
 export default function MeetingsView() {
-  const { meetings, setMeetings, loading } = useMeetings();
+  const { meetings, addMeeting, editMeeting, removeMeeting, loading } = useMeetings();
   const detailModal = useModal();
   const createModal = useModal();
   const [selected, setSelected] = useState<MeetingRow | null>(null);
@@ -31,22 +31,19 @@ export default function MeetingsView() {
 
   const upcomingCount = meetings.filter((m) => m.status === 'upcoming').length;
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!form.title.trim()) return;
-    const newMtg = {
-      id: `mtg_${Date.now()}`,
+    await addMeeting({
       title: form.title.trim(),
       time: form.time || new Date().toLocaleString('zh-CN'),
       duration: form.duration,
       location: form.location || (form.type === 'online' ? '线上会议' : '待定'),
       organizer: '我',
       attendees: 1,
-      status: 'upcoming' as const,
+      status: 'upcoming',
       type: form.type,
       agenda: [],
-    };
-    setMeetings((prev: MeetingRow[]) => [...prev, newMtg]);
-    createMeeting({ id: newMtg.id, title: newMtg.title, start_date: newMtg.time, description: newMtg.location });
+    });
     setForm({ title: '', time: '', location: '', duration: '30分钟', type: 'online' });
     createModal.closeModal();
   }
@@ -56,7 +53,7 @@ export default function MeetingsView() {
     if (location.startsWith('http')) {
       window.open(location, '_blank');
     } else {
-      setMeetings((prev: MeetingRow[]) => prev.map((m) => m.id === mtg.id ? { ...m, status: 'ongoing' } : m));
+      editMeeting(mtg.id, { status: 'ongoing' });
       showToast(`已加入会议: ${mtg.title ?? ''}`);
     }
   }
@@ -122,12 +119,11 @@ export default function MeetingsView() {
       <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="会议详情" fields={MEETING_FIELDS} data={selected}
         onSave={(updated) => {
           if (selected) {
-            const id = updated.id ?? selected.id;
-            setMeetings((prev: MeetingRow[]) => prev.map((m) => m.id === id ? { ...m, ...updated } : m));
+            editMeeting(selected.id, updated);
           }
         }}
         onDelete={() => {
-          if (selected) setMeetings((prev: MeetingRow[]) => prev.filter((m) => m.id !== selected.id));
+          if (selected) removeMeeting(selected.id);
         }}
       />
 
