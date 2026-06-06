@@ -82,7 +82,7 @@ export default function MorningView() {
               briefingSource === 'local' && 'bg-warn/10 text-warn',
               !briefingSource && 'bg-surface-2 text-text-3',
             )}>
-              {briefingSource === 'llm' ? 'LLM' : briefingSource === 'edge' ? 'Edge' : briefingSource === 'local' ? '智能模拟' : 'AI生成'}
+              {briefingSource === 'llm' ? 'LLM' : briefingSource === 'edge' ? 'Edge' : briefingSource === 'local' ? '离线快照' : 'AI生成'}
             </span>
             <button
               onClick={generateBriefing}
@@ -108,7 +108,7 @@ export default function MorningView() {
 
         {/* Key metrics */}
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">实时数据</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">行业快照</div>
           <p className="text-sm text-text-2 mb-4">{cell.ribbon}</p>
           <div className="flex items-center gap-2 text-xs text-primary-2">
             <Bot size={14} />

@@ -3,6 +3,10 @@ import { useMatrixCell, useApprovals } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, Clock, AlertTriangle, ChevronRight, User, Loader2 } from 'lucide-react';
+import { useModal } from '@/components/Modal';
+import ItemDetailModal from '@/components/ItemDetailModal';
+import type { FieldDef } from '@/components/ItemDetailModal';
+import type { ApprovalRow } from '@/lib/dataLayer';
 
 
 
@@ -11,11 +15,24 @@ const URGENCY_STYLES: Record<string, string> = { urgent: 'bg-danger/10 text-dang
 const STATUS_STYLES: Record<string, string> = { pending: 'bg-warn/10 text-warn', approved: 'bg-success/10 text-success', rejected: 'bg-danger/10 text-danger' };
 const STATUS_LABELS: Record<string, string> = { pending: '待审批', approved: '已通过', rejected: '已驳回' };
 
+const APPROVAL_FIELDS: FieldDef[] = [
+  { key: 'title', label: '标题', type: 'text' },
+  { key: 'status', label: '状态', type: 'select', options: [
+    { value: 'pending', label: '待审批' },
+    { value: 'approved', label: '已通过' },
+    { value: 'rejected', label: '已驳回' },
+  ]},
+  { key: 'type', label: '类型', type: 'text' },
+  { key: 'amount', label: '金额', type: 'text' },
+];
+
 export default function ApprovalsView() {
   const { cell, loading: cellLoading } = useMatrixCell();
   const { approvals, setApprovals, loading } = useApprovals();
   const industry = useAppStore((s) => s.industry);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const detailModal = useModal();
+  const [selected, setSelected] = useState<ApprovalRow | null>(null);
 
   const filtered = filter === 'all' ? approvals : approvals.filter((a) => a.status === filter);
   const pendingCount = approvals.filter((a) => a.status === 'pending').length;
@@ -43,16 +60,21 @@ export default function ApprovalsView() {
         </div>
       </div>
 
-      {/* AI Alert */}
-      <div className="mx-4 mt-3 rounded-xl border border-warn/20 bg-warn/5 px-4 py-2.5">
-        <div className="flex items-center gap-2 text-xs text-warn">
-          <AlertTriangle size={14} />
-          <span className="font-semibold">AI 提醒</span>
-        </div>
-        <p className="mt-1 text-[11px] text-text-2">
-          「Q3路线图预算申请」已等待2小时，涉及紧急项目资源，建议尽快审批。
-        </p>
-      </div>
+      {/* Alert — auto-generated from oldest pending approval */}
+      {pendingCount > 0 && (() => {
+        const oldest = approvals.filter((a) => a.status === 'pending').sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))[0];
+        return oldest ? (
+          <div className="mx-4 mt-3 rounded-xl border border-warn/20 bg-warn/5 px-4 py-2.5">
+            <div className="flex items-center gap-2 text-xs text-warn">
+              <AlertTriangle size={14} />
+              <span className="font-semibold">待办提醒</span>
+            </div>
+            <p className="mt-1 text-[11px] text-text-2">
+              「{oldest.title}」已提交审批，建议尽快处理。
+            </p>
+          </div>
+        ) : null;
+      })()}
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -60,9 +82,9 @@ export default function ApprovalsView() {
           <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
         ) : (
         filtered.map((item) => (
-          <div key={item.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg',
+          <div key={item.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer',
             item.status === 'pending' && 'border-l-2 border-l-warn'
-          )}>
+          )} onClick={() => { setSelected(item); detailModal.openModal(); }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-text">{item.title}</span>
@@ -82,8 +104,8 @@ export default function ApprovalsView() {
             </div>
             {item.status === 'pending' && (
               <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="rounded-lg bg-success/10 px-3 py-1.5 text-[10px] font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
-                <button className="rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
+                <button onClick={(e) => { e.stopPropagation(); setApprovals((prev) => prev.map((a) => a.id === item.id ? { ...a, status: 'approved' as const } : a)); }} className="rounded-lg bg-success/10 px-3 py-1.5 text-[10px] font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
+                <button onClick={(e) => { e.stopPropagation(); setApprovals((prev) => prev.map((a) => a.id === item.id ? { ...a, status: 'rejected' as const } : a)); }} className="rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
                 <button className="rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] font-semibold text-text-3 hover:text-text transition-colors">
                   详情 <ChevronRight size={10} className="inline" />
                 </button>
@@ -93,6 +115,15 @@ export default function ApprovalsView() {
         ))
         )}
       </div>
+
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="审批详情" fields={APPROVAL_FIELDS} data={selected} onSave={(updated) => { if (selected) { const updatedItem = { ...selected, ...updated } as ApprovalRow; setSelected(updatedItem); setApprovals((prev) => prev.map((a) => a.id === selected.id ? updatedItem : a)); } }} extraFooter={
+        selected?.status === 'pending' ? (
+          <>
+            <button type="button" onClick={() => { if (selected) { const upd = { ...selected, status: 'approved' as const }; setSelected(upd); setApprovals((prev) => prev.map((a) => a.id === selected.id ? upd : a)); detailModal.closeModal(); } }} className="rounded-lg bg-success/10 px-4 py-2 text-xs font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
+            <button type="button" onClick={() => { if (selected) { const upd = { ...selected, status: 'rejected' as const }; setSelected(upd); setApprovals((prev) => prev.map((a) => a.id === selected.id ? upd : a)); detailModal.closeModal(); } }} className="rounded-lg bg-danger/10 px-4 py-2 text-xs font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
+          </>
+        ) : undefined
+      } />
     </div>
   );
 }

@@ -32,14 +32,91 @@ export interface HarnessOptions {
   agentId?: string;
 }
 
-// --- Configuration ---
+// --- Configuration: Multi-model presets ---
+// NOTE: API keys are now server-side only (Edge Function proxy).
+// The apiKey field is kept for type compatibility but should NOT be populated
+// from import.meta.env — that would expose keys in the client bundle.
 
-const AI_ENDPOINT = import.meta.env.VITE_AI_ENDPOINT ?? '';
-const AI_API_KEY = import.meta.env.VITE_AI_API_KEY ?? '';
-const AI_MODEL = import.meta.env.VITE_AI_MODEL ?? 'gpt-4o-mini';
+export interface AIModelPreset {
+  id: string;
+  name: string;
+  provider: string;
+  model: string;
+}
 
-function isAIConfigured(): boolean {
-  return !!(AI_ENDPOINT && AI_API_KEY);
+export const AI_MODEL_PRESETS: AIModelPreset[] = [
+  {
+    id: 'deepseek-chat',
+    name: 'DeepSeek Chat',
+    provider: 'deepseek',
+    model: 'deepseek-chat',
+  },
+  {
+    id: 'deepseek-reasoner',
+    name: 'DeepSeek R1',
+    provider: 'deepseek',
+    model: 'deepseek-reasoner',
+  },
+  {
+    id: 'deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro',
+    provider: 'deepseek',
+    model: 'deepseek-v4-pro',
+  },
+  {
+    id: 'doubao-pro-32k',
+    name: '豆包 Pro 32K',
+    provider: 'doubao',
+    model: 'doubao-pro-32k',
+  },
+  {
+    id: 'doubao-pro-128k',
+    name: '豆包 Pro 128K',
+    provider: 'doubao',
+    model: 'doubao-pro-128k',
+  },
+  {
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+  },
+  {
+    id: 'qwen-plus',
+    name: '通义千问 Plus',
+    provider: 'qwen',
+    model: 'qwen-plus',
+  },
+];
+
+/** Get a preset by id */
+export function getModelPreset(id: string): AIModelPreset | undefined {
+  return AI_MODEL_PRESETS.find((p) => p.id === id);
+}
+
+/** Default model id — persisted to localStorage */
+const DEFAULT_MODEL_ID = 'deepseek-chat';
+
+export function getStoredModelId(): string {
+  try {
+    return localStorage.getItem('tbh_ai_model') ?? DEFAULT_MODEL_ID;
+  } catch {
+    return DEFAULT_MODEL_ID;
+  }
+}
+
+export function setStoredModelId(id: string): void {
+  try {
+    localStorage.setItem('tbh_ai_model', id);
+  } catch {
+    // ignore
+  }
+}
+
+/** Resolve active model from store */
+function getActiveModel(): AIModelPreset {
+  const id = getStoredModelId();
+  return getModelPreset(id) ?? AI_MODEL_PRESETS[0];
 }
 
 // --- Core: send chat messages to LLM (with Harness) ---
@@ -103,13 +180,11 @@ export async function chatCompletion(
   }
 
   // --- Execute AI call ---
-  let route: 'direct' | 'edge' | 'local' = 'local';
+  // Route priority: Edge Function proxy (secure) > local fallback (offline)
+  let route: 'edge' | 'local' = 'local';
   try {
     let response: AIResponse;
-    if (isAIConfigured()) {
-      route = 'direct';
-      response = await callDirectAPI(sanitizedMessages, options);
-    } else if (isSupabaseConfigured() && supabase) {
+    if (isSupabaseConfigured() && supabase) {
       route = 'edge';
       response = await callSupabaseEdge(sanitizedMessages, options);
     } else {
@@ -184,85 +259,7 @@ export async function chatCompletion(
   }
 }
 
-// --- Route 1: Direct API ---
-
-async function callDirectAPI(
-  messages: ChatMessage[],
-  options?: { stream?: boolean; onChunk?: StreamCallback; signal?: AbortSignal }
-): Promise<AIResponse> {
-  const useStream = options?.stream && options?.onChunk;
-
-  const res = await fetch(`${AI_ENDPOINT}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${AI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      messages,
-      stream: !!useStream,
-      temperature: 0.7,
-      max_tokens: 1024,
-    }),
-    signal: options?.signal,
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => 'Unknown error');
-    throw new Error(`AI API error ${res.status}: ${errText}`);
-  }
-
-  // Streaming response
-  if (useStream && res.body) {
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data: ')) continue;
-        const data = trimmed.slice(6);
-        if (data === '[DONE]') {
-          options.onChunk!('', true);
-          break;
-        }
-        try {
-          const parsed = JSON.parse(data);
-          const delta = parsed.choices?.[0]?.delta?.content ?? '';
-          if (delta) {
-            fullText += delta;
-            options.onChunk!(delta, false);
-          }
-        } catch {
-          // skip malformed chunks
-        }
-      }
-    }
-    options.onChunk!('', true);
-    return { text: fullText, agent: 'llm' };
-  }
-
-  // Non-streaming response
-  const json = await res.json();
-  const text = json.choices?.[0]?.message?.content ?? '';
-  return {
-    text,
-    agent: 'llm',
-    usage: json.usage ? { prompt_tokens: json.usage.prompt_tokens, completion_tokens: json.usage.completion_tokens } : undefined,
-  };
-}
-
-// --- Route 2: Supabase Edge Function ---
+// --- Route 1: Supabase Edge Function (secure — API keys stay server-side) ---
 
 async function callSupabaseEdge(
   messages: ChatMessage[],
@@ -270,16 +267,89 @@ async function callSupabaseEdge(
 ): Promise<AIResponse> {
   if (!supabase) return localFallback(messages);
 
-  const { data, error } = await supabase.functions.invoke('ai-chat', {
-    body: { messages, stream: false },
-  });
+  const activeModel = getActiveModel();
+  const useStream = options?.stream && options?.onChunk;
 
-  if (error || !data?.text) {
-    // Edge function failed — silently fall back to local
+  try {
+    // Use streaming via direct fetch to Edge Function for better UX
+    if (useStream) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token ?? '';
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
+      const res = await fetch(`${supabaseUrl}/functions/v1/ai-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ messages, model: activeModel.model, stream: true }),
+        signal: options?.signal,
+      });
+
+      if (!res.ok) {
+        // Fall back to local on any error
+        return localFallback(messages);
+      }
+
+      // Parse as SSE stream
+      if (res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+            const data = trimmed.slice(6);
+            if (data === '[DONE]') {
+              options.onChunk!('', true);
+              break;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                fullText += parsed.text;
+                options.onChunk!(parsed.text, false);
+              } else if (parsed.choices?.[0]?.delta?.content) {
+                const delta = parsed.choices[0].delta.content;
+                fullText += delta;
+                options.onChunk!(delta, false);
+              }
+            } catch {
+              // skip malformed chunks
+            }
+          }
+        }
+        options.onChunk!('', true);
+        return { text: fullText, agent: 'edge' };
+      }
+    }
+
+    // Non-streaming: use supabase client
+    const { data, error } = await supabase.functions.invoke('ai-chat', {
+      body: { messages, model: activeModel.model, stream: false },
+    });
+
+    if (error || !data?.text) {
+      // Edge function failed — fall back to local
+      return localFallback(messages);
+    }
+
+    return { text: data.text, agent: 'edge', usage: data.usage };
+  } catch {
+    // Any error — fall back to local
     return localFallback(messages);
   }
-
-  return { text: data.text, agent: 'edge', usage: data.usage };
 }
 
 // --- Route 3: Local intelligent fallback ---

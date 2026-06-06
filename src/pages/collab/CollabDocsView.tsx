@@ -4,6 +4,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/lib/auth';
 import { useRealtime, usePresence } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
+import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { FileText, FileSpreadsheet, FileImage, File, Clock, User, Edit3, Eye, Loader2, X, Save, Users } from 'lucide-react';
 
 const TYPE_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
@@ -20,7 +21,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function CollabDocsView() {
-  const { docs, loading } = useCollabDocs();
+  const { docs, setDocs, loading } = useCollabDocs();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const { user } = useAuth();
@@ -31,7 +32,10 @@ export default function CollabDocsView() {
   const [saving, setSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Subscribe to realtime changes on collab_docs
+  const createModal = useModal();
+  const [newTitle, setNewTitle] = useState('');
+  const [newType, setNewType] = useState('doc');
+
   useRealtime(
     'collab_docs',
     useCallback((payload) => {
@@ -41,7 +45,6 @@ export default function CollabDocsView() {
     }, [activeDoc]),
   );
 
-  // Presence for collaborative editing
   usePresence(
     `doc-${activeDoc ?? 'none'}`,
     user?.id ?? `anon-${Date.now()}`,
@@ -58,7 +61,6 @@ export default function CollabDocsView() {
     }, []),
   );
 
-  // Load doc content when selected
   useEffect(() => {
     if (activeDoc) {
       const doc = docs.find((d) => d.id === activeDoc);
@@ -67,15 +69,34 @@ export default function CollabDocsView() {
   }, [activeDoc, docs]);
 
   async function handleSave() {
+    if (!activeDoc) return;
     setSaving(true);
-    // Simulate save with debounce (real version would call dataLayer.updateCollabDoc)
-    await new Promise((r) => setTimeout(r, 800));
+    setDocs((prev) => prev.map((d) => d.id === activeDoc ? { ...d, content: editContent, last_edited: new Date().toLocaleDateString('zh-CN'), last_edited_by: user?.email ?? '当前用户' } : d));
+    await new Promise((r) => setTimeout(r, 300));
     setSaving(false);
+  }
+
+  function handleCreateDoc() {
+    if (!newTitle.trim()) return;
+    const newDoc = {
+      id: `cdoc-${Date.now()}`,
+      title: newTitle.trim(),
+      type: newType,
+      status: 'editing' as const,
+      content: `# ${newTitle.trim()}\n\n在此编辑文档内容...`,
+      last_edited: new Date().toLocaleDateString('zh-CN'),
+      last_edited_by: user?.email ?? '当前用户',
+      editors: 1,
+      viewers: 0,
+    };
+    setDocs((prev) => [newDoc, ...prev]);
+    setNewTitle('');
+    setNewType('doc');
+    createModal.closeModal();
   }
 
   const activeDocData = docs.find((d) => d.id === activeDoc);
 
-  // Document editor view
   if (activeDoc && activeDocData) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -111,13 +132,12 @@ export default function CollabDocsView() {
     );
   }
 
-  // Document list view
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">协作文档</span>
         <span className="text-[10px] text-text-3">{docs.length} 个文档</span>
-        <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 新建文档</button>
+        <button onClick={createModal.openModal} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 新建文档</button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -152,6 +172,26 @@ export default function CollabDocsView() {
         })
         )}
       </div>
+
+      <Modal open={createModal.open} onClose={createModal.closeModal} title="新建文档"
+        footer={
+          <>
+            <button onClick={createModal.closeModal} className={btnSecondary}>取消</button>
+            <button onClick={handleCreateDoc} className={btnPrimary} disabled={!newTitle.trim()}>创建</button>
+          </>
+        }>
+        <ModalField label="文档标题">
+          <input className={inputCls} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="输入文档标题" />
+        </ModalField>
+        <ModalField label="文档类型">
+          <select className={inputCls} value={newType} onChange={(e) => setNewType(e.target.value)}>
+            <option value="doc">文档</option>
+            <option value="sheet">表格</option>
+            <option value="slide">幻灯片</option>
+            <option value="other">其他</option>
+          </select>
+        </ModalField>
+      </Modal>
     </div>
   );
 }

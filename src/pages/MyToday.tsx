@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useTasks, useGoals } from '@/hooks/useMatrix';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -10,8 +10,8 @@ interface QuickTask {
   id: string;
   title: string;
   priority: string;
-  done: boolean;
-  due: string;
+  status: string;
+  due_date: string;
 }
 
 interface GoalSummary {
@@ -25,11 +25,11 @@ interface GoalSummary {
 /*  Mock fallback data                                                 */
 /* ------------------------------------------------------------------ */
 const MOCK_TASKS: QuickTask[] = [
-  { id: '1', title: '完成Q2 OKR回顾报告', priority: 'high', done: false, due: '今天' },
-  { id: '2', title: '审核产品需求文档', priority: 'medium', done: false, due: '今天' },
-  { id: '3', title: '团队周会准备', priority: 'medium', done: false, due: '明天' },
-  { id: '4', title: '更新项目进度看板', priority: 'low', done: true, due: '今天' },
-  { id: '5', title: '提交技术方案评审', priority: 'high', done: false, due: '今天' },
+  { id: '1', title: '完成Q2 OKR回顾报告', priority: 'high', status: 'todo', due_date: '今天' },
+  { id: '2', title: '审核产品需求文档', priority: 'medium', status: 'todo', due_date: '今天' },
+  { id: '3', title: '团队周会准备', priority: 'medium', status: 'todo', due_date: '明天' },
+  { id: '4', title: '更新项目进度看板', priority: 'low', status: 'done', due_date: '今天' },
+  { id: '5', title: '提交技术方案评审', priority: 'high', status: 'todo', due_date: '今天' },
 ];
 
 const MOCK_GOALS: GoalSummary[] = [
@@ -96,45 +96,31 @@ export default function MyToday() {
   const navigate = useNavigate();
   const setInterface = useAppStore((s) => s.setInterface);
   const setActiveModule = useAppStore((s) => s.setActiveModule);
+  const { tasks: dbTasks } = useTasks();
+  const { goals: dbGoals } = useGoals();
 
-  const [tasks, setTasks] = useState<QuickTask[]>(MOCK_TASKS);
-  const [goals, setGoals] = useState<GoalSummary[]>(MOCK_GOALS);
-  const [insights] = useState<string[]>(MOCK_INSIGHTS);
   const [now, setNow] = useState(new Date());
 
-  // Real data from Supabase
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+  // Map DB data to local types, with fallback to defaults when loading
+  const tasks: QuickTask[] = useMemo(() => dbTasks.length > 0 ? dbTasks.map((t) => ({
+    id: t.id, title: t.title, priority: t.priority ?? 'medium', status: t.status, due_date: t.due_date ?? '',
+  })) : MOCK_TASKS, [dbTasks]);
 
-    async function fetchData() {
-      try {
-        const { data: taskData } = await supabase!
-          .from('tasks')
-          .select('id, title, priority, done, due')
-          .eq('done', false)
-          .order('priority', { ascending: false })
-          .limit(5);
+  const goals: GoalSummary[] = useMemo(() => dbGoals.length > 0 ? dbGoals.map((g) => ({
+    id: g.id, title: g.title, progress: g.progress ?? 0, status: g.status,
+  })) : MOCK_GOALS, [dbGoals]);
 
-        if (taskData && taskData.length > 0) {
-          setTasks(taskData as QuickTask[]);
-        }
-
-        const { data: goalData } = await supabase!
-          .from('goals')
-          .select('id, title, progress, status')
-          .order('progress', { ascending: true })
-          .limit(3);
-
-        if (goalData && goalData.length > 0) {
-          setGoals(goalData as GoalSummary[]);
-        }
-      } catch {
-        // Use mock data on error
-      }
-    }
-
-    fetchData();
-  }, []);
+  // Derive insights from actual data
+  const insights = useMemo(() => {
+    const items: string[] = [];
+    const atRiskGoals = goals.filter((g) => g.status === 'at_risk' || g.status === 'off_track');
+    if (atRiskGoals.length > 0) items.push(`目标"${atRiskGoals[0].title}"进度滞后，建议本周聚焦推进`);
+    const pendingHigh = tasks.filter((t) => t.priority === 'high' && t.status !== 'done');
+    if (pendingHigh.length > 0) items.push(`有 ${pendingHigh.length} 个紧急任务待处理，建议优先安排`);
+    const doneRate = tasks.length > 0 ? Math.round((tasks.filter((t) => t.status === 'done').length / tasks.length) * 100) : 0;
+    items.push(`当前任务完成率 ${doneRate}%，持续保持专注`);
+    return items.length > 0 ? items : MOCK_INSIGHTS;
+  }, [tasks, goals]);
 
   // Update clock
   useEffect(() => {
@@ -142,8 +128,8 @@ export default function MyToday() {
     return () => clearInterval(timer);
   }, []);
 
-  const pendingTasks = tasks.filter((t) => !t.done);
-  const completedTasks = tasks.filter((t) => t.done);
+  const pendingTasks = tasks.filter((t) => t.status !== 'done');
+  const completedTasks = tasks.filter((t) => t.status === 'done');
   const completionRate = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
 
   function goToModule(iface: string, mod: string) {
@@ -252,8 +238,8 @@ export default function MyToday() {
                 >
                   {PRIORITY_LABELS[task.priority]}
                 </span>
-                {task.due && (
-                  <span className="text-xs text-[#9ca3b8] shrink-0">{task.due}</span>
+                {task.due_date && (
+                  <span className="text-xs text-[#9ca3b8] shrink-0">{task.due_date}</span>
                 )}
               </button>
             ))}
@@ -320,7 +306,7 @@ export default function MyToday() {
           {/* AI Insights */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-[#eaecf4]">AI洞察</h2>
+              <h2 className="text-lg font-semibold text-[#eaecf4]">今日提示</h2>
               <button
                 onClick={() => goToModule('ai', 'morning')}
                 className="text-sm text-[#7b6cf0] hover:underline"

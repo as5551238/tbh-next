@@ -37,14 +37,17 @@ export default function RiskView() {
         <span className="text-[10px] text-text-3">{activeRisks.length} 活跃风险</span>
       </div>
 
-      {/* AI Summary */}
+      {/* AI Summary — generated from actual risk data */}
       <div className="mx-4 mt-3 rounded-xl border border-warn/20 bg-warn/5 p-4">
         <div className="flex items-center gap-2 text-xs font-semibold text-warn mb-1">
-          <AlertTriangle size={14} />AI 风险摘要
+          <AlertTriangle size={14} />风险概览
         </div>
         <p className="text-[11px] text-text-2 leading-relaxed">
-          当前最需关注：「Q3路线图评审」截止在即，建议立即确认剩余3个需求。
-          「导出功能」使用率持续走低，建议本周安排专项优化。
+          {activeRisks.length === 0
+            ? '暂无活跃风险。'
+            : criticalCount > 0
+              ? `当前有 ${criticalCount} 个紧急风险需立即处理，${activeRisks.length} 个活跃风险待关注。建议优先处理紧急项。`
+              : `当前共 ${activeRisks.length} 个活跃风险，其中高优先级 ${risks.filter((r) => r.level === 'high' && r.status !== 'resolved').length} 个。建议持续监控。`}
         </p>
       </div>
 

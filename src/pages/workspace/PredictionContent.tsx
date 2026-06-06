@@ -1,10 +1,48 @@
+import { useState, useCallback, useEffect } from 'react';
 import { usePredictions, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
-import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight, Loader2 } from 'lucide-react';
+import { useToast, ToastOverlay } from '@/hooks/useToast';
+import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight, Loader2, Plus } from 'lucide-react';
+import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import ItemDetailModal from '@/components/ItemDetailModal';
 
 export default function PredictionContent() {
   const { cell, loading: cellLoading } = useMatrixCell();
   const indColor = useIndustryColor();
-  const { predictions, loading } = usePredictions();
+  const { predictions, setPredictions, loading } = usePredictions();
+  const modal = useModal();
+  const editModal = useModal();
+  const [selectedPred, setSelectedPred] = useState<(typeof predictions)[number] | null>(null);
+  const [form, setForm] = useState({ title: '', impact: 'medium' as 'positive' | 'high' | 'medium', probability: 50, reason: '', suggestion: '' });
+  const { toasts, success } = useToast();
+  const PRED_STORAGE = 'tbh-predictions';
+  const [localPredictions, setLocalPredictions] = useState<typeof predictions extends never[] ? never[] : typeof predictions>(() => {
+    try { const s = localStorage.getItem(PRED_STORAGE); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(PRED_STORAGE, JSON.stringify(localPredictions)); } catch {}
+  }, [localPredictions]);
+
+  const handleOpen = useCallback(() => {
+    setForm({ title: '', impact: 'medium', probability: 50, reason: '', suggestion: '' });
+    modal.openModal();
+  }, [modal.openModal]);
+
+  const handleSave = useCallback(() => {
+    if (!form.title.trim()) return;
+    const newItem = {
+      id: `custom-${Date.now()}`,
+      title: form.title,
+      impact: form.impact,
+      probability: form.probability,
+      trend: 'flat' as const,
+      reason: form.reason || '用户自定义预测',
+      suggestion: form.suggestion || '待补充建议',
+    };
+    setLocalPredictions((prev) => [newItem, ...prev]);
+    modal.closeModal();
+    success(`预测"${form.title}"已创建`);
+  }, [form, modal.closeModal]);
 
   if (loading) {
     return (
@@ -14,17 +52,25 @@ export default function PredictionContent() {
     );
   }
 
+  const allPredictions = [...localPredictions, ...predictions];
+
+  const positiveRatio = allPredictions.length > 0
+    ? Math.round(allPredictions.filter((p) => p.impact === 'positive').length / allPredictions.length * 100)
+    : 50;
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {/* Header */}
+      <ToastOverlay toasts={toasts} />
       <div className="flex items-center gap-2">
         <Brain size={18} style={{ color: indColor }} />
         <span className="text-sm font-bold">预测引擎</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>AI驱动</span>
-        <span className="ml-auto text-[10px] text-text-3">基于 {cell.kpis.length} 个指标 · 每日更新</span>
+        <span className="text-[10px] text-text-3">基于 {cell.kpis.length} 个指标 · 每日更新</span>
+        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleOpen}>
+          <Plus size={12} />自定义预测
+        </button>
       </div>
 
-      {/* Confidence Score */}
       <div className="rounded-xl border border-border p-4 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}08 0%, ${indColor}02 100%)` }}>
         <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-10" style={{ backgroundColor: indColor }} />
         <div className="relative z-10 flex items-center gap-4">
@@ -32,25 +78,26 @@ export default function PredictionContent() {
             <div className="relative h-16 w-16">
               <svg className="h-16 w-16 -rotate-90" viewBox="0 0 36 36">
                 <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeWidth="2" className="text-surface-2" />
-                <circle cx="18" cy="18" r="15.9" fill="none" strokeWidth="2" strokeLinecap="round" strokeDasharray={`${78} ${100 - 78}`} className="text-accent" style={{ stroke: indColor }} />
+                <circle cx="18" cy="18" r="15.9" fill="none" strokeWidth="2" strokeLinecap="round" strokeDasharray={`${positiveRatio} ${100 - positiveRatio}`} className="text-accent" style={{ stroke: indColor }} />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-lg font-extrabold">78</span>
+              <span className="absolute inset-0 flex items-center justify-center text-lg font-extrabold">{positiveRatio}</span>
             </div>
-            <span className="text-[9px] text-text-3 mt-1">预测置信度</span>
+            <span className="text-[9px] text-text-3 mt-1">正向比例</span>
           </div>
           <div className="flex-1">
             <div className="text-xs font-semibold text-text mb-1">综合预测概览</div>
             <p className="text-[11px] text-text-2 leading-relaxed">
-              本周整体风险可控，Q3路线图存在延期可能，但PRD标准化将提前完成。建议关注导出功能使用率波动。
+              {allPredictions.length > 0
+                ? `共 ${allPredictions.length} 个预测项，${allPredictions.filter((p) => p.impact === 'high').length} 个高风险需关注，${allPredictions.filter((p) => p.impact === 'positive').length} 个利好趋势。`
+                : '暂无预测，点击"自定义预测"添加。'}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Prediction Cards */}
       <div className="space-y-3">
-        {predictions.map((p) => (
-          <div key={p.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg">
+        {allPredictions.map((p) => (
+          <div key={p.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedPred(p); editModal.openModal(); }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-text">{p.title}</span>
               <div className="flex items-center gap-2">
@@ -90,7 +137,6 @@ export default function PredictionContent() {
         ))}
       </div>
 
-      {/* AI Insight */}
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
         <div className="flex items-center gap-2 text-xs text-primary-2">
           <Brain size={14} />
@@ -100,6 +146,66 @@ export default function PredictionContent() {
           预测基于历史数据趋势、资源分配状态和行业基准综合计算。置信度越高，预测越可靠。建议重点关注概率 &gt; 60% 的风险项。
         </p>
       </div>
+
+      <Modal open={modal.open} onClose={modal.closeModal} title="自定义预测"
+        footer={
+          <div className="flex gap-2">
+            <button className={btnSecondary} onClick={modal.closeModal}>取消</button>
+            <button className={btnPrimary} onClick={handleSave} disabled={!form.title.trim()}>创建</button>
+          </div>
+        }>
+        <ModalField label="预测标题">
+          <input className={inputCls} placeholder="输入预测标题" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+        </ModalField>
+        <ModalField label="影响级别">
+          <select className={inputCls} value={form.impact} onChange={(e) => setForm((p) => ({ ...p, impact: e.target.value as 'positive' | 'high' | 'medium' }))}>
+            <option value="positive">利好</option>
+            <option value="medium">中风险</option>
+            <option value="high">高风险</option>
+          </select>
+        </ModalField>
+        <ModalField label={`概率 (${form.probability}%)`}>
+          <input type="range" min="0" max="100" value={form.probability} className="w-full accent-primary" onChange={(e) => setForm((p) => ({ ...p, probability: Number(e.target.value) }))} />
+        </ModalField>
+        <ModalField label="原因分析">
+          <textarea className={inputCls} rows={2} placeholder="输入原因分析" value={form.reason} onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))} />
+        </ModalField>
+        <ModalField label="建议措施">
+          <textarea className={inputCls} rows={2} placeholder="输入建议措施" value={form.suggestion} onChange={(e) => setForm((p) => ({ ...p, suggestion: e.target.value }))} />
+        </ModalField>
+      </Modal>
+
+      <ItemDetailModal
+        open={editModal.open}
+        onClose={editModal.closeModal}
+        title="编辑预测"
+        fields={[
+          { key: 'title', label: '标题', type: 'text' },
+          { key: 'impact', label: '类型', type: 'select', options: [
+            { value: 'positive', label: '趋势利好' }, { value: 'high', label: '高风险' }, { value: 'medium', label: '中风险' },
+          ]},
+          { key: 'probability', label: '置信度', type: 'number' },
+          { key: 'reason', label: '描述', type: 'textarea' },
+        ]}
+        data={selectedPred as Record<string, unknown> | null}
+        onSave={(updated) => {
+          const id = updated.id as string;
+          if (id.startsWith('custom-')) {
+            setLocalPredictions(prev => prev.map(p => p.id === id ? { ...p, ...updated } as (typeof predictions)[number] : p));
+          } else {
+            setPredictions(prev => prev.map(p => p.id === id ? { ...p, ...updated } as (typeof predictions)[number] : p));
+          }
+        }}
+        onDelete={() => {
+          if (selectedPred) {
+            if (selectedPred.id.startsWith('custom-')) {
+              setLocalPredictions(prev => prev.filter(p => p.id !== selectedPred.id));
+            } else {
+              setPredictions(prev => prev.filter(p => p.id !== selectedPred.id));
+            }
+          }
+        }}
+      />
     </div>
   );
 }

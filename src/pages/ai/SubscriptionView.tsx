@@ -3,9 +3,14 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { PLAN_LIMITS, PLAN_PRICES, fetchSubscription, fetchUsageToday, type SubscriptionInfo, type UsageSummary } from '@/lib/subscription';
 import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Loader2 } from 'lucide-react';
+import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs } from '@/hooks/useMatrix';
 
 export default function SubscriptionView() {
   const { user } = useAuth();
+  const { agents } = useAgentDetails();
+  const { members } = useMembers();
+  const { projects } = useProjects();
+  const { docs: knowledgeDocs } = useKnowledgeDocs();
   const [sub, setSub] = useState<SubscriptionInfo>({ plan: 'free', status: 'active', currentPeriodEnd: null });
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,13 +29,13 @@ export default function SubscriptionView() {
         setUsage({
           aiQueries: usageToday.aiQueries,
           aiQueriesLimit: limits.aiQueriesPerDay,
-          agents: 3,   // Mock: would fetch from dataLayer
+          agents: agents.length,
           agentsLimit: limits.maxAgents,
-          teamMembers: 4,
+          teamMembers: members.length,
           teamMembersLimit: limits.maxTeamMembers,
-          projects: 3,
+          projects: projects.length,
           projectsLimit: limits.maxProjects,
-          docs: 8,
+          docs: knowledgeDocs.length,
           docsLimit: limits.maxDocs,
         });
       }

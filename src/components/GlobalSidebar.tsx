@@ -4,6 +4,9 @@ import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { clearAuth } from '@/lib/auth';
 import { LogOut, User, Settings } from 'lucide-react';
+import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { AI_MODEL_PRESETS } from '@/lib/aiService';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 const NAV_ITEMS = [
   { id: 'workspace', icon: '📊', label: '模块工作台' },
@@ -37,14 +40,26 @@ function Tooltip({ children, label }: { children: React.ReactNode; label: string
 function UserMenu({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
+  const profileModal = useModal();
+  const prefModal = useModal();
+  const [profile, setProfile] = useState(() => {
+    try { const s = localStorage.getItem('tbh-profile'); return s ? JSON.parse(s) : { name: '', email: 'demo@tbh-next.com', phone: '' }; } catch { return { name: '', email: 'demo@tbh-next.com', phone: '' }; }
+  });
+  const [prefs, setPrefs] = useState(() => {
+    try { const s = localStorage.getItem('tbh-prefs'); return s ? JSON.parse(s) : { notify: 'browser', lang: 'zh', tz: 'Asia/Shanghai' }; } catch { return { notify: 'browser', lang: 'zh', tz: 'Asia/Shanghai' }; }
+  });
+  const aiModelId = useAppStore((s) => s.aiModelId);
+  const setAiModelId = useAppStore((s) => s.setAiModelId);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
+      // Don't close when a modal is open — clicking inside modal shouldn't dismiss UserMenu
+      if (profileModal.open || prefModal.open) return;
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [onClose]);
+  }, [onClose, profileModal.open, prefModal.open]);
 
   function handleLogout() {
     clearAuth();
@@ -53,25 +68,89 @@ function UserMenu({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div ref={menuRef} className="absolute bottom-14 left-14 z-50 w-48 rounded-xl border border-border bg-surface-3 shadow-xl overflow-hidden">
-      <div className="px-3 py-2.5 border-b border-border">
-        <div className="text-xs font-semibold text-text">用户</div>
-        <div className="text-[10px] text-text-3">demo@tbh-next.com</div>
+    <>
+      <div ref={menuRef} className="absolute bottom-14 left-14 z-50 w-48 rounded-xl border border-border bg-surface-3 shadow-xl overflow-hidden">
+        <div className="px-3 py-2.5 border-b border-border">
+          <div className="text-xs font-semibold text-text">用户</div>
+          <div className="text-[10px] text-text-3">demo@tbh-next.com</div>
+        </div>
+        <button onClick={profileModal.openModal} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-2 hover:bg-surface-2 transition-colors">
+          <User size={14} />
+          <span>个人信息</span>
+        </button>
+        <button onClick={prefModal.openModal} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-2 hover:bg-surface-2 transition-colors">
+          <Settings size={14} />
+          <span>偏好设置</span>
+        </button>
+        <div className="border-t border-border" />
+        <button onClick={handleLogout} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-danger hover:bg-danger/5 transition-colors">
+          <LogOut size={14} />
+          <span>退出登录</span>
+        </button>
       </div>
-      <button className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-2 hover:bg-surface-2 transition-colors">
-        <User size={14} />
-        <span>个人信息</span>
-      </button>
-      <button className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-2 hover:bg-surface-2 transition-colors">
-        <Settings size={14} />
-        <span>偏好设置</span>
-      </button>
-      <div className="border-t border-border" />
-      <button onClick={handleLogout} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-danger hover:bg-danger/5 transition-colors">
-        <LogOut size={14} />
-        <span>退出登录</span>
-      </button>
-    </div>
+
+      <Modal open={profileModal.open} onClose={profileModal.closeModal} title="个人信息"
+        footer={
+          <>
+            <button onClick={profileModal.closeModal} className={btnSecondary}>取消</button>
+            <button onClick={() => { try { localStorage.setItem('tbh-profile', JSON.stringify(profile)); } catch {} profileModal.closeModal(); }} className={btnPrimary}>保存</button>
+          </>
+        }>
+        <ModalField label="姓名">
+          <input value={profile.name} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} className={inputCls} placeholder="请输入姓名" />
+        </ModalField>
+        <ModalField label="邮箱">
+          <input value={profile.email} onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))} className={inputCls} placeholder="请输入邮箱" />
+        </ModalField>
+        <ModalField label="手机号">
+          <input value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} className={inputCls} placeholder="请输入手机号" />
+        </ModalField>
+      </Modal>
+
+      <Modal open={prefModal.open} onClose={prefModal.closeModal} title="偏好设置"
+        footer={
+          <>
+            <button onClick={prefModal.closeModal} className={btnSecondary}>取消</button>
+            <button onClick={() => { try { localStorage.setItem('tbh-prefs', JSON.stringify(prefs)); } catch {} prefModal.closeModal(); }} className={btnPrimary}>保存</button>
+          </>
+        }>
+        <ModalField label="通知方式">
+          <select value={prefs.notify} onChange={(e) => setPrefs((p) => ({ ...p, notify: e.target.value }))} className={inputCls}>
+            <option value="browser">浏览器推送</option>
+            <option value="wecom">企微</option>
+            <option value="email">邮件</option>
+          </select>
+        </ModalField>
+        <ModalField label="语言">
+          <select value={prefs.lang} onChange={(e) => setPrefs((p) => ({ ...p, lang: e.target.value }))} className={inputCls}>
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+          </select>
+        </ModalField>
+        <ModalField label="时区">
+          <select value={prefs.tz} onChange={(e) => setPrefs((p) => ({ ...p, tz: e.target.value }))} className={inputCls}>
+            <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
+            <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+            <option value="America/New_York">America/New_York (UTC-5)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (UTC-8)</option>
+            <option value="Europe/London">Europe/London (UTC+0)</option>
+          </select>
+        </ModalField>
+        <ModalField label="AI 模型">
+          <select value={aiModelId} onChange={(e) => setAiModelId(e.target.value)} className={inputCls}>
+            {AI_MODEL_PRESETS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.provider})
+              </option>
+            ))}
+          </select>
+          <div className="mt-1 text-[10px] text-text-3">
+            当前: {AI_MODEL_PRESETS.find((p) => p.id === aiModelId)?.name ?? aiModelId}
+            {!isSupabaseConfigured() && ' — 未连接Supabase，将使用离线模式'}
+          </div>
+        </ModalField>
+      </Modal>
+    </>
   );
 }
 

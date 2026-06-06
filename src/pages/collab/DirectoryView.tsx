@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useIndustryColor, useContacts } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Phone, Mail, MessageSquare, Search, User, Loader2 } from 'lucide-react';
+import { Phone, Mail, MessageSquare, Search, User, Loader2, X } from 'lucide-react';
+import { useModal } from '@/components/Modal';
+import ItemDetailModal from '@/components/ItemDetailModal';
+import type { FieldDef } from '@/components/ItemDetailModal';
+import type { ContactRow } from '@/lib/dataLayer';
 
 
 
@@ -19,14 +24,30 @@ const STATUS_LABELS: Record<string, string> = {
   offline: '离线',
 };
 
+const CONTACT_FIELDS: FieldDef[] = [
+  { key: 'name', label: '姓名', type: 'text' },
+  { key: 'department', label: '部门', type: 'text' },
+  { key: 'role', label: '职位', type: 'text' },
+  { key: 'email', label: '邮箱', type: 'text' },
+  { key: 'phone', label: '电话', type: 'text' },
+];
+
 export default function DirectoryView() {
   const indColor = useIndustryColor();
+  const setCurrentPage = useAppStore((s) => s.setCurrentPage);
   const { contacts, loading } = useContacts();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
+  const detailModal = useModal();
+  const [selected, setSelected] = useState<ContactRow | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const humanContacts = contacts.filter((c) => !c.role.includes('AI'));
-  const aiContacts = contacts.filter((c) => c.role.includes('AI'));
+  const filteredContacts = searchQuery
+    ? contacts.filter((c) => c.name.includes(searchQuery) || c.department?.includes(searchQuery) || c.role?.includes(searchQuery))
+    : contacts;
+
+  const humanContacts = filteredContacts.filter((c) => !c.role.includes('AI'));
+  const aiContacts = filteredContacts.filter((c) => c.role.includes('AI'));
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -37,10 +58,13 @@ export default function DirectoryView() {
           <Search size={12} className="text-text-3" />
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="搜索联系人..."
             aria-label="搜索联系人"
             className="bg-transparent text-xs text-text outline-none placeholder:text-text-3 w-40"
           />
+          {searchQuery && <button onClick={() => setSearchQuery('')} className="text-text-3 hover:text-text"><X size={12} /></button>}
         </div>
       </div>
 
@@ -53,7 +77,8 @@ export default function DirectoryView() {
           <div className="text-[9px] font-bold uppercase tracking-wider text-text-3 mb-2">团队成员</div>
           <div className="grid grid-cols-2 gap-2">
             {humanContacts.map((contact) => (
-              <div key={contact.id} className="group rounded-xl border border-border bg-surface p-3 transition-all hover:border-border-2 hover:shadow-lg">
+              <div key={contact.id} className="group rounded-xl border border-border bg-surface p-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer"
+                onClick={() => { setSelected(contact); detailModal.openModal(); }}>
                 <div className="flex items-center gap-3">
                   <div className="relative shrink-0">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 text-xs font-bold text-text-2">
@@ -73,9 +98,9 @@ export default function DirectoryView() {
                   )}>{STATUS_LABELS[contact.status]}</span>
                 </div>
                 <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><MessageSquare size={9} />消息</button>
-                  <button className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Phone size={9} />电话</button>
-                  <button className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Mail size={9} />邮件</button>
+                  <button onClick={(e) => { e.stopPropagation(); setCurrentPage('main-chat'); }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><MessageSquare size={9} />消息</button>
+                  <button onClick={(e) => { e.stopPropagation(); if (contact.phone) window.location.href = 'tel:' + contact.phone; }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Phone size={9} />电话</button>
+                  <button onClick={(e) => { e.stopPropagation(); if (contact.email) window.location.href = 'mailto:' + contact.email; }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Mail size={9} />邮件</button>
                 </div>
               </div>
             ))}
@@ -109,6 +134,8 @@ export default function DirectoryView() {
         </>
         )}
       </div>
+
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="联系人详情" fields={CONTACT_FIELDS} data={selected} onSave={(updated) => { setSelected(updated); }} />
     </div>
   );
 }

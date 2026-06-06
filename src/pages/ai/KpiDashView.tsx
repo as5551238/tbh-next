@@ -53,7 +53,7 @@ export default function KpiDashView() {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {cell.kpis.map((kpi) => {
           const TrendIcon = TREND_ICON[kpi.trend];
-          const progress = kpi.status === 'good' ? 90 : kpi.status === 'warn' ? 60 : 30;
+          const progress = kpi.target > 0 ? Math.min(100, Math.round((Number(kpi.value) / Number(kpi.target)) * 100)) : 0;
           return (
             <div key={kpi.name} className="rounded-xl border border-border bg-surface p-4">
               <div className="flex items-center justify-between mb-2">
@@ -78,10 +78,11 @@ export default function KpiDashView() {
                   kpi.status === 'good' ? 'bg-success' : kpi.status === 'warn' ? 'bg-warn' : 'bg-danger'
                 )} style={{ width: `${progress}%` }} />
               </div>
-              {/* Sparkline placeholder */}
+              {/* Sparkline — deterministic bars from KPI name hash */}
               <div className="mt-3 flex items-end gap-[3px] h-10">
                 {Array.from({ length: 14 }).map((_, i) => {
-                  const h = 20 + ((i * 37 + 13) % 80);
+                  const hash = kpi.name.split('').reduce((a, c, j) => a + c.charCodeAt(0) * (j + 1), 0);
+                  const h = 20 + ((hash * (i + 1) * 7 + 13) % 70);
                   return <div key={i} className={cn('flex-1 rounded-t', i >= 11 ? 'bg-primary/30' : 'bg-surface-2')} style={{ height: `${h}%` }} />;
                 })}
               </div>

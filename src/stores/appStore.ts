@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { MatrixData } from '@/matrix/data';
+import { getStoredModelId, setStoredModelId } from '@/lib/aiService';
 
 interface AppState {
   // Interface
@@ -26,6 +27,14 @@ interface AppState {
   // Mobile drawer
   mobileDrawerOpen: boolean;
   setMobileDrawerOpen: (open: boolean) => void;
+
+  // AI Model
+  aiModelId: string;
+  setAiModelId: (id: string) => void;
+
+  // MLOO deviation alert count (set by Workspace on load)
+  deviationAlertCount: number;
+  setDeviationAlertCount: (n: number) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -47,4 +56,13 @@ export const useAppStore = create<AppState>((set) => ({
 
   mobileDrawerOpen: false,
   setMobileDrawerOpen: (open) => set({ mobileDrawerOpen: open }),
+
+  aiModelId: getStoredModelId(),
+  setAiModelId: (id) => {
+    setStoredModelId(id);
+    set({ aiModelId: id });
+  },
+
+  deviationAlertCount: 0,
+  setDeviationAlertCount: (n) => set({ deviationAlertCount: n }),
 }));

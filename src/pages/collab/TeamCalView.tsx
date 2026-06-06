@@ -1,4 +1,5 @@
-import { useMatrixCell } from '@/hooks/useMatrix';
+import { useState } from 'react';
+import { useMatrixCell, useScheduleEvents } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Clock, MapPin, Users } from 'lucide-react';
@@ -13,61 +14,57 @@ interface CalEvent {
   attendees?: number;
 }
 
-const MOCK_EVENTS: Record<number, CalEvent[]> = {
-  4: [
-    { time: '09:30', title: '产品周会', type: 'meeting', location: '会议室A', attendees: 8 },
-    { time: '14:00', title: 'Q3路线图评审', type: 'meeting', location: '主会议室', attendees: 15 },
-    { time: '17:00', title: 'PRD评审截止', type: 'deadline' },
-  ],
-  5: [
-    { time: '10:00', title: '1:1 with 研发负责人', type: 'meeting', attendees: 2 },
-  ],
-  6: [
-    { time: '11:00', title: '设计走查', type: 'meeting', location: '设计区', attendees: 5 },
-  ],
-  9: [
-    { time: '09:00', title: 'Sprint Review', type: 'meeting', location: '线上', attendees: 12 },
-    { time: '16:00', title: '导出功能上线', type: 'deadline' },
-  ],
-  12: [
-    { time: '15:00', title: '月度复盘', type: 'meeting', location: '主会议室', attendees: 20 },
-  ],
-  15: [],
-  18: [
-    { time: '14:00', title: 'Q3中期回顾', type: 'meeting', location: '主会议室', attendees: 10 },
-  ],
-  20: [
-    { time: '23:59', title: 'Q3目标截止', type: 'deadline' },
-  ],
-  25: [
-    { time: '10:00', title: '团建活动', type: 'reminder', location: '莫干山', attendees: 40 },
-  ],
-  30: [
-    { time: '17:00', title: '月度总结提交', type: 'deadline' },
-  ],
-};
 
 export default function TeamCalView() {
   const industry = useAppStore((s) => s.industry);
   const { cell, loading } = useMatrixCell();
+  const { events } = useScheduleEvents();
   const today = new Date();
+
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [selectedDay, setSelectedDay] = useState(today.getDate());
+
   const currentDay = today.getDate();
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
 
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
 
-  const todayEvents = MOCK_EVENTS[currentDay] ?? [];
+  // Group events by day of month
+  const eventsByDay: Record<number, CalEvent[]> = {};
+  events.forEach((evt) => {
+    const d = new Date(evt.start_date ?? evt.created_at ?? '');
+    if (d.getMonth() === viewMonth && d.getFullYear() === viewYear) {
+      const day = d.getDate();
+      if (!eventsByDay[day]) eventsByDay[day] = [];
+      eventsByDay[day].push({
+        time: d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        title: evt.title,
+        type: (evt.type?.includes('deadline') ? 'deadline' : evt.type?.includes('reminder') ? 'reminder' : 'meeting') as CalEvent['type'],
+        location: evt.description ?? undefined,
+      });
+    }
+  });
+
+  const todayEvents = eventsByDay[selectedDay] ?? [];
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else { setViewMonth(viewMonth - 1); }
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else { setViewMonth(viewMonth + 1); }
+  };
 
   return (
     <div className="flex h-full">
       {/* Calendar Grid */}
       <div className="flex flex-1 flex-col min-w-0 overflow-y-auto p-4">
         <div className="flex items-center gap-3 mb-4">
-          <ChevronLeft size={16} className="text-text-3 cursor-pointer hover:text-text" />
-          <span className="text-sm font-bold">{currentYear}年{currentMonth + 1}月</span>
-          <ChevronRight size={16} className="text-text-3 cursor-pointer hover:text-text" />
+          <ChevronLeft size={16} className="text-text-3 cursor-pointer hover:text-text" onClick={prevMonth} />
+          <span className="text-sm font-bold">{viewYear}年{viewMonth + 1}月</span>
+          <ChevronRight size={16} className="text-text-3 cursor-pointer hover:text-text" onClick={nextMonth} />
           <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary-2">今天</span>
         </div>
 
@@ -85,24 +82,25 @@ export default function TeamCalView() {
           ))}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
-            const isToday = day === currentDay;
-            const hasEvents = MOCK_EVENTS[day] && MOCK_EVENTS[day].length > 0;
+            const isToday = day === currentDay && viewMonth === currentMonth && viewYear === currentYear;
+            const hasEvents = eventsByDay[day] && eventsByDay[day].length > 0;
             return (
-              <div key={day} className={cn('rounded-lg p-1 min-h-[48px] text-[11px] transition-colors cursor-pointer',
+              <div key={day} onClick={() => setSelectedDay(day)} className={cn('rounded-lg p-1 min-h-[48px] text-[11px] transition-colors cursor-pointer',
                 isToday ? 'bg-primary/10' : 'hover:bg-surface-2',
-                hasEvents && !isToday && 'bg-surface/50'
+                hasEvents && !isToday && 'bg-surface/50',
+                day === selectedDay && 'ring-1 ring-primary/40'
               )}>
                 <div className={cn('flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold',
                   isToday ? 'bg-primary text-white' : 'text-text-2'
                 )}>{day}</div>
                 {hasEvents && (
                   <div className="mt-0.5 flex gap-0.5">
-                    {MOCK_EVENTS[day].slice(0, 2).map((evt, ei) => (
+                    {eventsByDay[day].slice(0, 2).map((evt, ei) => (
                       <div key={ei} className={cn('h-1 w-1 rounded-full',
                         evt.type === 'meeting' ? 'bg-primary-2' : evt.type === 'deadline' ? 'bg-danger' : 'bg-warn'
                       )} />
                     ))}
-                    {MOCK_EVENTS[day].length > 2 && <div className="h-1 w-1 rounded-full bg-text-3" />}
+                    {eventsByDay[day].length > 2 && <div className="h-1 w-1 rounded-full bg-text-3" />}
                   </div>
                 )}
               </div>

@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
+import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { fetchKnowledgePacks, KNOWLEDGE_CATEGORIES, type KnowledgePack } from '@/lib/knowledgeOSP';
 import { cn } from '@/lib/utils';
 import { Search, Download, Star, X, Check, BookOpen, Loader2, Tag } from 'lucide-react';
+
+const INSTALLED_PACKS_STORAGE = 'tbh-installed-packs';
 
 export default function KnowledgeOSPView() {
   const industry = useAppStore((s) => s.industry);
@@ -12,13 +15,23 @@ export default function KnowledgeOSPView() {
   const [category, setCategory] = useState('all');
   const [selectedPack, setSelectedPack] = useState<KnowledgePack | null>(null);
   const [showAllIndustries, setShowAllIndustries] = useState(false);
+  const { toasts, success } = useToast();
+  const [installedIds, setInstalledIds] = useState<Set<string>>(() => {
+    try { const s = localStorage.getItem(INSTALLED_PACKS_STORAGE); return s ? new Set(JSON.parse(s)) : new Set<string>(); } catch { return new Set<string>(); }
+  });
+
+  function saveInstalledIds(ids: Set<string>) {
+    setInstalledIds(ids);
+    try { localStorage.setItem(INSTALLED_PACKS_STORAGE, JSON.stringify([...ids])); } catch {}
+  }
 
   useEffect(() => {
     fetchKnowledgePacks(showAllIndustries ? undefined : industry).then((data) => {
-      setPacks(data);
+      // Apply persisted install state
+      setPacks(data.map((p) => ({ ...p, isInstalled: installedIds.has(p.id) })));
       setLoading(false);
     });
-  }, [industry, showAllIndustries]);
+  }, [industry, showAllIndustries, installedIds.size]);
 
   const filtered = packs.filter((p) => {
     if (category !== 'all' && p.category !== category) return false;
@@ -26,8 +39,21 @@ export default function KnowledgeOSPView() {
     return true;
   });
 
+  function toggleInstall() {
+    if (!selectedPack) return;
+    const id = selectedPack.id;
+    const nowInstalled = !selectedPack.isInstalled;
+    const newIds = new Set(installedIds);
+    if (nowInstalled) newIds.add(id); else newIds.delete(id);
+    saveInstalledIds(newIds);
+    setPacks((prev) => prev.map((p) => p.id === id ? { ...p, isInstalled: nowInstalled } : p));
+    setSelectedPack((prev) => prev ? { ...prev, isInstalled: nowInstalled } : null);
+    success(nowInstalled ? `知识包"${selectedPack.title}"已安装` : `知识包"${selectedPack.title}"已卸载`);
+  }
+
   return (
     <div className="flex h-full">
+      <ToastOverlay toasts={toasts} />
       {/* Main list */}
       <div className="flex flex-1 flex-col min-w-0">
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
@@ -117,10 +143,10 @@ export default function KnowledgeOSPView() {
           </div>
 
           <div className="border-t border-border p-4">
-            <button className={cn('w-full rounded-xl py-3 text-sm font-bold text-white transition-all',
+            <button onClick={toggleInstall} className={cn('w-full rounded-xl py-3 text-sm font-bold text-white transition-all',
               selectedPack.isInstalled ? 'bg-surface-2 text-text-3' : 'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20'
-            )} disabled={selectedPack.isInstalled}>
-              {selectedPack.isInstalled ? '已安装' : selectedPack.plan === 'free' ? '免费安装' : `${selectedPack.plan === 'pro' ? '专业版' : '企业版'} 解锁`}
+            )}>
+              {selectedPack.isInstalled ? '卸载' : selectedPack.plan === 'free' ? '免费安装' : `${selectedPack.plan === 'pro' ? '专业版' : '企业版'} 解锁`}
             </button>
           </div>
         </div>

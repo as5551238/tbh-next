@@ -38,17 +38,61 @@ function setDemoAuth(user: AuthUser | null): void {
 
 // --- Public API ---
 
-export function isAuthenticated(): boolean {
-  if (isSupabaseConfigured()) {
-    return !!supabase?.auth.getSession();
+/**
+ * Async version: checks if user is authenticated.
+ * The sync version was broken — supabase.auth.getSession() returns a Promise,
+ * so !!Promise is always true. This async version awaits the result.
+ */
+export async function isAuthenticatedAsync(): Promise<boolean> {
+  if (isSupabaseConfigured() && supabase) {
+    const { data: { session } } = await supabase.auth.getSession();
+    return !!session;
   }
   return !!getDemoUser();
 }
 
+/**
+ * Sync check: only reliable for demo mode.
+ * For Supabase mode, use isAuthenticatedAsync() or the useAuth() hook.
+ */
+export function isAuthenticated(): boolean {
+  if (isSupabaseConfigured()) {
+    // Cannot synchronously check Supabase session.
+    // Return false to be safe — caller should use isAuthenticatedAsync() or useAuth().
+    console.warn('isAuthenticated(): Supabase mode requires async check. Use isAuthenticatedAsync() or useAuth() hook instead.');
+    return false;
+  }
+  return !!getDemoUser();
+}
+
+/**
+ * Async version: gets the current authenticated user.
+ */
+export async function getCurrentUserAsync(): Promise<AuthUser | null> {
+  if (isSupabaseConfigured() && supabase) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const meta = session.user.user_metadata ?? {};
+      return {
+        id: session.user.id,
+        email: session.user.email ?? '',
+        role: meta.role ?? 'member',
+        name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
+      };
+    }
+    return null;
+  }
+  return getDemoUser();
+}
+
+/**
+ * Sync version: only reliable for demo mode.
+ * For Supabase mode, use getCurrentUserAsync().
+ */
 export function getCurrentUser(): AuthUser | null {
   if (isSupabaseConfigured()) {
-    const session = supabase?.auth.getSession();
-    // Session is async, use the hook instead for real auth
+    // Cannot synchronously get Supabase user.
+    // Use getCurrentUserAsync() or useAuth() hook instead.
     return null;
   }
   return getDemoUser();

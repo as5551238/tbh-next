@@ -16,7 +16,7 @@ interface ModuleGroup {
   items: ModuleItem[];
 }
 
-function getModules(iface: string, industry: string, dept: string): ModuleGroup[] {
+function getModules(iface: string, industry: string, dept: string, deviationAlertCount: number): ModuleGroup[] {
   if (iface === 'workspace') {
     return [
       { group: '我的', items: [
@@ -28,6 +28,10 @@ function getModules(iface: string, industry: string, dept: string): ModuleGroup[
         { icon: '🎯', name: '目标 OKR', id: 'goals' },
         { icon: '📁', name: '项目管理', id: 'projects', badge: '2' },
         { icon: '✅', name: '任务中心', id: 'tasks', badge: '5' },
+        { icon: '🔗', name: '穿透视图', id: 'alignment' },
+      ]},
+      { group: 'MLOO闭环', items: [
+        { icon: '🔄', name: '隐性复盘', id: 'review', ai: true, badge: deviationAlertCount > 0 ? String(deviationAlertCount) : undefined },
       ]},
       { group: '智能分析', items: [
         { icon: '💡', name: '数据洞察', id: 'insight', ai: true },
@@ -92,17 +96,26 @@ const BADGE_STYLES: Record<string, string> = {
   '1': 'bg-primary/10 text-primary-2',
 };
 
+function getBadgeStyle(badge: string): string {
+  const n = Number(badge);
+  if (!Number.isNaN(n) && n >= 3) return 'bg-danger/10 text-danger';
+  if (!Number.isNaN(n) && n >= 2) return 'bg-warn/10 text-warn';
+  if (!Number.isNaN(n) && n >= 1) return 'bg-primary/10 text-primary-2';
+  return BADGE_STYLES[badge] ?? 'bg-primary/10 text-primary-2';
+}
+
 export default function ModuleSidebar() {
   const iface = useAppStore((s) => s.interface);
   const activeModule = useAppStore((s) => s.activeModule);
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
+  const deviationAlertCount = useAppStore((s) => s.deviationAlertCount);
   const modSidebarOpen = useAppStore((s) => s.modSidebarOpen);
   const toggleModSidebar = useAppStore((s) => s.toggleModSidebar);
   const navigate = useNavigate();
 
-  const groups = getModules(iface, industry, dept);
+  const groups = getModules(iface, industry, dept, deviationAlertCount);
   const title = { workspace: '模块', collab: '协作', ai: 'AI' }[iface];
 
   function handleModuleClick(id: string) {
@@ -166,7 +179,7 @@ export default function ModuleSidebar() {
                   </span>
                 )}
                 {item.badge && (
-                  <span className={cn('ml-auto rounded px-1.5 py-[1px] text-[9px] font-semibold', BADGE_STYLES[item.badge] ?? 'bg-primary/10 text-primary-2')}>
+                  <span className={cn('ml-auto rounded px-1.5 py-[1px] text-[9px] font-semibold', getBadgeStyle(item.badge))}>
                     {item.badge}
                   </span>
                 )}

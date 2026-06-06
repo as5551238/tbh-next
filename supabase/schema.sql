@@ -1,5 +1,5 @@
--- TBH Next Database Schema v2
--- Security-hardened: RLS + audit logs + updated_at triggers
+-- TBH Next Database Schema v3
+-- Security-hardened: RLS + audit logs + updated_at triggers + team multi-tenancy
 -- Run this in Supabase SQL Editor
 
 -- ============================================================
@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS goals (
   key_results JSONB DEFAULT '[]',
   owner TEXT DEFAULT '',
   due_date DATE,
+  team_id TEXT DEFAULT '__default__',
   created_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -102,7 +103,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   assignee TEXT DEFAULT '',
   due TEXT DEFAULT '',
   done BOOLEAN DEFAULT false,
+  progress INT DEFAULT 0,
   goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,
+  team_id TEXT DEFAULT '__default__',
   created_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -116,6 +119,8 @@ CREATE TABLE IF NOT EXISTS projects (
   progress INT DEFAULT 0,
   members INT DEFAULT 1,
   deadline TEXT DEFAULT '',
+  goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,
+  team_id TEXT DEFAULT '__default__',
   created_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -129,6 +134,7 @@ CREATE TABLE IF NOT EXISTS knowledge_docs (
   author TEXT DEFAULT '',
   updated TEXT DEFAULT '',
   content TEXT DEFAULT '',
+  team_id TEXT DEFAULT '__default__',
   created_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -144,6 +150,7 @@ CREATE TABLE IF NOT EXISTS members (
   phone TEXT DEFAULT '',
   status TEXT DEFAULT 'offline',
   avatar_url TEXT DEFAULT '',
+  team_id TEXT DEFAULT '__default__',
   user_id UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -158,9 +165,23 @@ CREATE TABLE IF NOT EXISTS messages (
   sender_name TEXT NOT NULL DEFAULT '',
   sender_type TEXT NOT NULL DEFAULT 'user',  -- 'user' | 'ai' | 'system'
   content TEXT NOT NULL,
+  team_id UUID,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- ============================================================
+-- 12a. Team membership (multi-tenancy foundation)
+-- Required by RLS helper functions is_team_member() / is_team_admin()
+CREATE TABLE IF NOT EXISTS team_members (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  team_id TEXT NOT NULL,
+  member_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member',  -- 'member' | 'leader' | 'admin' | 'owner'
+  joined_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(team_id, member_id)
+);
+
+-- ============================================================
 -- 12b. Subscriptions & billing
 CREATE TABLE IF NOT EXISTS subscriptions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -184,6 +205,42 @@ CREATE TABLE IF NOT EXISTS usage_events (
   detail JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- 12d. Action items (MLOO loop core)
+CREATE TABLE IF NOT EXISTS action_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  source TEXT NOT NULL DEFAULT 'manual',  -- 'review' | 'deviation' | 'manual' | 'ai_suggested'
+  source_id TEXT,
+  goal_id TEXT REFERENCES goals(id) ON DELETE SET NULL,
+  assignee_id TEXT,
+  status TEXT NOT NULL DEFAULT 'open',     -- 'open' | 'in_progress' | 'completed' | 'cancelled'
+  priority TEXT DEFAULT 'medium',          -- 'low' | 'medium' | 'high' | 'critical'
+  due_date DATE,
+  completed_at TIMESTAMPTZ,
+  closed_loop BOOLEAN DEFAULT false,
+  team_id TEXT DEFAULT '__default__',
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 12e. Deviation alerts (MLOO loop core)
+CREATE TABLE IF NOT EXISTS deviation_alerts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  goal_id TEXT REFERENCES goals(id) ON DELETE CASCADE,
+  task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+  alert_type TEXT NOT NULL,                -- 'progress_behind' | 'overdue' | 'stalled' | 'kr_off_track'
+  severity TEXT NOT NULL DEFAULT 'warning', -- 'info' | 'warning' | 'critical'
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT false,
+  is_resolved BOOLEAN DEFAULT false,
+  resolved_at TIMESTAMPTZ,
+  action_item_id UUID REFERENCES action_items(id) ON DELETE SET NULL,
+  team_id TEXT DEFAULT '__default__',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 -- ============================================================
 CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -202,7 +259,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 -- 13. Row Level Security
 -- ============================================================
 
--- Enable RLS on all tables
+-- Enable RLS on all tables (including new ones)
 ALTER TABLE industries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kpis ENABLE ROW LEVEL SECURITY;
@@ -218,6 +275,7 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 13b. RLS Helper Functions (must be created before policies)
@@ -327,6 +385,12 @@ CREATE POLICY "team_delete_members" ON members FOR DELETE TO authenticated USING
 CREATE POLICY "team_select_messages" ON messages FOR SELECT TO authenticated USING (is_team_member(team_id::text));
 CREATE POLICY "team_insert_messages" ON messages FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id::text));
 
+-- Team members: users can read their own teams, admins can manage
+CREATE POLICY "member_read_teams" ON team_members FOR SELECT TO authenticated USING (member_id = auth.uid() OR EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = team_members.team_id AND tm.member_id = auth.uid() AND tm.role IN ('admin', 'owner', 'leader')));
+CREATE POLICY "admin_insert_team_member" ON team_members FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = team_members.team_id AND tm.member_id = auth.uid() AND tm.role IN ('admin', 'owner')));
+CREATE POLICY "admin_update_team_member" ON team_members FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = team_members.team_id AND tm.member_id = auth.uid() AND tm.role IN ('admin', 'owner')));
+CREATE POLICY "admin_delete_team_member" ON team_members FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = team_members.team_id AND tm.member_id = auth.uid() AND tm.role IN ('admin', 'owner')));
+
 -- Audit logs: admin-only read, no manual insert/update/delete
 CREATE POLICY "admin_read_audit_logs" ON audit_logs FOR SELECT TO authenticated USING (is_any_team_admin());
 
@@ -410,7 +474,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE goals;
 ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE members;
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE collab_docs;
+ALTER PUBLICATION supabase_realtime ADD TABLE team_members;
 
 -- ============================================================
 -- 17. Indexes for performance
@@ -430,3 +494,8 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_usage_events_user_id ON usage_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_usage_events_type ON usage_events(user_id, event_type);
 CREATE INDEX IF NOT EXISTS idx_usage_events_created ON usage_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id);
+CREATE INDEX IF NOT EXISTS idx_team_members_member_id ON team_members(member_id);
+CREATE INDEX IF NOT EXISTS idx_goals_team_id ON goals(team_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_team_id ON tasks(team_id);
+CREATE INDEX IF NOT EXISTS idx_members_team_id ON members(team_id);

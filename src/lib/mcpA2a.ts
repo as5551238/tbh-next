@@ -90,11 +90,11 @@ export function createBuiltinMCPTools(cell: MatrixCell, industry: string, dept: 
       handler: async (params) => {
         const { title, priority = 'medium' } = params;
         if (isSupabaseConfigured() && supabase) {
-          const { data, error } = await supabase.from('tasks').insert({ title, priority, assignee: 'AI', due: '', done: false }).select().single();
+          const { data, error } = await supabase.from('tasks').insert({ title, priority, assignee_id: null, leader_id: null, due_date: null, status: 'todo', team_id: '__default__' }).select().single();
           if (error) return { success: false, error: error.message };
           return { success: true, task: data };
         }
-        return { success: true, task: { id: `local-${Date.now()}`, title, priority, assignee: 'AI' } };
+        return { success: true, task: { id: `local-${Date.now()}`, title, priority, status: 'todo' } };
       },
     },
   ];

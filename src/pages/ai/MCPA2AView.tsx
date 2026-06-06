@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
+import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAppStore } from '@/stores/appStore';
 import { createBuiltinServer, getExternalServers, type MCPServer, type MCPTool, type A2AMessage } from '@/lib/mcpA2a';
 import { a2aSend, a2aGetMessages, a2aPipeline } from '@/lib/mcpA2a';
@@ -7,7 +8,13 @@ import { MORNING_AGENT, PROGRESS_AGENT, RISK_AGENT } from '@/lib/agents';
 import { cn } from '@/lib/utils';
 import { Plug, Radio, Play, ArrowRight, Loader2, Zap, RefreshCw } from 'lucide-react';
 
+const MCP_STATUS_STORAGE = 'tbh-mcp-status';
+
 const ALL_AGENTS_DEF = [MORNING_AGENT, PROGRESS_AGENT, RISK_AGENT];
+
+function loadSavedStatuses(): Record<string, 'connected' | 'disconnected' | 'error'> {
+  try { const s = localStorage.getItem(MCP_STATUS_STORAGE); return s ? JSON.parse(s) : {}; } catch { return {}; }
+}
 
 export default function MCPA2AView() {
   const industry = useAppStore((s) => s.industry);
@@ -21,21 +28,28 @@ export default function MCPA2AView() {
 
   const [selectedServer, setSelectedServer] = useState<string>(builtinServer.id);
   const [connecting, setConnecting] = useState<string | null>(null);
-  const [serverStatuses, setServerStatuses] = useState<Record<string, 'connected' | 'disconnected' | 'error'>>({});
+  const [serverStatuses, setServerStatuses] = useState<Record<string, 'connected' | 'disconnected' | 'error'>>(() => loadSavedStatuses());
   const [toolResult, setToolResult] = useState<unknown>(null);
   const [toolLoading, setToolLoading] = useState(false);
   const [a2aMessages, setA2aMessages] = useState<A2AMessage[]>(a2aGetMessages());
   const [pipelineResult, setPipelineResult] = useState<unknown[] | null>(null);
   const [pipelineRunning, setPipelineRunning] = useState(false);
+  const { toasts, success, error } = useToast();
+
+  function saveStatuses(statuses: Record<string, 'connected' | 'disconnected' | 'error'>) {
+    setServerStatuses(statuses);
+    try { localStorage.setItem(MCP_STATUS_STORAGE, JSON.stringify(statuses)); } catch {}
+  }
 
   const activeServer = allServers.find((s) => s.id === selectedServer) ?? builtinServer;
 
   async function handleConnect(serverId: string) {
     setConnecting(serverId);
-    // Simulate connection
     await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1000));
-    setServerStatuses((prev) => ({ ...prev, [serverId]: 'connected' }));
+    saveStatuses({ ...serverStatuses, [serverId]: 'connected' });
     setConnecting(null);
+    const server = allServers.find((s) => s.id === serverId);
+    success(`MCP服务"${server?.name ?? serverId}"已连接`);
   }
 
   async function handleCallTool(tool: MCPTool) {
@@ -84,6 +98,7 @@ export default function MCPA2AView() {
 
   return (
     <div className="flex h-full">
+      <ToastOverlay toasts={toasts} />
       {/* Left: Server list */}
       <div className="flex w-72 shrink-0 flex-col border-r border-border bg-surface">
         <div className="border-b border-border px-4 py-3">

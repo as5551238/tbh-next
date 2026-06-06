@@ -1,19 +1,68 @@
 import { useState } from 'react';
 import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
+import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { Bot, ToggleLeft, ToggleRight, Settings, Play, Pause, MessageSquare, BarChart3, RefreshCw } from 'lucide-react';
+import { Bot, ToggleLeft, ToggleRight, Settings, MessageSquare, BarChart3, RefreshCw, X } from 'lucide-react';
+import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 
 export default function AiAgentsView() {
   const { cell, loading } = useMatrixCell();
   const indColor = useIndustryColor();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
+  const setCurrentPage = useAppStore((s) => s.setCurrentPage);
 
   const [agents, setAgents] = useState(cell.agents.map((a) => ({ ...a, enabled: true })));
+  const addModal = useModal();
+  const statsModal = useModal();
+  const [newAgentName, setNewAgentName] = useState('');
+  const [newAgentDesc, setNewAgentDesc] = useState('');
+  const [selectedAgent, setSelectedAgent] = useState<typeof agents[0] | null>(null);
+  const [statsAgent, setStatsAgent] = useState<typeof agents[0] | null>(null);
+  const [toast, setToast] = useState('');
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2500);
+  }
 
   function toggleAgent(name: string) {
     setAgents((prev) => prev.map((a) => a.name === name ? { ...a, enabled: !a.enabled } : a));
+  }
+
+  function handleAddAgent() {
+    if (!newAgentName.trim()) return;
+    const newAgent = {
+      name: newAgentName.trim(),
+      desc: newAgentDesc.trim() || '自定义AI助手',
+      status: '在线',
+      enabled: true,
+    };
+    setAgents((prev) => [...prev, newAgent]);
+    setNewAgentName('');
+    setNewAgentDesc('');
+    addModal.closeModal();
+    showToast(`AI同事"${newAgent.name}"已添加`);
+  }
+
+  function handleAgentAction(name: string, action: string) {
+    const agent = agents.find((a) => a.name === name);
+    if (!agent) return;
+    if (action === 'restart') {
+      setAgents((prev) => prev.map((a) => a.name === name ? { ...a, status: '重启中...' } : a));
+      setTimeout(() => {
+        setAgents((prev) => prev.map((a) => a.name === name ? { ...a, status: '在线' } : a));
+        showToast(`${name} 已重启完成`);
+      }, 1500);
+    } else if (action === 'chat') {
+      setCurrentPage('main-chat');
+    } else if (action === 'stats') {
+      setStatsAgent(agent);
+      statsModal.openModal();
+    } else if (action === 'config') {
+      setCurrentPage('agent-config');
+    }
   }
 
   return (
@@ -22,11 +71,16 @@ export default function AiAgentsView() {
         <span className="text-sm font-bold">AI 同事管理</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
         <span className="text-[10px] text-text-3">{agents.filter((a) => a.enabled).length}/{agents.length} 启用</span>
-        <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 添加AI同事</button>
+        <button onClick={addModal.openModal} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 添加AI同事</button>
       </div>
 
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-lg bg-success/90 px-4 py-2 text-xs font-semibold text-white shadow-lg animate-in fade-in slide-in-from-top-2">
+          <Check size={12} className="mr-1.5 inline" />{toast}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {/* Description */}
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
           <p className="text-xs text-text-2 leading-relaxed">
             AI同事是与你同在一个团队的智能助手，它们会持续监控数据、提供分析、参与协作。你可以根据需要启用或禁用特定的AI同事。
@@ -45,9 +99,10 @@ export default function AiAgentsView() {
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-sm font-semibold text-text">{agent.name}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold',
+                    agent.status === '重启中...' ? 'bg-warning/10 text-warning' :
                     agent.enabled ? 'bg-success/10 text-success' : 'bg-surface-2 text-text-3'
                   )}>
-                    {agent.enabled ? '已启用' : '已禁用'}
+                    {agent.status === '重启中...' ? '重启中' : agent.enabled ? '已启用' : '已禁用'}
                   </span>
                 </div>
                 <div className="text-[11px] text-text-3">{agent.desc}</div>
@@ -62,16 +117,16 @@ export default function AiAgentsView() {
             </div>
             {agent.enabled && (
               <div className="flex items-center gap-2 mt-3 ml-13">
-                <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text transition-colors">
+                <button onClick={() => handleAgentAction(agent.name, 'chat')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <MessageSquare size={10} />对话
                 </button>
-                <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text transition-colors">
+                <button onClick={() => handleAgentAction(agent.name, 'stats')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <BarChart3 size={10} />统计
                 </button>
-                <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text transition-colors">
+                <button onClick={() => handleAgentAction(agent.name, 'config')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <Settings size={10} />配置
                 </button>
-                <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text transition-colors">
+                <button onClick={() => handleAgentAction(agent.name, 'restart')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <RefreshCw size={10} />重启
                 </button>
               </div>
@@ -79,6 +134,74 @@ export default function AiAgentsView() {
           </div>
         ))}
       </div>
+
+      {/* Add Agent Modal */}
+      {addModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-96 rounded-xl border border-border bg-bg p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-bold">添加AI同事</span>
+              <button onClick={addModal.closeModal}><X size={16} className="text-text-3" /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-text-3 mb-1">名称</label>
+                <input className={inputCls} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} placeholder="输入AI同事名称" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-text-3 mb-1">描述</label>
+                <input className={inputCls} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} placeholder="输入AI同事描述" />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={addModal.closeModal} className={btnSecondary}>取消</button>
+              <button onClick={handleAddAgent} className={btnPrimary}>添加</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Modal */}
+      {statsModal.isOpen && statsAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-96 rounded-xl border border-border bg-bg p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-bold">{statsAgent.name} 统计</span>
+              <button onClick={statsModal.closeModal}><X size={16} className="text-text-3" /></button>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-3">状态</span>
+                <span className={statsAgent.status === '在线' ? 'text-success' : 'text-warning'}>{statsAgent.status}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-3">今日交互次数</span>
+                <span className="text-text">{statsAgent.name.charCodeAt(0) % 15 + 8}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-3">本周处理任务</span>
+                <span className="text-text">{statsAgent.name.charCodeAt(1) % 20 + 12}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-3">平均响应时间</span>
+                <span className="text-text">{((statsAgent.name.charCodeAt(0) % 15 + 5) / 10).toFixed(1)}s</span>
+              </div>
+              <div className="mt-3 rounded-lg bg-surface-2 p-3">
+                <div className="text-[10px] font-bold text-text-3 mb-2">过去7天活跃度</div>
+                <div className="flex items-end gap-1 h-12">
+                  {Array.from({ length: 7 }).map((_, i) => {
+                    const h = 30 + ((i * 37 + statsAgent.name.charCodeAt(0)) % 60);
+                    return <div key={i} className="flex-1 rounded-t bg-primary/40" style={{ height: `${h}%` }} />;
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button onClick={statsModal.closeModal} className={btnSecondary}>关闭</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

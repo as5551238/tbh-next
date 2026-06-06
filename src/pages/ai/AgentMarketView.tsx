@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
+import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { fetchMarketplaceAgents, CATEGORIES, type MarketplaceAgent } from '@/lib/agentMarketplace';
 import { cn } from '@/lib/utils';
 import { Search, Download, Star, X, Check, Crown, Zap, Building2, Loader2 } from 'lucide-react';
+
+const INSTALLED_AGENTS_STORAGE = 'tbh-installed-agents';
 
 const PRICE_ICONS: Record<string, React.ReactNode> = {
   free: <Zap size={12} className="text-success" />,
@@ -17,13 +20,22 @@ export default function AgentMarketView() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [selectedAgent, setSelectedAgent] = useState<MarketplaceAgent | null>(null);
+  const { toasts, success } = useToast();
+  const [installedAgentIds, setInstalledAgentIds] = useState<Set<string>>(() => {
+    try { const s = localStorage.getItem(INSTALLED_AGENTS_STORAGE); return s ? new Set(JSON.parse(s)) : new Set<string>(); } catch { return new Set<string>(); }
+  });
+
+  function saveInstalledAgentIds(ids: Set<string>) {
+    setInstalledAgentIds(ids);
+    try { localStorage.setItem(INSTALLED_AGENTS_STORAGE, JSON.stringify([...ids])); } catch {}
+  }
 
   useEffect(() => {
     fetchMarketplaceAgents().then((data) => {
-      setAgents(data);
+      setAgents(data.map((a) => ({ ...a, isInstalled: installedAgentIds.has(a.id) })));
       setLoading(false);
     });
-  }, []);
+  }, [installedAgentIds.size]);
 
   const filtered = agents.filter((a) => {
     if (category !== 'all' && a.category !== category) return false;
@@ -34,8 +46,21 @@ export default function AgentMarketView() {
   const installed = agents.filter((a) => a.isInstalled);
   const available = filtered.filter((a) => !a.isInstalled);
 
+  function toggleInstall() {
+    if (!selectedAgent) return;
+    const id = selectedAgent.id;
+    const nowInstalled = !selectedAgent.isInstalled;
+    const newIds = new Set(installedAgentIds);
+    if (nowInstalled) newIds.add(id); else newIds.delete(id);
+    saveInstalledAgentIds(newIds);
+    setAgents((prev) => prev.map((a) => a.id === id ? { ...a, isInstalled: nowInstalled } : a));
+    setSelectedAgent((prev) => prev ? { ...prev, isInstalled: nowInstalled } : null);
+    success(nowInstalled ? `Agent"${selectedAgent.name}"已安装` : `Agent"${selectedAgent.name}"已卸载`);
+  }
+
   return (
     <div className="flex h-full">
+      <ToastOverlay toasts={toasts} />
       {/* Main list */}
       <div className="flex flex-1 flex-col min-w-0">
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
@@ -139,12 +164,12 @@ export default function AgentMarketView() {
           </div>
 
           <div className="border-t border-border p-4">
-            <button className={cn('w-full rounded-xl py-3 text-sm font-bold text-white transition-all',
+            <button onClick={toggleInstall} className={cn('w-full rounded-xl py-3 text-sm font-bold text-white transition-all',
               selectedAgent.isInstalled ? 'bg-surface-2 text-text-3' :
               selectedAgent.price === 'free' ? 'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20' :
               'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20'
-            )} disabled={selectedAgent.isInstalled}>
-              {selectedAgent.isInstalled ? '已安装' : selectedAgent.price === 'free' ? '免费安装' : `${selectedAgent.price === 'pro' ? '专业版' : '企业版'} 解锁`}
+            )}>
+              {selectedAgent.isInstalled ? '卸载' : selectedAgent.price === 'free' ? '免费安装' : `${selectedAgent.price === 'pro' ? '专业版' : '企业版'} 解锁`}
             </button>
           </div>
         </div>

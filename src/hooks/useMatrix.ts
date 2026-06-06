@@ -230,13 +230,13 @@ export function useKnowledgeDocs() {
       .catch(() => setLoading(false));
   }, []);
 
-  const addDoc = useCallback(async (data: Omit<KnowledgeDocRow, 'id'>) => {
+  const addDoc = useCallback(async (data: Omit<KnowledgeDocRow, 'id' | 'created_at' | 'updated_at'>) => {
     const row = await createKnowledgeDoc(data);
     setDocs((prev) => [row, ...prev]);
     return row;
   }, []);
 
-  const editDoc = useCallback(async (id: string, data: Partial<Omit<KnowledgeDocRow, 'id'>>) => {
+  const editDoc = useCallback(async (id: string, data: Partial<Omit<KnowledgeDocRow, 'id' | 'created_at' | 'updated_at'>>) => {
     const row = await updateKnowledgeDoc(id, data);
     setDocs((prev) => prev.map((d) => d.id === id ? row : d));
     return row;
@@ -267,7 +267,7 @@ export function useReports() {
     fetchReports().then((d) => { setReports(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { reports, loading };
+  return { reports, setReports, loading };
 }
 
 export function useApprovals() {
@@ -287,7 +287,7 @@ export function useAnnouncements() {
     fetchAnnouncements().then((d) => { setAnnouncements(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { announcements, loading };
+  return { announcements, setAnnouncements, loading };
 }
 
 export function useMeetings() {
@@ -297,7 +297,7 @@ export function useMeetings() {
     fetchMeetings().then((d) => { setMeetings(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { meetings, loading };
+  return { meetings, setMeetings, loading };
 }
 
 export function useCollabDocs() {
@@ -307,7 +307,7 @@ export function useCollabDocs() {
     fetchCollabDocs().then((d) => { setDocs(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { docs, loading };
+  return { docs, setDocs, loading };
 }
 
 export function useSharedFiles() {
@@ -317,7 +317,7 @@ export function useSharedFiles() {
     fetchSharedFiles().then((d) => { setFiles(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { files, loading };
+  return { files, setFiles, loading };
 }
 
 export function useContacts() {
@@ -327,7 +327,7 @@ export function useContacts() {
     fetchContacts().then((d) => { setContacts(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { contacts, loading };
+  return { contacts, setContacts, loading };
 }
 
 export function useAgentDetails() {
@@ -357,7 +357,7 @@ export function useRisks() {
     fetchRisks().then((d) => { setRisks(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { risks, loading };
+  return { risks, setRisks, loading };
 }
 
 export function useWorkflows() {
@@ -367,7 +367,7 @@ export function useWorkflows() {
     fetchWorkflows().then((d) => { setWorkflows(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { workflows, loading };
+  return { workflows, setWorkflows, loading };
 }
 
 export function useScheduleEvents() {
@@ -377,7 +377,7 @@ export function useScheduleEvents() {
     fetchScheduleEvents().then((d) => { setEvents(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { events, loading };
+  return { events, setEvents, loading };
 }
 
 export function useOrgInfo() {
@@ -387,7 +387,7 @@ export function useOrgInfo() {
     fetchOrgInfo().then((d) => { setOrgInfo(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { orgInfo, loading };
+  return { orgInfo, setOrgInfo, loading };
 }
 
 export function useRoles() {
@@ -397,7 +397,7 @@ export function useRoles() {
     fetchRoles().then((d) => { setRoles(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { roles, loading };
+  return { roles, setRoles, loading };
 }
 
 export function usePredictions() {
@@ -407,7 +407,7 @@ export function usePredictions() {
     fetchPredictions().then((d) => { setPredictions(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { predictions, loading };
+  return { predictions, setPredictions, loading };
 }
 
 export function useExperiences() {
@@ -417,7 +417,7 @@ export function useExperiences() {
     fetchExperiences().then((d) => { setExperiences(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { experiences, loading };
+  return { experiences, setExperiences, loading };
 }
 
 export function useDocs() {
@@ -427,5 +427,6 @@ export function useDocs() {
     fetchDocs().then((d) => { setDocs(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { docs, loading };
+  return { docs, setDocs, loading };
 }
+

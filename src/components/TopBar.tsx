@@ -1,8 +1,10 @@
+import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useIndustryColor, useMatrixCell } from '@/hooks/useMatrix';
 import { useDepartments, useIndustries } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Search, Bell, Settings, ChevronRight } from 'lucide-react';
+import { Search, Bell, Settings, ChevronRight, X } from 'lucide-react';
+import { useNotifications } from '@/hooks/useMatrix';
 
 const IFACE_LABELS: Record<string, string> = {
   workspace: '模块工作台',
@@ -30,9 +32,39 @@ export default function TopBar() {
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const toggleCtxPanel = useAppStore((s) => s.toggleCtxPanel);
+  const setActiveModule = useAppStore((s) => s.setActiveModule);
+  const setInterface = useAppStore((s) => s.setInterface);
 
   const indColor = useIndustryColor();
   const { cell, loading } = useMatrixCell();
+  const { notifications } = useNotifications();
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
+
+  // Navigate to the matching module based on search query
+  const handleSearch = (query: string) => {
+    if (!query.trim()) return;
+    const q = query.trim().toLowerCase();
+    // Find module by label or key
+    const match = Object.entries(MODULE_LABELS).find(([key, label]) => key.toLowerCase().includes(q) || label.toLowerCase().includes(q));
+    if (match) {
+      const [modKey] = match;
+      // Determine interface from module
+      const collabMods = ['channels', 'teamCal', 'approvals', 'announcements', 'collabDocs', 'meetings', 'files', 'directory', 'aiAgents'];
+      const aiMods = ['main', 'morning', 'risk', 'agentList', 'agentConfig', 'industryView', 'workflows', 'kpiDash'];
+      if (collabMods.includes(modKey)) setInterface('collab');
+      else if (aiMods.includes(modKey)) setInterface('ai');
+      else setInterface('workspace');
+      setActiveModule(modKey);
+    }
+    setSearchQuery('');
+    setSearchOpen(false);
+  };
 
   return (
     <div className="flex h-12 shrink-0 items-center border-b border-border bg-surface px-3 gap-3">
@@ -62,21 +94,31 @@ export default function TopBar() {
       <div className="flex-1" />
 
       {/* Search */}
-      <div className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs text-text-3 w-44">
-        <Search size={13} />
-        <span>搜索...</span>
-      </div>
+      {searchOpen ? (
+        <div className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 w-48">
+          <Search size={13} className="text-text-3 shrink-0" />
+          <input ref={searchRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(searchQuery); if (e.key === 'Escape') setSearchOpen(false); }} placeholder="搜索模块..." className="bg-transparent text-xs text-text outline-none flex-1 min-w-0" />
+          <button onClick={() => { setSearchOpen(false); setSearchQuery(''); }} className="text-text-3 hover:text-text shrink-0"><X size={12} /></button>
+        </div>
+      ) : (
+        <button onClick={() => setSearchOpen(true)} className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs text-text-3 w-44 hover:bg-surface-2/80 transition-colors">
+          <Search size={13} />
+          <span>搜索...</span>
+        </button>
+      )}
 
       {/* Notifications */}
-      <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text">
+      <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text" onClick={() => { setInterface('workspace'); setActiveModule('notifications'); }}>
         <Bell size={16} />
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
-          3
-        </span>
+        {unreadCount > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
       </button>
 
       {/* Settings */}
-      <button className="flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text">
+      <button className="flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text" onClick={() => { setInterface('workspace'); setActiveModule('org'); }}>
         <Settings size={16} />
       </button>
     </div>

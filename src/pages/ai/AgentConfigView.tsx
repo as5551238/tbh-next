@@ -1,17 +1,70 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAgentConfigs, useMatrixCell } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { Settings, Bot, Save, RotateCcw, Loader2 } from 'lucide-react';
+import { Settings, Bot, Save, RotateCcw, Loader2, Check } from 'lucide-react';
+
+const CONFIG_STORAGE_KEY = 'tbh-agent-configs';
+
+function loadSavedConfigs(): Record<string, any> {
+  try {
+    const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveConfigsToStorage(configs: any[]) {
+  try {
+    const map: Record<string, any> = {};
+    configs.forEach((c) => { map[c.id] = { model: c.model, temperature: c.temperature, max_tokens: c.max_tokens, system_prompt: c.system_prompt, schedule: c.schedule }; });
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(map));
+  } catch { /* quota exceeded - silent */ }
+}
 
 export default function AgentConfigView() {
   const { configs, setConfigs, loading } = useAgentConfigs();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState('');
   const resolvedId = selectedId ?? configs[0]?.id ?? '';
   const selected = configs.find((c) => c.id === resolvedId);
 
+  // Apply saved localStorage configs on load
+  useEffect(() => {
+    if (configs.length === 0) return;
+    const saved = loadSavedConfigs();
+    if (Object.keys(saved).length === 0) return;
+    setConfigs((prev) => prev.map((c) => saved[c.id] ? { ...c, ...saved[c.id] } : c));
+  }, [configs.length > 0]);
+
+  const originalRef = useRef<typeof selected>(null);
+
+  useEffect(() => {
+    if (selected) {
+      originalRef.current = { ...selected };
+    }
+  }, [resolvedId]);
+
   function updateConfig(field: string, value: any) {
     setConfigs((prev) => prev.map((c) => c.id === resolvedId ? { ...c, [field]: value } : c));
+    setSaved(false);
+  }
+
+  function handleSave() {
+    originalRef.current = selected ? { ...selected } : null;
+    saveConfigsToStorage(configs);
+    setSaved(true);
+    setToast('配置已保存');
+    setTimeout(() => { setSaved(false); setToast(''); }, 2000);
+  }
+
+  function handleReset() {
+    if (!originalRef.current) return;
+    const orig = originalRef.current;
+    setConfigs((prev) => prev.map((c) => c.id === resolvedId ? { ...c, model: orig.model, temperature: orig.temperature, max_tokens: orig.max_tokens, system_prompt: orig.system_prompt, schedule: orig.schedule } : c));
+    setSaved(false);
+    setToast('已重置');
+    setTimeout(() => setToast(''), 1500);
   }
 
   if (loading || !selected) {
@@ -24,6 +77,11 @@ export default function AgentConfigView() {
 
   return (
     <div className="flex h-full">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-lg bg-success/90 px-4 py-2 text-xs font-semibold text-white shadow-lg">
+          <Check size={12} className="mr-1.5 inline" />{toast}
+        </div>
+      )}
       {/* Agent List */}
       <div className="flex w-56 shrink-0 flex-col border-r border-border bg-surface">
         <div className="border-b border-border px-3 py-2.5">
@@ -51,11 +109,11 @@ export default function AgentConfigView() {
           <Settings size={16} className="text-primary-2" />
           <span className="text-sm font-bold">{selected.name} 配置</span>
           <div className="ml-auto flex gap-2">
-            <button className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] text-text-3 hover:text-text">
+            <button onClick={handleReset} className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] text-text-3 hover:text-text">
               <RotateCcw size={10} />重置
             </button>
-            <button className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[10] font-semibold text-white hover:opacity-80">
-              <Save size={10} />保存
+            <button onClick={handleSave} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-white hover:opacity-80">
+              <Save size={10} />{saved ? '已保存' : '保存'}
             </button>
           </div>
         </div>

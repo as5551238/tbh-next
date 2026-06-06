@@ -32,8 +32,7 @@ export default function ChannelsView() {
   const [activeCh, setActiveCh] = useState(channels[0]);
   const [msgInput, setMsgInput] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { id: 1, role: 'system', sender: '系统', text: `欢迎来到「${channels[0]}」频道，当前行业：${industry} · ${dept}`, time: '09:00' },
-    { id: 2, role: 'ai', sender: 'AI同事', text: cell.morning, time: '09:01' },
+    { id: 1, role: 'system', sender: '系统', text: `欢迎来到「${channels[0]}」频道，当前行业：${industry} · ${dept}`, time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) },
   ]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -121,7 +120,7 @@ export default function ChannelsView() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: 'ai', sender: 'AI同事', text: `收到，我会持续关注「${dept}」相关进展，有异常会及时提醒。`, time: now },
+        { id: Date.now() + 1, role: 'system', sender: '系统', text: 'AI暂时无法回复，请稍后再试。', time: now },
       ]);
     } finally {
       setIsTyping(false);
@@ -153,13 +152,13 @@ export default function ChannelsView() {
             </button>
           ))}
           <div className="px-3 py-1.5 mt-2 text-[9px] font-bold uppercase tracking-wider text-text-3">
-            在线成员 ({onlineUsers.length + cell.agents.filter((a) => a.status === '在线').length})
+            AI 同事 ({cell.agents.length})
           </div>
-          {cell.agents.filter((a) => a.status === '在线').map((agent) => (
+          {cell.agents.map((agent) => (
             <div key={agent.name} className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-2">
               <Bot size={13} className="shrink-0 text-primary-2" />
               <span className="truncate">{agent.name}</span>
-              <Circle size={6} className="ml-auto fill-success text-success" />
+              <span className="ml-auto text-[8px] text-text-3">{agent.status}</span>
             </div>
           ))}
           {onlineUsers.map((ou, i) => (
@@ -182,9 +181,9 @@ export default function ChannelsView() {
         <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
           <Hash size={15} className="text-text-3" />
           <span className="text-sm font-bold">{activeCh}</span>
-          <span className="text-[10px] text-text-3 ml-2"><Users size={11} className="inline mr-1" />{cell.agents.length + 1 + onlineUsers.length} 人</span>
+          <span className="text-[10px] text-text-3 ml-2"><Users size={11} className="inline mr-1" />{1 + onlineUsers.length} 人 · {cell.agents.length} AI</span>
           {onlineUsers.length > 0 && (
-            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">实时在线</span>
+            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">成员在线</span>
           )}
         </div>
 

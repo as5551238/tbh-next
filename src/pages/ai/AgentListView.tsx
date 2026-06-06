@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useAgentDetails, useIndustryColor } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Loader2 } from 'lucide-react';
+import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Loader2, Plus, Check } from 'lucide-react';
+import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 
 const STATUS_DOT: Record<string, string> = { running: 'bg-success', idle: 'bg-warn', error: 'bg-danger' };
 const STATUS_LABEL: Record<string, string> = { running: '运行中', idle: '空闲', error: '异常' };
@@ -8,9 +10,42 @@ const STATUS_LABEL: Record<string, string> = { running: '运行中', idle: '空�
 export default function AgentListView() {
   const indColor = useIndustryColor();
   const { agents, setAgents, loading } = useAgentDetails();
+  const registerModal = useModal();
+  const [formName, setFormName] = useState('');
+  const [formModel, setFormModel] = useState('gpt-4o');
+  const [formDesc, setFormDesc] = useState('');
+  const [toast, setToast] = useState('');
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2500);
+  }
 
   function toggleAgent(id: string) {
     setAgents((prev) => prev.map((a) => a.id === id ? { ...a, enabled: !a.enabled } : a));
+    const agent = agents.find((a) => a.id === id);
+    if (agent) showToast(agent.enabled ? `${agent.name} 已禁用` : `${agent.name} 已启用`);
+  }
+
+  function handleRegister() {
+    if (!formName.trim()) return;
+    const newAgent = {
+      id: `agent-${Date.now()}`,
+      name: formName.trim(),
+      model: formModel,
+      desc: formDesc.trim() || '自定义Agent',
+      status: 'idle' as const,
+      enabled: true,
+      tasks_completed: 0,
+      uptime: '0%',
+      capabilities: ['自定义'],
+    };
+    setAgents((prev) => [...prev, newAgent]);
+    setFormName('');
+    setFormModel('gpt-4o');
+    setFormDesc('');
+    registerModal.closeModal();
+    showToast(`Agent"${newAgent.name}"已注册`);
   }
 
   const runningCount = agents.filter((a) => a.enabled && a.status === 'running').length;
@@ -25,10 +60,15 @@ export default function AgentListView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-lg bg-success/90 px-4 py-2 text-xs font-semibold text-white shadow-lg">
+          <Check size={12} className="mr-1.5 inline" />{toast}
+        </div>
+      )}
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">Agent 列表</span>
         <span className="text-[10px] text-text-3">{runningCount} 运行中 · {agents.length} 总计</span>
-        <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 注册Agent</button>
+        <button onClick={registerModal.openModal} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 注册Agent</button>
       </div>
 
       {/* Stats Bar */}
@@ -84,6 +124,28 @@ export default function AgentListView() {
           </div>
         ))}
       </div>
+
+      <Modal open={registerModal.open} onClose={registerModal.closeModal} title="注册Agent"
+        footer={
+          <>
+            <button onClick={registerModal.closeModal} className={btnSecondary}>取消</button>
+            <button onClick={handleRegister} className={btnPrimary} disabled={!formName.trim()}>注册</button>
+          </>
+        }>
+        <ModalField label="Agent名称">
+          <input className={inputCls} value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="输入Agent名称" />
+        </ModalField>
+        <ModalField label="模型">
+          <select className={inputCls} value={formModel} onChange={(e) => setFormModel(e.target.value)}>
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+            <option value="gpt-4o-mini">GPT-4o-mini</option>
+          </select>
+        </ModalField>
+        <ModalField label="描述">
+          <input className={inputCls} value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="输入Agent描述" />
+        </ModalField>
+      </Modal>
     </div>
   );
 }

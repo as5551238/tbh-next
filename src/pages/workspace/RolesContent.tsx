@@ -1,8 +1,43 @@
+import { useState } from 'react';
 import { useRoles } from '@/hooks/useMatrix';
+import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { Shield, Plus, Users, Lock, Eye, Loader2 } from 'lucide-react';
 
+const ALL_PERMISSIONS = ['系统配置', '成员管理', '目标管理', '审批', '任务管理', '文档协作', '数据分析', '只读访问'];
+
 export default function RolesContent() {
-  const { roles, loading } = useRoles();
+  const { roles, setRoles, loading } = useRoles();
+  const { open, openModal, closeModal } = useModal();
+  const [editRole, setEditRole] = useState<typeof roles[number] | null>(null);
+  const [form, setForm] = useState({ key: '', name: '', description: '' });
+  const [formPerms, setFormPerms] = useState<string[]>([]);
+
+  function openCreate() {
+    setEditRole(null);
+    setForm({ key: '', name: '', description: '' });
+    setFormPerms(['只读访问']);
+    openModal();
+  }
+
+  function openEdit(r: typeof roles[number]) {
+    setEditRole(r);
+    setForm({ key: r.key, name: r.name, description: (r as any).description ?? '' });
+    setFormPerms([...r.permissions]);
+    openModal();
+  }
+
+  function togglePerm(perm: string) {
+    setFormPerms((prev) => prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]);
+  }
+
+  function handleSave() {
+    if (editRole) {
+      setRoles((prev) => prev.map((r) => r.id === editRole.id ? { ...r, key: form.key, name: form.name, permissions: formPerms, description: form.description } as typeof r : r));
+    } else {
+      setRoles((prev) => [...prev, { id: crypto.randomUUID(), key: form.key, name: form.name, members: 0, permissions: formPerms, color: `hsl(${Math.random() * 360},60%,50%)` } as typeof prev[number]]);
+    }
+    closeModal();
+  }
 
   if (loading) {
     return (
@@ -18,7 +53,7 @@ export default function RolesContent() {
       <div className="flex items-center gap-2">
         <Shield size={18} className="text-primary-2" />
         <span className="text-sm font-bold">角色权限</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">
+        <button onClick={openCreate} className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">
           <Plus size={12} />
           新建角色
         </button>
@@ -68,7 +103,7 @@ export default function RolesContent() {
       {/* Role Cards */}
       <div className="space-y-3">
         {roles.map((r) => (
-          <div key={r.key} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
+          <div key={r.key} onClick={() => openEdit(r)} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full" style={{ backgroundColor: r.color }} />
@@ -90,6 +125,40 @@ export default function RolesContent() {
           </div>
         ))}
       </div>
+
+      {/* Create / Edit Role Modal */}
+      <Modal
+        open={open}
+        onClose={closeModal}
+        title={editRole ? '编辑角色' : '新建角色'}
+        footer={
+          <>
+            <button onClick={closeModal} className={btnSecondary}>取消</button>
+            <button onClick={handleSave} className={btnPrimary}>{editRole ? '保存' : '创建'}</button>
+          </>
+        }
+      >
+        <ModalField label="角色名称 (Key)">
+          <input className={inputCls} value={form.key} onChange={e => setForm(f => ({ ...f, key: e.target.value }))} placeholder="如 admin、member" />
+        </ModalField>
+        <ModalField label="显示名称">
+          <input className={inputCls} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="如 管理员、成员" />
+        </ModalField>
+        <ModalField label="描述 (可选)">
+          <input className={inputCls} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="角色的简要描述" />
+        </ModalField>
+        <div className="mt-3">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">权限配置</div>
+          <div className="grid grid-cols-2 gap-2">
+            {ALL_PERMISSIONS.map((perm) => (
+              <label key={perm} className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 cursor-pointer hover:border-border-2 transition-colors" onClick={(e) => e.stopPropagation()}>
+                <input type="checkbox" checked={formPerms.includes(perm)} onChange={() => togglePerm(perm)} className="accent-primary-2 h-3 w-3" />
+                <span className="text-[11px] text-text-2">{perm}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
