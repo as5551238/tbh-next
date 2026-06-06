@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '9b793ed3-e771-4eeb-8111-c7dd650e4aaa'
-  PropagateID: '9b793ed3-e771-4eeb-8111-c7dd650e4aaa'
-  ReservedCode1: '2050a55a-fb7d-4215-b13b-46de50fd5e85'
-  ReservedCode2: '2050a55a-fb7d-4215-b13b-46de50fd5e85'
+  ProduceID: '9f5c3931-7ebb-496a-80a1-9e18bc4c7587'
+  PropagateID: '9f5c3931-7ebb-496a-80a1-9e18bc4c7587'
+  ReservedCode1: '7daaf86b-2ffa-4b7f-9767-b5213ec3834b'
+  ReservedCode2: '7daaf86b-2ffa-4b7f-9767-b5213ec3834b'
 ---
 
 # TBH-Next 部署记录
@@ -21,5 +21,6 @@ AIGC:
 | 2026-06-06 | 5ea48d3e | R4-Fix2 | ItemDetailModal泛型化 + 消除as-unknown-as桥接 + 5个页面类型安全 + DEPLOY-LOG |
 | 2026-06-06 | 7c2b8d9f | R5 | 46项商业UX修复Batch1-3：动态数据替换硬编码、诚实标签、真实交互（搜索/日历/导出/审批/公告/频道/AI洞察等） |
 | 2026-06-06 | 9ea3a4cf | R5-Fix | 残留假AI标签清除：AI分析→数据分析、AI洞察摘要→洞察概览、AI增强→知识沉淀、AI建议→经验提示、实时数据→业务概览 |
+| 2026-06-06 | 6a6e7970 | S6 | 数据闭环：消灭协作台local-only写入 — 7个View的setX→mutator hook、messages持久化、agent持久化、Group B错误处理throw |
 
 > AI生成
