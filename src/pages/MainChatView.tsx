@@ -26,7 +26,7 @@ function MainChatView() {
   const { cell, loading } = useMatrixCell();
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { id: 1, role: 'ai', text: `☀️ 晨间播报\n\n${cell.morning}\n\n📊 实时数据: ${cell.ribbon}\n\n有什么需要我帮你分析的？`, time: '08:00', agent: 'morning-brief', agentIcon: '☀️' },
+    { id: 1, role: 'ai', text: `☀️ 晨间播报\n\n${cell.morning}\n\n📊 业务概览: ${cell.ribbon}\n\n有什么需要我帮你分析的？`, time: '08:00', agent: 'morning-brief', agentIcon: '☀️' },
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [activeAgent, setActiveAgent] = useState<AgentDef | null>(null);

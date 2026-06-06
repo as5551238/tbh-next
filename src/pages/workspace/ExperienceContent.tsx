@@ -70,7 +70,7 @@ export default function ExperienceContent() {
       <div className="flex items-center gap-2">
         <BookOpen size={18} style={{ color: indColor }} />
         <span className="text-sm font-bold">经验库</span>
-        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>AI增强</span>
+        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>知识沉淀</span>
         <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleOpen}>
           <Plus size={12} />
           提炼经验
@@ -128,7 +128,7 @@ export default function ExperienceContent() {
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
         <div className="flex items-center gap-2 text-xs text-primary-2">
           <Sparkles size={14} />
-          <span className="font-semibold">AI 建议</span>
+          <span className="font-semibold">经验提示</span>
         </div>
         <p className="mt-1 text-[11px] text-text-2">{allExperiences.length > 0 ? `当前共 ${allExperiences.length} 条经验，建议定期复盘并提炼高频引用的经验为标准流程。` : '暂无经验条目，点击"提炼经验"开始沉淀团队知识。'}</p>
       </div>

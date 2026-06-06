@@ -54,14 +54,14 @@ export default function InsightContent() {
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <Lightbulb size={16} className="text-primary-2" />
         <span className="text-sm font-bold">数据洞察</span>
-        <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-bold text-accent">AI分析</span>
+        <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-bold text-accent">数据分析</span>
         <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleOpen}>
           <Plus size={12} />新建洞察
         </button>
       </div>
 
       <div className="mx-4 mt-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-primary-2 mb-1"><Lightbulb size={14} />AI 洞察摘要</div>
+        <div className="flex items-center gap-2 text-xs font-semibold text-primary-2 mb-1"><Lightbulb size={14} />洞察概览</div>
         <p className="text-[11px] text-text-2 leading-relaxed">
           {localInsights.length > 0
             ? `当前共 ${localInsights.length} 条洞察：${localInsights.filter((i) => i.impact === 'negative').length} 个需关注项，${localInsights.filter((i) => i.impact === 'positive').length} 个正向趋势。建议优先处理负面指标。`

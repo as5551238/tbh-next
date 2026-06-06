@@ -480,7 +480,7 @@ export function buildSystemPrompt(cell: MatrixCell, industry: string, dept: stri
     `- 行业：${industry}`,
     `- 部门：${dept}`,
     `- 晨间播报：${cell.morning}`,
-    `- 实时数据：${cell.ribbon}`,
+    `- 业务概览：${cell.ribbon}`,
     `- 下一步建议：${cell.nextStep}`,
     '',
     '## KPI 数据',
