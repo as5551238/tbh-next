@@ -11,18 +11,25 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { createHarness } from '@/lib/agentHarness';
 import { sanitizeInput, validateAIOutput, recordInjectionCheck } from '@/lib/aiSecurity';
 import type { MatrixCell } from '@/matrix/data';
+import { getToolSchemas, executeToolCall, isValidTool } from '@/lib/aiTools';
 
 // --- Types ---
 
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
+  /** OpenAI-format tool_calls on assistant messages */
+  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>;
+  /** tool_call_id on tool-role messages */
+  tool_call_id?: string;
 }
 
 export interface AIResponse {
   text: string;
   agent?: string;
   usage?: { prompt_tokens: number; completion_tokens: number };
+  toolCalls?: Array<{ id: string; name: string; arguments: string }>;
+  toolResults?: Array<{ tool_call_id: string; name: string; result: unknown }>;
 }
 
 export type StreamCallback = (chunk: string, done: boolean) => void;
@@ -123,7 +130,7 @@ function getActiveModel(): AIModelPreset {
 
 export async function chatCompletion(
   messages: ChatMessage[],
-  options?: { stream?: boolean; onChunk?: StreamCallback; signal?: AbortSignal; harness?: HarnessOptions }
+  options?: { stream?: boolean; onChunk?: StreamCallback; signal?: AbortSignal; harness?: HarnessOptions; enableTools?: boolean }
 ): Promise<AIResponse> {
   const agentId = options?.harness?.agentId ?? '_general';
   const harness = createHarness(agentId);
@@ -184,11 +191,104 @@ export async function chatCompletion(
   let route: 'edge' | 'local' = 'local';
   try {
     let response: AIResponse;
-    if (isSupabaseConfigured() && supabase) {
+
+    if (options?.enableTools && isSupabaseConfigured() && supabase) {
+      // === S8.1: Tool-enabled path with execution loop ===
       route = 'edge';
-      response = await callSupabaseEdge(sanitizedMessages, options);
+      const tools = getToolSchemas();
+      const currentMessages: ChatMessage[] = [...sanitizedMessages];
+      const allToolResults: AIResponse['toolResults'] = [];
+      const MAX_TOOL_ITERATIONS = 3;
+      let loopDone = false;
+
+      for (let i = 0; i < MAX_TOOL_ITERATIONS && !loopDone; i++) {
+        // Non-streaming during tool loop — tool-calling rounds produce no user-visible text
+        const iterResp = await callSupabaseEdge(currentMessages, {
+          stream: false,
+          enableTools: true,
+          tools,
+          signal: options?.signal,
+        });
+
+        if (!iterResp.toolCalls || iterResp.toolCalls.length === 0) {
+          // No tool calls — this is the final text response
+          loopDone = true;
+          // Re-call with streaming if user originally requested it
+          if (options?.stream && options?.onChunk) {
+            response = await callSupabaseEdge(currentMessages, {
+              stream: true,
+              onChunk: options.onChunk,
+              signal: options?.signal,
+            });
+          } else {
+            response = iterResp;
+          }
+          if (allToolResults.length > 0) {
+            response = { ...response, toolResults: allToolResults };
+          }
+          break;
+        }
+
+        // --- Execute tool calls locally ---
+        const iterToolResults: Array<{ tool_call_id: string; name: string; result: unknown }> = [];
+        for (const tc of iterResp.toolCalls) {
+          try {
+            const args = JSON.parse(tc.arguments);
+            const result = await executeToolCall(tc.name, args);
+            iterToolResults.push({ tool_call_id: tc.id, name: tc.name, result });
+            allToolResults.push({ tool_call_id: tc.id, name: tc.name, result });
+          } catch (err) {
+            const errResult = { error: String(err) };
+            iterToolResults.push({ tool_call_id: tc.id, name: tc.name, result: errResult });
+            allToolResults.push({ tool_call_id: tc.id, name: tc.name, result: errResult });
+          }
+        }
+
+        // Append assistant message with tool_calls
+        currentMessages.push({
+          role: 'assistant',
+          content: iterResp.text || '',
+          tool_calls: iterResp.toolCalls.map((tc) => ({
+            id: tc.id,
+            type: 'function' as const,
+            function: { name: tc.name, arguments: tc.arguments },
+          })),
+        });
+
+        // Append tool result messages
+        for (const tr of iterToolResults) {
+          currentMessages.push({
+            role: 'tool',
+            content: JSON.stringify(tr.result),
+            tool_call_id: tr.tool_call_id,
+          });
+        }
+
+        // If this was the last allowed iteration, force a final text-only call
+        if (i === MAX_TOOL_ITERATIONS - 1) {
+          response = await callSupabaseEdge(currentMessages, {
+            stream: !!options?.stream && !!options?.onChunk,
+            onChunk: options?.onChunk,
+            signal: options?.signal,
+          });
+          if (allToolResults.length > 0) {
+            response = { ...response, toolResults: allToolResults };
+          }
+        }
+      }
+
+      // Safety net
+      if (!response) {
+        response = { text: 'AI工具调用处理完成，但未生成文本响应，请重试。', agent: 'edge' };
+      }
     } else {
-      response = await localFallback(sanitizedMessages);
+      // === Regular path (no tools) ===
+      if (isSupabaseConfigured() && supabase) {
+        route = 'edge';
+        response = await callSupabaseEdge(sanitizedMessages, options);
+      } else {
+        response = await localFallback(sanitizedMessages);
+      }
     }
 
     // --- Security: Output validation (after AI call) ---
@@ -263,41 +363,57 @@ export async function chatCompletion(
 
 async function callSupabaseEdge(
   messages: ChatMessage[],
-  options?: { stream?: boolean; onChunk?: StreamCallback; signal?: AbortSignal }
+  options?: {
+    stream?: boolean;
+    onChunk?: StreamCallback;
+    signal?: AbortSignal;
+    enableTools?: boolean;
+    tools?: ReturnType<typeof getToolSchemas>;
+  }
 ): Promise<AIResponse> {
   if (!supabase) return localFallback(messages);
 
   const activeModel = getActiveModel();
   const useStream = options?.stream && options?.onChunk;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
 
   try {
-    // Use streaming via direct fetch to Edge Function for better UX
-    if (useStream) {
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token ?? '';
+    // --- Acquire auth token (shared by both paths) ---
+    const { data: { session } } = await supabase.auth.getSession();
+    const accessToken = session?.access_token ?? '';
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
+    // --- Build request body ---
+    const body: Record<string, unknown> = {
+      messages,
+      model: activeModel.model,
+      stream: !!useStream,
+      enableTools: options?.enableTools ?? false,
+    };
+    if (options?.tools && options.tools.length > 0) {
+      body.tools = options.tools;
+    }
+
+    if (useStream) {
+      // === Streaming path ===
       const res = await fetch(`${supabaseUrl}/functions/v1/ai-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ messages, model: activeModel.model, stream: true }),
+        body: JSON.stringify(body),
         signal: options?.signal,
       });
 
-      if (!res.ok) {
-        // Fall back to local on any error
-        return localFallback(messages);
-      }
+      if (!res.ok) return localFallback(messages);
 
-      // Parse as SSE stream
       if (res.body) {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let fullText = '';
         let buffer = '';
+        // Accumulate tool_calls from SSE delta chunks (keyed by index)
+        const toolCallMap = new Map<number, { id: string; name: string; arguments: string }>();
 
         while (true) {
           const { done, value } = await reader.read();
@@ -317,13 +433,30 @@ async function callSupabaseEdge(
             }
             try {
               const parsed = JSON.parse(data);
+
+              // Custom Edge Function format: { text: "..." }
               if (parsed.text) {
                 fullText += parsed.text;
                 options.onChunk!(parsed.text, false);
-              } else if (parsed.choices?.[0]?.delta?.content) {
+              }
+
+              // OpenAI delta format — text content
+              if (parsed.choices?.[0]?.delta?.content) {
                 const delta = parsed.choices[0].delta.content;
                 fullText += delta;
                 options.onChunk!(delta, false);
+              }
+
+              // OpenAI delta format — tool_calls (S8.1)
+              if (parsed.choices?.[0]?.delta?.tool_calls) {
+                for (const tc of parsed.choices[0].delta.tool_calls) {
+                  const idx = tc.index ?? 0;
+                  const existing = toolCallMap.get(idx) ?? { id: '', name: '', arguments: '' };
+                  if (tc.id) existing.id = tc.id;
+                  if (tc.function?.name) existing.name += tc.function.name;
+                  if (tc.function?.arguments) existing.arguments += tc.function.arguments;
+                  toolCallMap.set(idx, existing);
+                }
               }
             } catch {
               // skip malformed chunks
@@ -331,21 +464,52 @@ async function callSupabaseEdge(
           }
         }
         options.onChunk!('', true);
-        return { text: fullText, agent: 'edge' };
+
+        const toolCalls = toolCallMap.size > 0
+          ? Array.from(toolCallMap.values()).filter((tc) => tc.name)
+          : undefined;
+
+        return { text: fullText, agent: 'edge', toolCalls };
       }
     }
 
-    // Non-streaming: use supabase client
-    const { data, error } = await supabase.functions.invoke('ai-chat', {
-      body: { messages, model: activeModel.model, stream: false },
+    // === Non-streaming path (direct fetch for full response parsing) ===
+    const res = await fetch(`${supabaseUrl}/functions/v1/ai-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
+      signal: options?.signal,
     });
 
-    if (error || !data?.text) {
-      // Edge function failed — fall back to local
+    if (!res.ok) return localFallback(messages);
+
+    const data = await res.json();
+
+    // Parse tool_calls from Edge Function response (OpenAI-compatible format)
+    let toolCalls: AIResponse['toolCalls'];
+    if (Array.isArray(data.tool_calls) && data.tool_calls.length > 0) {
+      toolCalls = data.tool_calls.map((tc: Record<string, unknown>) => ({
+        id: (tc.id as string) ?? `tc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: ((tc.function as Record<string, unknown>)?.name as string) ?? (tc.name as string) ?? '',
+        arguments: typeof (tc.function as Record<string, unknown>)?.arguments === 'string'
+          ? (tc.function as Record<string, unknown>).arguments as string
+          : JSON.stringify((tc.function as Record<string, unknown>)?.arguments ?? {}),
+      }));
+    }
+
+    if (!data?.text && (!toolCalls || toolCalls.length === 0)) {
       return localFallback(messages);
     }
 
-    return { text: data.text, agent: 'edge', usage: data.usage };
+    return {
+      text: data.text ?? '',
+      agent: 'edge',
+      usage: data.usage,
+      toolCalls,
+    };
   } catch {
     // Any error — fall back to local
     return localFallback(messages);

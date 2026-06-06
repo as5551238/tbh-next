@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { Bot, Sun, RefreshCw, Sparkles } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
 import { MORNING_AGENT } from '@/lib/agents';
 import { cn } from '@/lib/utils';
+import { useNotifications } from '@/hooks/useMatrix';
 
 /** Morning Focus - AI-powered dedicated morning briefing view */
 export default function MorningView() {
@@ -16,6 +17,8 @@ export default function MorningView() {
   const [briefing, setBriefing] = useState<string>('');
   const [briefingLoading, setBriefingLoading] = useState(false);
   const [briefingSource, setBriefingSource] = useState<string>('');
+  const { addNotification } = useNotifications();
+  const briefingPushedRef = useRef(false);
 
   const generateBriefing = useCallback(async () => {
     setBriefingLoading(true);
@@ -31,6 +34,7 @@ export default function MorningView() {
       const res = await chatCompletion(messages, {
         stream: true,
         harness: { agentId: 'morning-brief' },
+        enableTools: true,
         onChunk: (chunk, done) => {
           if (done) {
             setBriefingLoading(false);
@@ -40,6 +44,21 @@ export default function MorningView() {
         },
       });
       setBriefingSource(res.agent ?? 'local');
+
+      // S8.2: Push morning briefing notification (once per session)
+      if (!briefingPushedRef.current && res.text) {
+        briefingPushedRef.current = true;
+        const summary = res.text.slice(0, 120).replace(/[#*_]/g, '').trim();
+        addNotification({
+          title: '晨间播报已生成',
+          message: summary + (res.text.length > 120 ? '...' : ''),
+          type: 'system',
+          related_id: null,
+          related_type: null,
+          member_id: null,
+          level: 'info',
+        });
+      }
     } catch {
       // AI generation failed — fallback to cell.morning static data
       setBriefing(cell.morning);

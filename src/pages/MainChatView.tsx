@@ -94,6 +94,7 @@ function MainChatView() {
       stream: true,
       signal: abort.signal,
       harness: { agentId: matchedAgent?.id ?? '_general' },
+      enableTools: true,
       onChunk: (chunk, done) => {
         if (done) {
           setMessages((prev) =>

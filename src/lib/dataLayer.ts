@@ -478,6 +478,26 @@ export async function fetchAgentConfigs(): Promise<AgentConfigRow[]> {
   return data as AgentConfigRow[];
 }
 
+/** Upsert a single agent config to Supabase (S8.3) */
+export async function saveAgentConfig(config: AgentConfigRow): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) {
+    console.warn('Supabase not configured — agent config saved to localStorage only');
+    return;
+  }
+  const { error } = await supabase.from('agent_configs').upsert({
+    id: config.id,
+    name: config.name,
+    model: config.model,
+    temperature: config.temperature,
+    max_tokens: config.max_tokens,
+    system_prompt: config.system_prompt,
+    schedule: config.schedule,
+    enabled: config.enabled,
+    sort_order: 0,
+  }, { onConflict: 'id' });
+  if (error) throw new Error(`saveAgentConfig failed: ${error.message}`);
+}
+
 // --- Risks ---
 
 export async function fetchRisks(): Promise<RiskRow[]> {

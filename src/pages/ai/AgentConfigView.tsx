@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useAgentConfigs, useMatrixCell } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
+import { useNotifications } from '@/hooks/useMatrix';
+import { setStoredModelId, AI_MODEL_PRESETS } from '@/lib/aiService';
 import { Settings, Bot, Save, RotateCcw, Loader2, Check } from 'lucide-react';
 
 const CONFIG_STORAGE_KEY = 'tbh-agent-configs';
@@ -22,7 +24,7 @@ function saveConfigsToStorage(configs: any[]) {
 }
 
 export default function AgentConfigView() {
-  const { configs, setConfigs, loading } = useAgentConfigs();
+  const { configs, setConfigs, saveConfig, loading } = useAgentConfigs();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [toast, setToast] = useState('');
@@ -50,9 +52,20 @@ export default function AgentConfigView() {
     setSaved(false);
   }
 
-  function handleSave() {
+  async function handleSave() {
     originalRef.current = selected ? { ...selected } : null;
     saveConfigsToStorage(configs);
+    // S8.3: Also persist to Supabase
+    if (selected) {
+      try {
+        await saveConfig(selected);
+        // Sync selected agent's model to global AI model store
+        const presetId = AI_MODEL_PRESETS.find((p) => p.model === selected.model)?.id;
+        if (presetId) setStoredModelId(presetId);
+      } catch (err) {
+        console.warn('Failed to save agent config to Supabase:', err);
+      }
+    }
     setSaved(true);
     setToast('配置已保存');
     setTimeout(() => { setSaved(false); setToast(''); }, 2000);
@@ -125,9 +138,9 @@ export default function AgentConfigView() {
             <select id="agent-model" value={selected.model} onChange={(e) => updateConfig('model', e.target.value)}
               className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-text outline-none focus:border-primary"
             >
-              <option value="gpt-4o">GPT-4o</option>
-              <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-              <option value="gpt-4o-mini">GPT-4o-mini</option>
+              {AI_MODEL_PRESETS.map((p) => (
+                <option key={p.id} value={p.model}>{p.name} ({p.model})</option>
+              ))}
             </select>
           </div>
 

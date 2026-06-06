@@ -25,6 +25,7 @@ import {
   createMessage,
   updateAgentDetail, createAgentDetail,
   createNotification,
+  saveAgentConfig,
   type GoalRow, type TaskRow, type ProjectRow, type MemberRow, type KnowledgeDocRow,
   type NotificationRow, type ReportRow, type ApprovalRow, type AnnouncementRow,
   type MeetingRow, type CollabDocRow, type SharedFileRow, type ContactRow,
@@ -509,7 +510,11 @@ export function useAgentConfigs() {
     fetchAgentConfigs().then((d) => { setConfigs(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { configs, setConfigs, loading };
+  const saveConfig = useCallback(async (config: AgentConfigRow) => {
+    await saveAgentConfig(config);
+    setConfigs((prev) => prev.map((c) => c.id === config.id ? config : c));
+  }, []);
+  return { configs, setConfigs, saveConfig, loading };
 }
 
 export function useRisks() {

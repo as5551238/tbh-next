@@ -5,8 +5,9 @@ import { cn, safeStr } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, Target, CheckCircle2, FolderKanban, BarChart3, BookOpen, Brain, ArrowRight, Bot, Loader2, Zap } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
-import { computeAutoProgress, detectDeviations } from '@/lib/reviewEngine';
+import { computeAutoProgress } from '@/lib/reviewEngine';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
+import { useDeviationWatch } from '@/hooks/useDeviationWatch';
 
 // Lazy-load heavier sub-views
 import ScheduleContent from '@/pages/workspace/ScheduleContent';
@@ -528,25 +529,14 @@ export default function Workspace() {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const iface = useAppStore((s) => s.interface);
   const setDeviationAlertCount = useAppStore((s) => s.setDeviationAlertCount);
-  const { goals, loading: goalsLoading } = useGoals();
-  const { projects, loading: projectsLoading } = useProjects();
 
-  // Auto-detect deviation alerts whenever goals/projects change
+  // Auto-detect deviation alerts and push notifications (S8.2)
+  const { alertCount } = useDeviationWatch();
+
+  // Sync deviation count to app store for sidebar badge
   useEffect(() => {
-    if (goalsLoading || projectsLoading) return;
-    const items = [
-      ...goals.map((g) => ({
-        id: g.id, title: g.title, progress: g.progress,
-        startDate: g.start_date, endDate: g.end_date, type: 'goal' as const,
-      })),
-      ...projects.map((p) => ({
-        id: p.id, title: p.title, progress: p.progress,
-        startDate: null as string | null, endDate: p.end_date, type: 'project' as const,
-      })),
-    ];
-    const alerts = detectDeviations(items);
-    setDeviationAlertCount(alerts.length);
-  }, [goals, projects, goalsLoading, projectsLoading, setDeviationAlertCount]);
+    setDeviationAlertCount(alertCount);
+  }, [alertCount, setDeviationAlertCount]);
 
   const Content = WORKSPACE_MODULES[activeModule];
   if (Content) return <Content />;
