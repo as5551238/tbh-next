@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'f07d50d2-6c49-4e45-bfb4-09c5a4a9266c'
-  PropagateID: 'f07d50d2-6c49-4e45-bfb4-09c5a4a9266c'
-  ReservedCode1: '7c56d921-6508-4ed6-9671-b638d50488bc'
-  ReservedCode2: '7c56d921-6508-4ed6-9671-b638d50488bc'
+  ProduceID: '9b793ed3-e771-4eeb-8111-c7dd650e4aaa'
+  PropagateID: '9b793ed3-e771-4eeb-8111-c7dd650e4aaa'
+  ReservedCode1: '2050a55a-fb7d-4215-b13b-46de50fd5e85'
+  ReservedCode2: '2050a55a-fb7d-4215-b13b-46de50fd5e85'
 ---
 
 # TBH-Next 部署记录
@@ -20,5 +20,6 @@ AIGC:
 | 2026-06-06 | 70f06845 | R4-Fix1 | MeetingsView类型安全 + InsightContent重复声明修复 + useToast.tsx重命名 |
 | 2026-06-06 | 5ea48d3e | R4-Fix2 | ItemDetailModal泛型化 + 消除as-unknown-as桥接 + 5个页面类型安全 + DEPLOY-LOG |
 | 2026-06-06 | 7c2b8d9f | R5 | 46项商业UX修复Batch1-3：动态数据替换硬编码、诚实标签、真实交互（搜索/日历/导出/审批/公告/频道/AI洞察等） |
+| 2026-06-06 | 9ea3a4cf | R5-Fix | 残留假AI标签清除：AI分析→数据分析、AI洞察摘要→洞察概览、AI增强→知识沉淀、AI建议→经验提示、实时数据→业务概览 |
 
 > AI生成
