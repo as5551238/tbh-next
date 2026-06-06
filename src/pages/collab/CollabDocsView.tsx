@@ -6,6 +6,7 @@ import { useRealtime, usePresence } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { FileText, FileSpreadsheet, FileImage, File, Clock, User, Edit3, Eye, Loader2, X, Save, Users } from 'lucide-react';
+import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 
 const TYPE_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   doc: FileText,
@@ -22,6 +23,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function CollabDocsView() {
   const { docs, addDoc, editDoc, loading } = useCollabDocs();
+  const { triggerFeedback } = useMLOOFeedback();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const { user } = useAuth();
@@ -72,6 +74,8 @@ export default function CollabDocsView() {
     if (!activeDoc) return;
     setSaving(true);
     await editDoc(activeDoc, { content: editContent, last_edited: new Date().toLocaleDateString('zh-CN'), last_edited_by: user?.email ?? '当前用户' });
+    const doc = docs.find((d) => d.id === activeDoc);
+    if (doc) triggerFeedback({ type: 'doc_status', action: 'saved', entity: doc });
     setSaving(false);
   }
 

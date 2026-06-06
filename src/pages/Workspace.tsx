@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Minus, Target, CheckCircle2, FolderKanban, Ba
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import { computeAutoProgress, detectDeviations } from '@/lib/reviewEngine';
+import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 
 // Lazy-load heavier sub-views
 import ScheduleContent from '@/pages/workspace/ScheduleContent';
@@ -243,6 +244,7 @@ function GoalsContent() {
 
 function TasksContent() {
   const { tasks, loading, editTask } = useTasks();
+  const { triggerFeedback } = useMLOOFeedback();
   const editModal = useModal();
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const priorityStyle: Record<string, string> = { urgent: 'bg-danger/10 text-danger', high: 'bg-warn/10 text-warn', medium: 'bg-primary/10 text-primary-2', low: 'bg-surface-2 text-text-3' };
@@ -262,19 +264,24 @@ function TasksContent() {
   }, [editModal.openModal]);
 
   const handleTaskSave = useCallback((updated: Record<string, unknown>) => {
-    editTask(String(updated.id), {
+    const id = String(updated.id);
+    const newStatus = String(updated.status);
+    editTask(id, {
       title: String(updated.title),
       priority: String(updated.priority),
-      status: String(updated.status),
+      status: newStatus,
       due_date: updated.due_date ? String(updated.due_date) : null,
       assignee_id: updated.assignee_id ? String(updated.assignee_id) : null,
     });
-  }, [editTask]);
+    triggerFeedback({ type: 'task_status', action: 'updated', entity: { id, status: newStatus, title: updated.title, goal_id: tasks.find((t) => t.id === id)?.goal_id ?? null } });
+  }, [editTask, triggerFeedback, tasks]);
 
   const handleToggleDone = useCallback((e: React.MouseEvent, t: typeof tasks[number]) => {
     e.stopPropagation();
-    editTask(t.id, { status: t.done ? 'todo' : 'done' });
-  }, [editTask]);
+    const newStatus = t.done ? 'todo' : 'done';
+    editTask(t.id, { status: newStatus });
+    triggerFeedback({ type: 'task_status', action: 'toggled', entity: { id: t.id, title: t.title, status: newStatus, goal_id: t.goal_id } });
+  }, [editTask, triggerFeedback]);
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-2">

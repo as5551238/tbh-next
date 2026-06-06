@@ -24,6 +24,7 @@ import {
   updateApproval,
   createMessage,
   updateAgentDetail, createAgentDetail,
+  createNotification,
   type GoalRow, type TaskRow, type ProjectRow, type MemberRow, type KnowledgeDocRow,
   type NotificationRow, type ReportRow, type ApprovalRow, type AnnouncementRow,
   type MeetingRow, type CollabDocRow, type SharedFileRow, type ContactRow,
@@ -32,6 +33,7 @@ import {
   type ExperienceRow, type DocRow,
 } from '@/lib/dataLayer';
 import type { ActionItemRow } from '@/lib/dataLayer';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { MatrixCell } from '@/matrix/data';
 
 /**
@@ -268,7 +270,40 @@ export function useNotifications() {
     fetchNotifications().then((d) => { setNotifications(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  return { notifications, setNotifications, loading };
+
+  const addNotification = useCallback(async (data: Omit<NotificationRow, 'id' | 'created_at' | 'read' | 'team_id'>) => {
+    const row: NotificationRow = {
+      id: `notif-${Date.now()}`,
+      ...data,
+      read: false,
+      team_id: '__default__',
+      created_at: new Date().toISOString(),
+      source: data.related_type ?? '系统',
+      time: '刚刚',
+    };
+    setNotifications((prev) => [row, ...prev]);
+    try { await createNotification(data); } catch { /* optimistic */ }
+  }, []);
+
+  const markRead = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        await supabase.from('notifications').update({ read: true }).eq('id', id);
+      }
+    } catch { /* optimistic */ }
+  }, []);
+
+  const markAllRead = useCallback(async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        await supabase.from('notifications').update({ read: true }).neq('read', true);
+      }
+    } catch { /* optimistic */ }
+  }, []);
+
+  return { notifications, setNotifications, loading, addNotification, markRead, markAllRead };
 }
 
 export function useReports() {

@@ -6,6 +6,7 @@ import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { MeetingRow } from '@/lib/dataLayer';
+import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 
 const MEETING_FIELDS: FieldDef[] = [
   { key: 'title', label: '会议主题', type: 'text', editable: false },
@@ -21,6 +22,7 @@ const MEETING_FIELDS: FieldDef[] = [
 
 export default function MeetingsView() {
   const { meetings, addMeeting, editMeeting, removeMeeting, loading } = useMeetings();
+  const { triggerFeedback } = useMLOOFeedback();
   const detailModal = useModal();
   const createModal = useModal();
   const [selected, setSelected] = useState<MeetingRow | null>(null);
@@ -54,6 +56,7 @@ export default function MeetingsView() {
       window.open(location, '_blank');
     } else {
       editMeeting(mtg.id, { status: 'ongoing' });
+      triggerFeedback({ type: 'meeting', action: 'started', entity: mtg });
       showToast(`已加入会议: ${mtg.title ?? ''}`);
     }
   }

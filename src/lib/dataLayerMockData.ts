@@ -8,8 +8,12 @@
 // --- Types (must match dataLayer.ts) ---
 
 export interface NotificationRow {
-  id: string; title: string; content: string; type: string;
-  source: string; time: string; read: boolean; action_url: string | null;
+  id: string; title: string; message: string; type: string;
+  related_id: string | null; related_type: string | null;
+  member_id: string | null; read: boolean; level: string;
+  created_at: string; team_id: string;
+  /** Computed display fields (for UI, not stored in DB) */
+  source?: string; time?: string; action_url?: string | null;
 }
 export interface ReportRow {
   id: string; name: string; type: string; generated_at: string;
@@ -92,12 +96,12 @@ export interface DocRow {
 
 export function localNotifications(): NotificationRow[] {
   return [
-    { id: 'N-001', title: 'Q3路线图评审截止', content: '明天是Q3路线图评审截止日，3个需求待确认', type: 'alert', source: 'AI产品分析师', time: '10分钟前', read: false, action_url: null },
-    { id: 'N-002', title: '导出功能使用率下降', content: '本周使用率降至12%，较上周下降3个百分点', type: 'alert', source: 'AI数据看门人', time: '1小时前', read: false, action_url: null },
-    { id: 'N-003', title: '张明在PRD中@了你', content: '「导出功能技术方案」v2.1 需要你的评审意见', type: 'mention', source: '协作', time: '2小时前', read: false, action_url: null },
-    { id: 'N-004', title: 'Sprint Review会议提醒', content: '明天09:00 Sprint Review，请准备演示内容', type: 'system', source: '日历', time: '3小时前', read: true, action_url: null },
-    { id: 'N-005', title: 'PRD模板v2.0已更新', content: '你关注的「PRD模板」已更新至v2.0', type: 'update', source: '知识库', time: '5小时前', read: true, action_url: null },
-    { id: 'N-006', title: '竞品动态', content: 'XX产品发布了AI辅助决策功能', type: 'update', source: 'AI竞品侦探', time: '1天前', read: true, action_url: null },
+    { id: 'N-001', title: 'Q3路线图评审截止', message: '明天是Q3路线图评审截止日，3个需求待确认', type: 'alert', related_id: null, related_type: null, member_id: null, read: false, level: 'warn', created_at: new Date(Date.now() - 600000).toISOString(), team_id: '__default__', source: 'AI产品分析师', time: '10分钟前' },
+    { id: 'N-002', title: '导出功能使用率下降', message: '本周使用率降至12%，较上周下降3个百分点', type: 'alert', related_id: null, related_type: null, member_id: null, read: false, level: 'warn', created_at: new Date(Date.now() - 3600000).toISOString(), team_id: '__default__', source: 'AI数据看门人', time: '1小时前' },
+    { id: 'N-003', title: '张明在PRD中@了你', message: '「导出功能技术方案」v2.1 需要你的评审意见', type: 'mention', related_id: null, related_type: null, member_id: null, read: false, level: 'info', created_at: new Date(Date.now() - 7200000).toISOString(), team_id: '__default__', source: '协作', time: '2小时前' },
+    { id: 'N-004', title: 'Sprint Review会议提醒', message: '明天09:00 Sprint Review，请准备演示内容', type: 'system', related_id: null, related_type: null, member_id: null, read: true, level: 'info', created_at: new Date(Date.now() - 10800000).toISOString(), team_id: '__default__', source: '日历', time: '3小时前' },
+    { id: 'N-005', title: 'PRD模板v2.0已更新', message: '你关注的「PRD模板」已更新至v2.0', type: 'update', related_id: null, related_type: null, member_id: null, read: true, level: 'info', created_at: new Date(Date.now() - 18000000).toISOString(), team_id: '__default__', source: '知识库', time: '5小时前' },
+    { id: 'N-006', title: '竞品动态', message: 'XX产品发布了AI辅助决策功能', type: 'update', related_id: null, related_type: null, member_id: null, read: true, level: 'info', created_at: new Date(Date.now() - 86400000).toISOString(), team_id: '__default__', source: 'AI竞品侦探', time: '1天前' },
   ];
 }
 

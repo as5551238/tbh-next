@@ -373,7 +373,21 @@ export async function fetchNotifications(): Promise<NotificationRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localNotifications();
   const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localNotifications();
-  return data as NotificationRow[];
+  return (data as NotificationRow[]).map((n) => ({
+    ...n,
+    source: n.related_type ?? '系统',
+    time: n.created_at ? new Date(n.created_at).toLocaleString('zh-CN') : '',
+  }));
+}
+
+export async function createNotification(data: Omit<NotificationRow, 'id' | 'created_at' | 'read' | 'team_id'>): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const { error } = await supabase.from('notifications').insert({
+    ...data,
+    read: false,
+    team_id: '__default__',
+  });
+  if (error) throw new Error(`createNotification: ${error.message}`);
 }
 
 // --- Reports ---
