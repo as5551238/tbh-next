@@ -1,0 +1,49 @@
+name: CI Quality Gate (DR-38)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (quality gate)
+        run: pnpm build
+
+      - name: Unit tests
+        run: pnpm test -- --run
+
+      - name: Type check (non-blocking)
+        run: pnpm tsc --noEmit || true
+        continue-on-error: true
+
+      - name: Lint (non-blocking)
+        run: pnpm lint --max-warnings=0 || true
+        continue-on-error: true
+
+      - name: File size check (DR-28)
+        run: bash scripts/check-file-size.sh
+
+      - name: Bundle size check
+        run: node scripts/bundle-report.mjs
