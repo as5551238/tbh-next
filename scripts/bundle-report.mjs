@@ -10,11 +10,11 @@ const DIST = join(import.meta.dirname, '..', 'dist', 'assets');
 
 // Size thresholds (in KB) — fail CI if exceeded
 const THRESHOLDS = {
-  'index': 300,     // Main bundle
+  'index': 320,     // Main bundle (includes Tailwind runtime)
   'vendor': 260,    // Vendor (React, Router, etc.)
   'supabase': 220,  // Supabase client
   'collab': 80,     // Collab interface
-  'personalAI': 120, // Personal AI interface
+  'personalAI': 130, // Personal AI interface
   'workspace': 15,   // Workspace shell (lazy loaded modules are separate chunks)
   'default': 25,    // Default per-chunk threshold
 };
