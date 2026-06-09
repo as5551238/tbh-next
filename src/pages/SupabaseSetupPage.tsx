@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 
 export default function SupabaseSetupPage() {
   const navigate = useNavigate();
+  const navigateTo = useAppStore((s) => s.navigateTo);
   const [url, setUrl] = useState('');
   const [anonKey, setAnonKey] = useState('');
   const [status, setStatus] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
@@ -28,7 +30,7 @@ export default function SupabaseSetupPage() {
     // In production, this would go through proper init flow
     sessionStorage.setItem('tbh-next-supabase-url', url.trim());
     sessionStorage.setItem('tbh-next-supabase-anon-key', anonKey.trim());
-    navigate('/workspace/overview');
+    navigate(navigateTo('workspace', 'overview'));
   }
 
   return (

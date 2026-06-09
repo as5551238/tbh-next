@@ -15,7 +15,7 @@ export default function KnowledgeOSPView() {
   const [category, setCategory] = useState('all');
   const [selectedPack, setSelectedPack] = useState<KnowledgePack | null>(null);
   const [showAllIndustries, setShowAllIndustries] = useState(false);
-  const { toasts, success } = useToast();
+  const { toasts, success, error } = useToast();
   const [installedIds, setInstalledIds] = useState<Set<string>>(() => {
     try { const s = localStorage.getItem(INSTALLED_PACKS_STORAGE); return s ? new Set(JSON.parse(s)) : new Set<string>(); } catch { return new Set<string>(); }
   });
@@ -30,7 +30,7 @@ export default function KnowledgeOSPView() {
       // Apply persisted install state
       setPacks(data.map((p) => ({ ...p, isInstalled: installedIds.has(p.id) })));
       setLoading(false);
-    });
+    }).catch((err) => { console.error("[knowledge]", err); error("知识包加载失败，请重试"); setLoading(false); });
   }, [industry, showAllIndustries, installedIds.size]);
 
   const filtered = packs.filter((p) => {
@@ -86,7 +86,8 @@ export default function KnowledgeOSPView() {
             <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
           ) : (
             filtered.map((pack) => (
-              <button key={pack.id} onClick={() => setSelectedPack(pack)} className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface p-4 text-left transition-all hover:border-primary/30 hover:shadow-lg">
+              <button key={pack.id} onClick={() => setSelectedPack(pack)} className={cn('flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-all hover:shadow-lg',
+                pack.isInstalled ? 'border-success/30 bg-success/5 hover:border-success/50' : 'border-border bg-surface hover:border-primary/30')}>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-lg shrink-0">
                   {KNOWLEDGE_CATEGORIES.find((c) => c.id === pack.category)?.icon ?? '📚'}
                 </div>
@@ -143,10 +144,10 @@ export default function KnowledgeOSPView() {
           </div>
 
           <div className="border-t border-border p-4">
-            <button onClick={toggleInstall} className={cn('w-full rounded-xl py-3 text-sm font-bold text-white transition-all',
-              selectedPack.isInstalled ? 'bg-surface-2 text-text-3' : 'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20'
+            <button onClick={toggleInstall} className={cn('w-full rounded-xl py-3 text-sm font-bold transition-all',
+              selectedPack.isInstalled ? 'bg-success/10 text-success border border-success/20 hover:bg-success/20' : 'bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:shadow-primary/20'
             )}>
-              {selectedPack.isInstalled ? '卸载' : selectedPack.plan === 'free' ? '免费安装' : `${selectedPack.plan === 'pro' ? '专业版' : '企业版'} 解锁`}
+              {selectedPack.isInstalled ? '✓ 已安装 · 点击卸载' : selectedPack.plan === 'free' ? '免费安装' : `${selectedPack.plan === 'pro' ? '专业版' : '企业版'} 解锁`}
             </button>
           </div>
         </div>

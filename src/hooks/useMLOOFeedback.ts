@@ -42,7 +42,12 @@ export function useMLOOFeedback() {
       for (const { goalId, newProgress } of result.progressUpdates) {
         const goal = goalsRef.current.find((g) => g.id === goalId);
         if (goal && goal.progress !== newProgress) {
-          await editGoal(goalId, { progress: newProgress });
+          // 当目标进度达到100%时，同时将状态改为 completed
+          const updates: Record<string, unknown> = { progress: newProgress };
+          if (newProgress >= 100 && goal.status !== 'completed') {
+            updates.status = 'completed';
+          }
+          await editGoal(goalId, updates);
         }
       }
 

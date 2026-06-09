@@ -8,16 +8,16 @@ import { Settings, Bot, Save, RotateCcw, Loader2, Check } from 'lucide-react';
 
 const CONFIG_STORAGE_KEY = 'tbh-agent-configs';
 
-function loadSavedConfigs(): Record<string, any> {
+function loadSavedConfigs(): Record<string, unknown> {
   try {
     const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
 
-function saveConfigsToStorage(configs: any[]) {
+function saveConfigsToStorage(configs: { id: string; model: string; temperature: number; max_tokens: number; system_prompt: string; schedule: string }[]) {
   try {
-    const map: Record<string, any> = {};
+    const map: Record<string, unknown> = {};
     configs.forEach((c) => { map[c.id] = { model: c.model, temperature: c.temperature, max_tokens: c.max_tokens, system_prompt: c.system_prompt, schedule: c.schedule }; });
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(map));
   } catch { /* quota exceeded - silent */ }
@@ -47,7 +47,7 @@ export default function AgentConfigView() {
     }
   }, [resolvedId]);
 
-  function updateConfig(field: string, value: any) {
+  function updateConfig(field: string, value: unknown) {
     setConfigs((prev) => prev.map((c) => c.id === resolvedId ? { ...c, [field]: value } : c));
     setSaved(false);
   }

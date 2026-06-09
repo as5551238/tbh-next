@@ -4,9 +4,12 @@ import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/lib/auth';
 import { useRealtime, usePresence } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
-import { Send, Bot, User, Hash, Users, ChevronDown, Circle } from 'lucide-react';
+import { hasFeature, getCurrentPlan, PLAN_LIMITS } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
+import { Send, Bot, User, Hash, Users, ChevronDown, Circle, Plus, X } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
-import { createMessage } from '@/lib/dataLayer';
+import { createMessage, fetchChannels, createChannel, type ChannelRow } from '@/lib/dataLayer';
+import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 
 interface ChatMsg {
   id: number;
@@ -27,17 +30,47 @@ export default function ChannelsView() {
   const dept = useAppStore((s) => s.dept);
   const indColor = useIndustryColor();
   const { cell, loading } = useMatrixCell();
-  const channels = cell.channels;
+  const defaultChannels = cell.channels;
   const { user } = useAuth();
 
-  const [activeCh, setActiveCh] = useState(channels[0]);
+  const [channels, setChannels] = useState<string[]>(defaultChannels);
+  const [channelRows, setChannelRows] = useState<ChannelRow[]>([]);
+  const [channelsLoaded, setChannelsLoaded] = useState(false);
+  const [activeCh, setActiveCh] = useState('');
   const [msgInput, setMsgInput] = useState('');
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    { id: 1, role: 'system', sender: '系统', text: `欢迎来到「${channels[0]}」频道，当前行业：${industry} · ${dept}`, time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) },
-  ]);
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const createChModal = useModal();
+  const [newChName, setNewChName] = useState('');
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const rows = await fetchChannels(industry, dept);
+      if (cancelled) return;
+      if (rows.length > 0) {
+        setChannelRows(rows);
+        setChannels(rows.map((r) => r.name));
+      } else {
+        setChannels(defaultChannels);
+      }
+      setChannelsLoaded(true);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [industry, dept, defaultChannels]);
+
+  useEffect(() => {
+    if (channelsLoaded && channels.length > 0 && !activeCh) {
+      setActiveCh(channels[0]);
+      setMessages([
+        { id: 1, role: 'system', sender: '系统', text: `欢迎来到「${channels[0]}」频道，当前行业：${industry} · ${dept}`, time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) },
+      ]);
+    }
+  }, [channelsLoaded, channels, activeCh, industry, dept]);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -45,7 +78,6 @@ export default function ChannelsView() {
     });
   }, []);
 
-  // Subscribe to realtime messages for this channel
   useRealtime(
     'messages',
     useCallback((payload) => {
@@ -66,7 +98,6 @@ export default function ChannelsView() {
     { column: 'channel', value: activeCh },
   );
 
-  // Subscribe to presence (who's online)
   usePresence(
     `channel-${activeCh}`,
     user?.id ?? `anon-${Date.now()}`,
@@ -90,7 +121,6 @@ export default function ChannelsView() {
 
     setMessages((prev) => [...prev, userMsg]);
 
-    // Persist user message to Supabase
     createMessage({
       channel: activeCh,
       content: msgInput.trim(),
@@ -102,7 +132,6 @@ export default function ChannelsView() {
     setIsTyping(true);
     scrollToBottom();
 
-    // AI colleague responds
     const systemPrompt = buildSystemPrompt(cell, industry, dept);
     const aiMessages: ChatMessage[] = [
       { role: 'system', content: `${systemPrompt}\n\n你正在「#${activeCh}」频道中作为AI同事与团队成员对话。语气像一位资深同事，简洁专业。` },
@@ -116,7 +145,7 @@ export default function ChannelsView() {
     try {
       const res = await chatCompletion(aiMessages, {
         stream: true,
-        onChunk: () => {}, // We'll load the full response
+        onChunk: (_chunk: string, _done: boolean) => { /* intentional no-op */ },
       });
 
       const aiMsg: ChatMsg = {
@@ -128,7 +157,6 @@ export default function ChannelsView() {
       };
       setMessages((prev) => [...prev, aiMsg]);
 
-      // Persist AI message to Supabase
       createMessage({
         channel: activeCh,
         content: res.text,
@@ -144,6 +172,28 @@ export default function ChannelsView() {
       setIsTyping(false);
       scrollToBottom();
     }
+  }
+
+  async function handleCreateChannel() {
+    if (!newChName.trim()) return;
+    const plan = getCurrentPlan();
+    const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+    if (onlineUsers.length + 1 >= limits.maxTeamMembers && limits.maxTeamMembers !== -1) {
+      setShowPaywall(true);
+      return;
+    }
+    const name = newChName.trim();
+    const row = await createChannel({ industry, dept, name });
+    if (row) {
+      setChannelRows((prev) => [...prev, row]);
+      setChannels((prev) => [...prev, name]);
+    } else {
+      setChannels((prev) => [...prev, name]);
+    }
+    setActiveCh(name);
+    setMessages((prev) => [...prev, { id: Date.now(), role: 'system' as const, sender: '系统', text: `频道「#${name}」已创建`, time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }]);
+    setNewChName('');
+    createChModal.closeModal();
   }
 
   return (
@@ -169,6 +219,10 @@ export default function ChannelsView() {
               )}
             </button>
           ))}
+          <button onClick={createChModal.openModal} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-text-3 hover:text-primary-2 transition-colors">
+            <Plus size={13} className="shrink-0" />
+            <span>新建频道</span>
+          </button>
           <div className="px-3 py-1.5 mt-2 text-[9px] font-bold uppercase tracking-wider text-text-3">
             AI 同事 ({cell.agents.length})
           </div>
@@ -253,6 +307,27 @@ export default function ChannelsView() {
           </div>
         </div>
       </div>
+
+      {/* Create Channel Modal */}
+      {createChModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={createChModal.closeModal}>
+          <div className="w-80 rounded-xl border border-border bg-surface-2 p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold">新建频道</span>
+              <button onClick={createChModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
+            </div>
+            <div>
+              <label className="text-[10px] text-text-3 mb-1 block">频道名称 *</label>
+              <input value={newChName} onChange={(e) => setNewChName(e.target.value)} placeholder="输入频道名称" className={inputCls + ' w-full'} onKeyDown={(e) => e.key === 'Enter' && handleCreateChannel()} />
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <button onClick={handleCreateChannel} disabled={!newChName.trim()} className={`${btnPrimary} disabled:opacity-40`}>创建</button>
+              <button onClick={createChModal.closeModal} className={btnSecondary}>取消</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="团队人数已达上限，升级可扩展团队" feature="maxTeamMembers" />
     </div>
   );
 }

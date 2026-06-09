@@ -1,6 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { initSentry } from '@/lib/sentry';
+
+// DR-34: Observability baseline — Sentry must init before any component renders
+initSentry();
 
 // Use HashRouter on GitHub Pages (sub-directory hosting), BrowserRouter for local dev
 const Router = window.location.hostname === 'localhost' ? BrowserRouter : HashRouter;
@@ -14,6 +18,7 @@ import TermsOfService from './pages/TermsOfService';
 import AuditLogView from './pages/AuditLogView';
 import RequireAuth from './lib/auth';
 import './index.css';
+import '@/lib/i18n';
 
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
@@ -22,11 +27,6 @@ if ('serviceWorker' in navigator) {
       // SW registration failed - non-critical, continue without PWA
     });
   });
-}
-
-// Request notification permission for push
-if ('Notification' in window && Notification.permission === 'default') {
-  // Don't auto-request - let the UI trigger it
 }
 
 createRoot(document.getElementById('root')!).render(

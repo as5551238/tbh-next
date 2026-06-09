@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
+import { useAgentDetails } from '@/hooks/useMatrix';
 import { fetchMarketplaceAgents, CATEGORIES, type MarketplaceAgent } from '@/lib/agentMarketplace';
 import { cn } from '@/lib/utils';
 import { Search, Download, Star, X, Check, Crown, Zap, Building2, Loader2 } from 'lucide-react';
 
 const INSTALLED_AGENTS_STORAGE = 'tbh-installed-agents';
 
-const PRICE_ICONS: Record<string, React.ReactNode> = {
+const PRICE_ICONS: Record<string, ReactNode> = {
   free: <Zap size={12} className="text-success" />,
   pro: <Crown size={12} className="text-primary-2" />,
   enterprise: <Building2 size={12} className="text-accent" />,
@@ -15,12 +16,13 @@ const PRICE_ICONS: Record<string, React.ReactNode> = {
 
 export default function AgentMarketView() {
   const industry = useAppStore((s) => s.industry);
+  const { addAgent, removeAgent } = useAgentDetails();
   const [agents, setAgents] = useState<MarketplaceAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [selectedAgent, setSelectedAgent] = useState<MarketplaceAgent | null>(null);
-  const { toasts, success } = useToast();
+  const { toasts, success, error } = useToast();
   const [installedAgentIds, setInstalledAgentIds] = useState<Set<string>>(() => {
     try { const s = localStorage.getItem(INSTALLED_AGENTS_STORAGE); return s ? new Set(JSON.parse(s)) : new Set<string>(); } catch { return new Set<string>(); }
   });
@@ -34,7 +36,7 @@ export default function AgentMarketView() {
     fetchMarketplaceAgents().then((data) => {
       setAgents(data.map((a) => ({ ...a, isInstalled: installedAgentIds.has(a.id) })));
       setLoading(false);
-    });
+    }).catch((err) => { console.error('[agent-market]', err); error('Agent 市场加载失败，请重试'); setLoading(false); });
   }, [installedAgentIds.size]);
 
   const filtered = agents.filter((a) => {
@@ -46,12 +48,27 @@ export default function AgentMarketView() {
   const installed = agents.filter((a) => a.isInstalled);
   const available = filtered.filter((a) => !a.isInstalled);
 
-  function toggleInstall() {
+  async function toggleInstall() {
     if (!selectedAgent) return;
     const id = selectedAgent.id;
     const nowInstalled = !selectedAgent.isInstalled;
     const newIds = new Set(installedAgentIds);
-    if (nowInstalled) newIds.add(id); else newIds.delete(id);
+    if (nowInstalled) {
+      newIds.add(id);
+      await addAgent({
+        name: selectedAgent.name,
+        model: 'gpt-4o',
+        description: selectedAgent.description,
+        status: 'idle',
+        enabled: true,
+        tasks_completed: 0,
+        uptime: '0%',
+        capabilities: selectedAgent.capabilities,
+      });
+    } else {
+      newIds.delete(id);
+      await removeAgent(id);
+    }
     saveInstalledAgentIds(newIds);
     setAgents((prev) => prev.map((a) => a.id === id ? { ...a, isInstalled: nowInstalled } : a));
     setSelectedAgent((prev) => prev ? { ...prev, isInstalled: nowInstalled } : null);

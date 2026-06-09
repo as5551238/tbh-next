@@ -1,9 +1,6 @@
-import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { useDepartments } from '@/hooks/useMatrix';
-import { cn } from '@/lib/utils';
-
-interface ModuleItem {
+import { cn } from '@/lib/utils';interface ModuleItem {
   icon: string;
   name: string;
   id: string;
@@ -31,7 +28,9 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
         { icon: '🔗', name: '穿透视图', id: 'alignment' },
       ]},
       { group: 'MLOO闭环', items: [
+        { icon: '⚡', name: '行动项', id: 'actionItems' },
         { icon: '🔄', name: '隐性复盘', id: 'review', ai: true, badge: deviationAlertCount > 0 ? String(deviationAlertCount) : undefined },
+        { icon: '🏃', name: 'Sprint', id: 'sprints' },
       ]},
       { group: '智能分析', items: [
         { icon: '💡', name: '数据洞察', id: 'insight', ai: true },
@@ -42,12 +41,26 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
         { icon: '📚', name: '知识库', id: 'knowledge' },
         { icon: '📝', name: '文档协作', id: 'docs' },
         { icon: '🏷️', name: '经验库', id: 'experience', ai: true },
+        { icon: '📋', name: '模板库', id: 'templates' },
+        { icon: '🗒️', name: '便签', id: 'notes' },
+      ]},
+      { group: '动态与收藏', items: [
+        { icon: '📡', name: '动态流', id: 'activities' },
+        { icon: '🔖', name: '收藏夹', id: 'bookmarks' },
       ]},
       { group: '管理', items: [
         { icon: '👥', name: '成员管理', id: 'members' },
         { icon: '🔐', name: '角色权限', id: 'roles' },
         { icon: '🏢', name: '组织设置', id: 'org' },
         { icon: '⚙️', name: '系统配置', id: 'admin' },
+      ]},
+      { group: '配置中心', items: [
+        { icon: '🏷️', name: '标签管理', id: 'tags' },
+        { icon: '📂', name: '分类管理', id: 'categories' },
+        { icon: '🚩', name: '功能开关', id: 'featureFlags' },
+        { icon: '👁️', name: '保存视图', id: 'savedViews' },
+        { icon: '⚡', name: '自动化规则', id: 'automation' },
+        { icon: '🔀', name: '状态流转', id: 'statusFlow' },
       ]},
     ];
   }
@@ -80,11 +93,17 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
     { group: 'AI同事', items: [
       { icon: '🤖', name: 'Agent列表', id: 'agentList', ai: true },
       { icon: '🔧', name: 'Agent配置', id: 'agentConfig' },
+      { icon: '🏪', name: 'Agent市场', id: 'agentMarket', ai: true },
     ]},
     { group: '行业视角', items: [
       { icon: '🏭', name: '行业视图', id: 'industryView', ai: true },
       { icon: '📐', name: '工作流模板', id: 'workflows' },
       { icon: '📈', name: 'KPI仪表盘', id: 'kpiDash' },
+      { icon: '📚', name: '行业知识库', id: 'knowledgeOSP', ai: true },
+    ]},
+    { group: '设置', items: [
+      { icon: '👑', name: '订阅管理', id: 'subscription' },
+      { icon: '🔌', name: 'MCP & A2A', id: 'mcpA2a', ai: true },
     ]},
   ];
 }
@@ -107,20 +126,18 @@ function getBadgeStyle(badge: string): string {
 export default function ModuleSidebar() {
   const iface = useAppStore((s) => s.interface);
   const activeModule = useAppStore((s) => s.activeModule);
-  const setActiveModule = useAppStore((s) => s.setActiveModule);
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const deviationAlertCount = useAppStore((s) => s.deviationAlertCount);
   const modSidebarOpen = useAppStore((s) => s.modSidebarOpen);
   const toggleModSidebar = useAppStore((s) => s.toggleModSidebar);
-  const navigate = useNavigate();
+  const navigateTo = useAppStore((s) => s.navigateTo);
 
   const groups = getModules(iface, industry, dept, deviationAlertCount);
   const title = { workspace: '模块', collab: '协作', ai: 'AI' }[iface];
 
   function handleModuleClick(id: string) {
-    setActiveModule(id);
-    navigate(`/${iface}/${id}`);
+    navigateTo(iface, id);
   }
 
   if (!modSidebarOpen) {

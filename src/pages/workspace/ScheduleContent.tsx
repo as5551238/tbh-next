@@ -3,14 +3,16 @@ import { useScheduleEvents } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Calendar, Clock, MapPin, Users, Plus, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Plus, Lock, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { createScheduleEvent } from '@/lib/dataLayer';
+import { hasFeature } from '@/lib/subscription';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
 export default function ScheduleContent() {
+  const isPro = hasFeature('advancedAnalytics' as never);
   const industry = useAppStore((s) => s.industry);
-  const { events, setEvents, loading } = useScheduleEvents();
+  const { events, setEvents, addEvent, editEvent, removeEvent, loading } = useScheduleEvents();
   const today = new Date();
   const [monthOffset, setMonthOffset] = useState(0);
   const viewDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
@@ -52,8 +54,12 @@ export default function ScheduleContent() {
       type: formType,
       date: dateStr,
     };
-    setEvents((prev) => [...prev, newEvt]);
-    createScheduleEvent({ id: newEvt.id, title: newEvt.title, start_date: dateStr, description: newEvt.location || '', type: newEvt.type });
+    addEvent({
+      title: formTitle.trim(),
+      start_date: dateStr,
+      description: formLocation.trim() || '',
+      type: formType,
+    });
     resetForm();
     createModal.closeModal();
   }
@@ -69,13 +75,12 @@ export default function ScheduleContent() {
 
   function handleEdit() {
     if (!formTitle.trim() || !formTime.trim() || !editingId) return;
-    setEvents((prev) => prev.map((e) => e.id === editingId ? {
-      ...e,
+    editEvent(editingId, {
       title: formTitle.trim(),
       time: formTime,
       location: formLocation.trim() || undefined,
       type: formType,
-    } : e));
+    });
     resetForm();
     editModal.closeModal();
   }
@@ -116,7 +121,7 @@ export default function ScheduleContent() {
         <div className="flex items-center gap-2 mb-2">
           <Calendar size={18} className="text-primary-2" />
           <span className="text-sm font-bold">日程</span>
-          <button onClick={() => { resetForm(); createModal.openModal(); }} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">+ 新建日程</button>
+          <button onClick={() => { if (!isPro) return; resetForm(); createModal.openModal(); }} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">{isPro ? "+ 新建日程" : <><Lock size={10} className="inline mr-1" />Pro</>}</button>
         </div>
 
         <div className="rounded-xl border border-border bg-surface p-4">
@@ -180,6 +185,7 @@ export default function ScheduleContent() {
       <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑日程"
         footer={
           <>
+            <button onClick={() => { if (editingId) { removeEvent(editingId); resetForm(); editModal.closeModal(); } }} className="text-[11px] text-danger hover:underline mr-auto">删除</button>
             <button onClick={editModal.closeModal} className={btnSecondary}>取消</button>
             <button onClick={handleEdit} className={btnPrimary} disabled={!formTitle.trim() || !formTime.trim()}>保存</button>
           </>

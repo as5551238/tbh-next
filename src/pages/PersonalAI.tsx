@@ -1,3 +1,4 @@
+import { type FC } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import MorningView from '@/pages/ai/MorningView';
 import RiskView from '@/pages/ai/RiskView';
@@ -13,7 +14,7 @@ import MCPA2AView from '@/pages/ai/MCPA2AView';
 import MainChatView from '@/pages/MainChatView';
 import ModulePageStub from '@/pages/ModulePageStub';
 
-const AI_MODULES: Record<string, { component: React.FC; title: string; icon: string; desc: string }> = {
+const AI_MODULES: Record<string, { component: FC; title: string; icon: string; desc: string }> = {
   main: { component: MainChatView, title: '工作助手', icon: '🧠', desc: '' },
   morning: { component: MorningView, title: '晨间聚焦', icon: '☀️', desc: 'AI晨间播报' },
   risk: { component: RiskView, title: '风险预警', icon: '⚠️', desc: '风险监控与预警' },

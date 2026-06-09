@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
-import { useAppStore } from '@/stores/appStore';
-import { INDUSTRIES, IND_COLORS, getDepartments } from '@/matrix/data';
+import { useNavigate } from 'react-router-dom';
+import { useAppStore, DEFAULT_MODULES, getInterfaceForModule } from '@/stores/appStore';
+import { INDUSTRIES, IND_COLORS, getDepartments, getAllIndustries, getIndustryColor } from '@/matrix/data';
 import { useIndustryColor, useMatrixCell, useDepartments as useDepts } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { X, Sparkles, ChevronRight, Bot, Loader2, Pencil } from 'lucide-react';
+import { X, Sparkles, ChevronRight, Bot, Loader2, Pencil, Wand2 } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
+import { generateMatrixCellAI, saveCustomCell, getColorForIndustry } from '@/lib/matrixGenerator';
 
 interface AiMsg {
   role: 'ai' | 'user';
@@ -16,6 +18,7 @@ interface ChipOption {
   industry: string;
   dept: string;
   confidence: number;
+  isNew?: boolean;
 }
 
 /** Extended keyword mapping for industries not in the base 4 */
@@ -100,28 +103,28 @@ const MULTI_WORD_DEPT_KEYS: [string, string, string][] = [
   ['产品', 'IT业', '产品部'],
 ];
 
-/** AI command patterns that trigger UI state changes */
-const UI_COMMANDS: { pattern: RegExp; action: (store: ReturnType<typeof useAppStore.getState>) => string }[] = [
-  { pattern: /打开四象限|四象限模式|象限视图/, action: (s) => { s.setInterface('workspace'); s.setActiveModule('overview'); return '已切换到四象限总览视图'; } },
-  { pattern: /切换到.*工作台|打开工作台|工作台模式/, action: (s) => { s.setInterface('workspace'); return '已切换到模块工作台'; } },
-  { pattern: /切换到.*协作|打开协作台|协作台/, action: (s) => { s.setInterface('collab'); return '已切换到团队协作台'; } },
-  { pattern: /切换到.*AI|打开AI台|AI台|个人AI/, action: (s) => { s.setInterface('ai'); return '已切换到个人AI台'; } },
-  { pattern: /打开目标|目标管理|目标模块/, action: (s) => { s.setInterface('workspace'); s.setActiveModule('goals'); return '已打开目标管理模块'; } },
-  { pattern: /打开任务|任务管理|任务模块|任务中心/, action: (s) => { s.setInterface('workspace'); s.setActiveModule('tasks'); return '已打开任务管理模块'; } },
-  { pattern: /打开项目|项目管理|项目模块/, action: (s) => { s.setInterface('workspace'); s.setActiveModule('projects'); return '已打开项目管理模块'; } },
-  { pattern: /打开成员|成员管理|成员列表/, action: (s) => { s.setInterface('workspace'); s.setActiveModule('members'); return '已打开成员管理模块'; } },
-  { pattern: /打开知识|知识库|知识管理/, action: (s) => { s.setInterface('workspace'); s.setActiveModule('knowledge'); return '已打开知识管理模块'; } },
-  { pattern: /打开甘特图|甘特图|项目甘特/, action: (s) => { s.setInterface('workspace'); s.setActiveModule('projects'); return '已打开项目甘特图'; } },
-  { pattern: /切换行业|换个行业/, action: (s) => { const inds = INDUSTRIES; const next = inds[(inds.indexOf(s.industry) + 1) % inds.length]; s.setContext(next, getDepartments(next)[0]); return `已切换到「${next} · ${getDepartments(next)[0]}」`; } },
-  { pattern: /收起侧栏|隐藏侧栏/, action: (s) => { if (s.modSidebarOpen) s.toggleModSidebar(); return '已收起侧栏'; } },
-  { pattern: /展开侧栏|显示侧栏/, action: (s) => { if (!s.modSidebarOpen) s.toggleModSidebar(); return '已展开侧栏'; } },
+/** AI command patterns that trigger UI state changes — now returns [reply, path] */
+const UI_COMMANDS: { pattern: RegExp; action: (store: ReturnType<typeof useAppStore.getState>) => [string, string?] }[] = [
+  { pattern: /打开四象限|四象限模式|象限视图/, action: (s) => { const path = s.navigateTo('workspace', 'overview'); return ['已切换到四象限总览视图', path]; } },
+  { pattern: /切换到.*工作台|打开工作台|工作台模式/, action: (s) => { const path = s.navigateTo('workspace'); return ['已切换到模块工作台', path]; } },
+  { pattern: /切换到.*协作|打开协作台|协作台/, action: (s) => { const path = s.navigateTo('collab'); return ['已切换到团队协作台', path]; } },
+  { pattern: /切换到.*AI|打开AI台|AI台|个人AI/, action: (s) => { const path = s.navigateTo('ai'); return ['已切换到个人AI台', path]; } },
+  { pattern: /打开目标|目标管理|目标模块/, action: (s) => { const path = s.navigateTo('workspace', 'goals'); return ['已打开目标管理模块', path]; } },
+  { pattern: /打开任务|任务管理|任务模块|任务中心/, action: (s) => { const path = s.navigateTo('workspace', 'tasks'); return ['已打开任务管理模块', path]; } },
+  { pattern: /打开项目|项目管理|项目模块/, action: (s) => { const path = s.navigateTo('workspace', 'projects'); return ['已打开项目管理模块', path]; } },
+  { pattern: /打开成员|成员管理|成员列表/, action: (s) => { const path = s.navigateTo('workspace', 'members'); return ['已打开成员管理模块', path]; } },
+  { pattern: /打开知识|知识库|知识管理/, action: (s) => { const path = s.navigateTo('workspace', 'knowledge'); return ['已打开知识管理模块', path]; } },
+  { pattern: /打开甘特图|甘特图|项目甘特/, action: (s) => { const path = s.navigateTo('workspace', 'projects'); return ['已打开项目甘特图', path]; } },
+  { pattern: /切换行业|换个行业/, action: (s) => { const inds = INDUSTRIES; const next = inds[(inds.indexOf(s.industry) + 1) % inds.length]; s.setContext(next, getDepartments(next)[0]); return [`已切换到「${next} · ${getDepartments(next)[0]}」`]; } },
+  { pattern: /收起侧栏|隐藏侧栏/, action: (s) => { if (s.modSidebarOpen) s.toggleModSidebar(); return ['已收起侧栏']; } },
+  { pattern: /展开侧栏|显示侧栏/, action: (s) => { if (!s.modSidebarOpen) s.toggleModSidebar(); return ['已展开侧栏']; } },
 ];
 
-function tryParseUICommand(text: string): { executed: boolean; reply?: string } {
+function tryParseUICommand(text: string): { executed: boolean; reply?: string; navigateTo?: string } {
   for (const cmd of UI_COMMANDS) {
     if (cmd.pattern.test(text)) {
-      const reply = cmd.action(useAppStore.getState());
-      return { executed: true, reply };
+      const [reply, path] = cmd.action(useAppStore.getState());
+      return { executed: true, reply, navigateTo: path };
     }
   }
   return { executed: false };
@@ -132,6 +135,7 @@ export default function ContextPanel() {
   const dept = useAppStore((s) => s.dept);
   const setContext = useAppStore((s) => s.setContext);
   const toggleCtxPanel = useAppStore((s) => s.toggleCtxPanel);
+  const navigate = useNavigate();
 
   const [inputVal, setInputVal] = useState('');
   const [aiMessages, setAiMessages] = useState<AiMsg[]>([
@@ -141,6 +145,9 @@ export default function ContextPanel() {
   const [isThinking, setIsThinking] = useState(false);
   const [editingLayer, setEditingLayer] = useState<'vocab' | 'flow' | 'kpi' | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [cocreateMode, setCocreateMode] = useState(false);
+  const [cocreateIndustry, setCocreateIndustry] = useState('');
+  const [cocreateDept, setCocreateDept] = useState('');
 
   const indColor = useIndustryColor();
   const { cell, loading } = useMatrixCell();
@@ -158,11 +165,11 @@ export default function ContextPanel() {
       '- 银行、保险、证券等均映射为"金融行业"',
       '- 学校、培训等均映射为"教育行业"',
       '',
-      '## 可选行业和部门',
-      ...INDUSTRIES.map((ind) => {
-        const depts = getDepartments(ind);
-        return `- ${ind}: ${depts.join('、')}`;
-      }),
+       '## 可选行业和部门',
+       ...getAllIndustries().map((ind) => {
+         const depts = getDepartments(ind);
+         return `- ${ind}: ${depts.join('、')}`;
+       }),
       '',
       '## 行业别名映射（用户可能使用的非标准行业名）',
       '汽车/电气/电子/半导体/化工/食品/医药/机械/航空/钢铁/建筑/新能源 → 制造业',
@@ -170,10 +177,11 @@ export default function ContextPanel() {
       '银行/保险/证券/基金/信托 → 金融行业',
       '学校/大学/培训/在线教育 → 教育行业',
       '',
-      '## 回答格式（严格JSON）',
-      '返回一个JSON数组，每项包含 label(对用户的推荐描述)、industry(行业名,必须是上述4个之一)、dept(部门名,必须是该行业下的部门)、confidence(0-1置信度)',
-      '按置信度从高到低排列，最多返回3个。',
-      '示例: [{"label":"制造业·供应商质量部","industry":"制造业","dept":"供应商质量部","confidence":0.9}]',
+       '## 回答格式（严格JSON）',
+       '返回一个JSON数组，每项包含 label(对用户的推荐描述)、industry(行业名)、dept(部门名)、confidence(0-1置信度)、isNew(布尔值,行业不在上述列表中时为true)',
+       '按置信度从高到低排列，最多返回3个。',
+       '当用户的行业不在上述列表中时，industry可以为用户描述的实际行业名（如"医疗器械"），isNew设为true。',
+       '示例: [{"label":"医疗器械·质量部","industry":"医疗器械","dept":"质量部","confidence":0.9,"isNew":true}]',
       '',
       '只返回JSON数组，不要任何其它文字。',
     ].join('\n');
@@ -324,8 +332,15 @@ export default function ContextPanel() {
       }
     }
 
-    // Step 3: Ultimate fallback
+    // Step 3: Ultimate fallback — offer cocreate for unknown industries
     if (results.length === 0) {
+      // Try to extract industry/dept from user text for cocreate
+      const industryGuess = text.replace(/我是在|我负责|我做|我是|的.*$/g, '').trim().slice(0, 10);
+      if (industryGuess.length >= 2) {
+        results.push(
+          { label: `${industryGuess} · 业务部`, industry: industryGuess, dept: '业务部', confidence: 0.5, isNew: true },
+        );
+      }
       results.push(
         { label: 'IT业 · 产品部', industry: 'IT业', dept: '产品部', confidence: 0.4 },
         { label: '制造业 · 生产部', industry: '制造业', dept: '生产部', confidence: 0.3 },
@@ -342,6 +357,11 @@ export default function ContextPanel() {
   }
 
   function handleChipSelect(chip: ChipOption) {
+    if (chip.isNew) {
+      // AI共创流程：为新的行业+部门生成专属视图
+      handleCocreate(chip.industry, chip.dept);
+      return;
+    }
     setContext(chip.industry, chip.dept);
     setAiMessages((prev) => [
       ...prev,
@@ -360,6 +380,9 @@ export default function ContextPanel() {
     const cmdResult = tryParseUICommand(text);
     if (cmdResult.executed && cmdResult.reply) {
       setAiMessages((prev) => [...prev, { role: 'ai', text: cmdResult.reply! }]);
+      if (cmdResult.navigateTo) {
+        navigate(cmdResult.navigateTo);
+      }
       return;
     }
 
@@ -385,8 +408,41 @@ export default function ContextPanel() {
     setEditValue('');
   }
 
+  /** AI共创: generate a custom matrix cell for the new industry+dept */
+  const handleCocreate = useCallback(async (industry: string, dept: string) => {
+    if (!industry.trim() || !dept.trim()) return;
+    setIsThinking(true);
+    setCocreateMode(false);
+    setAiMessages((prev) => [
+      ...prev,
+      { role: 'user', text: `我是${industry}的${dept}，请为我定制业务视图` },
+      { role: 'ai', text: `正在为你生成「${industry} · ${dept}」的专属业务视图...` },
+    ]);
+
+    try {
+      const cell = await generateMatrixCellAI(industry, dept);
+      const color = getColorForIndustry(industry, IND_COLORS);
+      saveCustomCell({ industry, dept, cell, color, createdAt: new Date().toISOString() });
+
+      setContext(industry, dept);
+      setAiMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: `✅ 「${industry} · ${dept}」专属视图已生成！\n\n已为你定制：\n- ${cell.kpis.length}个行业KPI\n- ${cell.workflow.length}步业务流程\n- ${cell.agents.length}个专属AI Agent\n- ${cell.top3.length}条预警项\n\n界面已切换，你可以开始使用了。` },
+      ]);
+    } catch {
+      setAiMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: '生成失败，请重试。你也可以先选择相近的行业，后续再调整。' },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
+  }, [setContext]);
+
   return (
-    <div className="flex w-[380px] shrink-0 flex-col border-l border-border bg-surface z-40">
+    <>
+      <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={toggleCtxPanel} />
+      <div className="fixed inset-y-0 right-0 w-full md:w-[380px] md:relative md:inset-auto shrink-0 flex-col border-l border-border bg-surface z-50 md:z-40 flex">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
@@ -485,23 +541,60 @@ export default function ContextPanel() {
 
         {/* Chip options */}
         {chips.length > 0 && (
-          <div className="space-y-1.5 mb-2">
-            <div className="text-[9px] font-bold uppercase tracking-wider text-text-3">选择你的上下文</div>
-            {chips.map((chip) => (
-              <button
-                key={chip.label}
-                onClick={() => handleChipSelect(chip)}
-                className="flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-left transition-all hover:border-primary/50 hover:bg-primary/5"
-              >
-                <span className="rounded-md px-1.5 py-0.5 text-[9px] font-bold" style={{ backgroundColor: (IND_COLORS[chip.industry] ?? '#7b6cf0') + '18', color: IND_COLORS[chip.industry] ?? '#7b6cf0' }}>
-                  {Math.round(chip.confidence * 100)}%
-                </span>
-                <span className="text-xs font-medium text-text">{chip.label}</span>
-              </button>
-            ))}
-          </div>
+           <div className="space-y-1.5 mb-2">
+             <div className="text-[9px] font-bold uppercase tracking-wider text-text-3">选择你的上下文</div>
+             {chips.map((chip) => (
+               <button
+                 key={chip.label}
+                 onClick={() => handleChipSelect(chip)}
+                 className="flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-left transition-all hover:border-primary/50 hover:bg-primary/5"
+               >
+                 <span className="rounded-md px-1.5 py-0.5 text-[9px] font-bold" style={{ backgroundColor: (getIndustryColor(chip.industry)) + '18', color: getIndustryColor(chip.industry) }}>
+                   {Math.round(chip.confidence * 100)}%
+                 </span>
+                 <span className="text-xs font-medium text-text">{chip.label}</span>
+                 {chip.isNew && (
+                   <span className="ml-auto flex items-center gap-1 rounded-full bg-accent/10 px-1.5 py-0.5 text-[8px] font-bold text-accent">
+                     <Wand2 size={8} />AI共创
+                   </span>
+                 )}
+               </button>
+             ))}
+           </div>
         )}
       </div>
+
+      {/* AI Cocreate: Manual industry+dept input */}
+      {cocreateMode && (
+        <div className="border-t border-border px-4 py-3 bg-accent/5">
+          <div className="flex items-center gap-2 mb-2">
+            <Wand2 size={12} className="text-accent" />
+            <span className="text-[10px] font-bold text-accent">AI 共创新行业视图</span>
+          </div>
+          <input
+            type="text"
+            value={cocreateIndustry}
+            onChange={(e) => setCocreateIndustry(e.target.value)}
+            placeholder="输入行业名，如：医疗器械"
+            aria-label="行业名称"
+            className="w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-text outline-none placeholder:text-text-3 mb-2"
+          />
+          <input
+            type="text"
+            value={cocreateDept}
+            onChange={(e) => setCocreateDept(e.target.value)}
+            placeholder="输入部门名，如：质量管理部"
+            aria-label="部门名称"
+            className="w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs text-text outline-none placeholder:text-text-3 mb-2"
+          />
+          <div className="flex items-center gap-2">
+            <button onClick={() => handleCocreate(cocreateIndustry, cocreateDept)} disabled={!cocreateIndustry.trim() || !cocreateDept.trim() || isThinking} className="rounded-md bg-accent px-2.5 py-1 text-[10px] font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-40">
+              生成专属视图
+            </button>
+            <button onClick={() => setCocreateMode(false)} className="text-[10px] text-text-3 hover:text-text">取消</button>
+          </div>
+        </div>
+      )}
 
       {/* Quick Suggestions — expanded */}
       <div className="border-t border-border px-4 py-2">
@@ -512,6 +605,9 @@ export default function ContextPanel() {
               {s}
             </button>
           ))}
+          <button onClick={() => setCocreateMode(true)} className="flex items-center gap-1 rounded-full border border-accent/30 px-2 py-0.5 text-[10px] text-accent transition-all hover:border-accent/60 hover:bg-accent/10" disabled={isThinking}>
+            <Wand2 size={8} />共创新行业
+          </button>
         </div>
       </div>
 
@@ -534,5 +630,6 @@ export default function ContextPanel() {
         </div>
       </div>
     </div>
+    </>
   );
 }

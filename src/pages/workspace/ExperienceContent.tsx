@@ -2,18 +2,21 @@ import { useState, useCallback, useEffect } from 'react';
 import { useExperiences, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
-import { BookOpen, Sparkles, Tag, ThumbsUp, MessageSquare, Plus, Loader2 } from 'lucide-react';
+import { BookOpen, Sparkles, Tag, Plus, Lock, Loader2 } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
+import { hasFeature } from '@/lib/subscription';
+import type { ExperienceInput } from '@/contracts/dataContracts';
 
 export default function ExperienceContent() {
+  const isPro = hasFeature('advancedAnalytics' as never);
   const { cell, loading: cellLoading } = useMatrixCell();
   const indColor = useIndustryColor();
-  const { experiences, setExperiences, loading } = useExperiences();
+  const { experiences, addExperience, editExperience, removeExperience, loading } = useExperiences();
   const modal = useModal();
   const editModal = useModal();
   const [selectedExp, setSelectedExp] = useState<(typeof experiences)[number] | null>(null);
-  const [form, setForm] = useState({ title: '', summary: '', author: '', tags: '' });
+  const [form, setForm] = useState({ title: '', content: '', author: '', tags: '' });
   const [searchFilter, setSearchFilter] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const { toasts, success } = useToast();
@@ -27,24 +30,30 @@ export default function ExperienceContent() {
     try { localStorage.setItem(EXP_STORAGE, JSON.stringify(localExperiences)); } catch {}
   }, [localExperiences]);
 
+  // Migrate localStorage items to DB on first load
+  useEffect(() => {
+    if (loading || localExperiences.length === 0) return;
+    localExperiences.forEach((item) => {
+      addExperience(item as ExperienceInput);
+    });
+    setLocalExperiences([]);
+    try { localStorage.removeItem(EXP_STORAGE); } catch {}
+  }, [loading]);
+
   const handleOpen = useCallback(() => {
-    setForm({ title: '', summary: '', author: '', tags: '' });
+    setForm({ title: '', content: '', author: '', tags: '' });
     modal.openModal();
   }, [modal.openModal]);
 
   const handleSave = useCallback(() => {
     if (!form.title.trim()) return;
     const tags = form.tags.split(/[,，]/).map((t) => t.trim()).filter(Boolean);
-    const newItem = {
-      id: `exp-${Date.now()}`,
+    addExperience({
       title: form.title,
       tags,
-      author: form.author || '匿名',
-      likes: 0,
-      comments: 0,
-      summary: form.summary || '暂无摘要',
-    };
-    setLocalExperiences((prev) => [newItem, ...prev]);
+      author: form.author || undefined,
+      content: form.content || undefined,
+    } as ExperienceInput);
     modal.closeModal();
     success(`经验"${form.title}"已提炼`);
   }, [form, modal.closeModal]);
@@ -60,7 +69,7 @@ export default function ExperienceContent() {
   const allExperiences = [...localExperiences, ...experiences];
 
   const filteredExperiences = allExperiences.filter((e) => {
-    if (searchFilter && !e.title.includes(searchFilter) && !e.summary.includes(searchFilter) && !e.author.includes(searchFilter)) return false;
+    if (searchFilter && !e.title.includes(searchFilter) && !(e.content ?? '').includes(searchFilter) && !(e.author ?? '').includes(searchFilter)) return false;
     if (tagFilter && !e.tags.some((t) => t.includes(tagFilter))) return false;
     return true;
   });
@@ -71,13 +80,13 @@ export default function ExperienceContent() {
         <BookOpen size={18} style={{ color: indColor }} />
         <span className="text-sm font-bold">经验库</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>知识沉淀</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleOpen}>
-          <Plus size={12} />
+        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; handleOpen(); }}>
+          {isPro ? <Plus size={12} /> : <Lock size={12} />}
           提炼经验
         </button>
       </div>
 
-      <div className="rounded-xl border border-border p-3 relative overflow-hidden cursor-pointer hover:border-primary/40 transition-colors" style={{ background: `linear-gradient(135deg, ${indColor}06 0%, transparent 100%)` }} onClick={handleOpen}>
+      <div className="rounded-xl border border-border p-3 relative overflow-hidden cursor-pointer hover:border-primary/40 transition-colors" style={{ background: `linear-gradient(135deg, ${indColor}06 0%, transparent 100%)` }} onClick={() => { if (!isPro) return; handleOpen(); }}>
         <div className="flex items-center gap-2 text-xs">
           <Sparkles size={14} style={{ color: indColor }} />
           <span className="font-semibold text-text">经验库快捷入口</span>
@@ -107,18 +116,14 @@ export default function ExperienceContent() {
           <div key={e.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedExp(e); editModal.openModal(); }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-text">{e.title}</span>
-              <span className="text-[10px] text-text-3">{e.author}</span>
+              {e.author && <span className="text-[10px] text-text-3">{e.author}</span>}
             </div>
-            <p className="text-[11px] text-text-2 leading-relaxed mb-3">{e.summary}</p>
+            <p className="text-[11px] text-text-2 leading-relaxed mb-3">{e.content ?? '暂无内容'}</p>
             <div className="flex items-center justify-between">
               <div className="flex flex-wrap gap-1">
                 {e.tags.map((t) => (
                   <span key={t} className="rounded bg-primary/5 px-1.5 py-0.5 text-[9px] text-primary-2">{t}</span>
                 ))}
-              </div>
-              <div className="flex items-center gap-3 text-[10px] text-text-3">
-                <span className="flex items-center gap-1"><ThumbsUp size={10} />{e.likes}</span>
-                <span className="flex items-center gap-1"><MessageSquare size={10} />{e.comments}</span>
               </div>
             </div>
           </div>
@@ -145,8 +150,8 @@ export default function ExperienceContent() {
         <ModalField label="经验标题">
           <input className={inputCls} placeholder="输入经验标题" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="摘要">
-          <textarea className={inputCls} rows={3} placeholder="输入经验摘要" value={form.summary} onChange={(e) => setForm((p) => ({ ...p, summary: e.target.value }))} />
+        <ModalField label="内容">
+          <textarea className={inputCls} rows={3} placeholder="输入经验内容" value={form.content} onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))} />
         </ModalField>
         <ModalField label="作者">
           <input className={inputCls} placeholder="输入作者" value={form.author} onChange={(e) => setForm((p) => ({ ...p, author: e.target.value }))} />
@@ -162,19 +167,21 @@ export default function ExperienceContent() {
         title="编辑经验"
         fields={[
           { key: 'title', label: '标题', type: 'text' },
-          { key: 'summary', label: '内容', type: 'textarea' },
+          { key: 'content', label: '内容', type: 'textarea' },
           { key: 'author', label: '作者', type: 'text' },
           { key: 'tags', label: '标签', type: 'text' },
         ]}
         data={selectedExp ? { ...selectedExp, tags: selectedExp.tags.join(', ') } : null}
+        commentTarget={selectedExp?.id ? { type: 'experience', id: String(selectedExp.id) } : null}
         onSave={(updated) => {
           const id = updated.id as string;
           const tags = typeof updated.tags === 'string' ? (updated.tags as string).split(/[,，]/).map((t: string) => t.trim()).filter(Boolean) : updated.tags;
           const processed = { ...updated, tags };
           if (id.startsWith('exp-')) {
-            setLocalExperiences(prev => prev.map(e => e.id === id ? { ...e, ...processed } as (typeof experiences)[number] : e));
+            addExperience(processed as ExperienceInput);
+            setLocalExperiences(prev => prev.filter(e => e.id !== id));
           } else {
-            setExperiences(prev => prev.map(e => e.id === id ? { ...e, ...processed } as (typeof experiences)[number] : e));
+            editExperience(id, processed as Record<string, unknown>);
           }
         }}
         onDelete={() => {
@@ -182,7 +189,7 @@ export default function ExperienceContent() {
             if (selectedExp.id.startsWith('exp-')) {
               setLocalExperiences(prev => prev.filter(e => e.id !== selectedExp.id));
             } else {
-              setExperiences(prev => prev.filter(e => e.id !== selectedExp.id));
+              removeExperience(selectedExp.id);
             }
           }
         }}

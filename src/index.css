@@ -2,6 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Design Token System (经验教训L6转化) ===== */
+:root {
+  /* Brand */
+  --brand-50: #eef2ff;
+  --brand-100: #dbe4ff;
+  --brand-200: #bac8ff;
+  --brand-300: #91a7ff;
+  --brand-400: #748ffc;
+  --brand-500: #5c7cfa;
+  --brand-600: #4c6ef5;
+  --brand-700: #4263eb;
+  --brand-800: #3b5bdb;
+  --brand-900: #364fc7;
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  /* Typography */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  /* Transition */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* Dark Theme Semantic Tokens */
+:root {
+  --bg-primary: var(--brand-600);
+  --bg-primary-hover: var(--brand-500);
+  --bg-primary-foreground: #ffffff;
+  --bg-surface: #0a0c12;
+  --bg-surface-elevated: #131620;
+  --bg-surface-hover: #1a1e2e;
+  --text-primary: #eaecf4;
+  --text-secondary: #8b92a5;
+  --text-tertiary: #7580a0;
+  --border-default: #272d42;
+  --border-focus: var(--brand-500);
+  --status-success: #40c057;
+  --status-warning: #fab005;
+  --status-danger: #fa5252;
+  --status-info: #339af0;
+}
+
+/* Light Theme Override */
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    --bg-surface: #ffffff;
+    --bg-surface-elevated: #f8f9fa;
+    --bg-surface-hover: #f1f3f5;
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --text-tertiary: #6c757d;
+    --border-default: #dee2e6;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -9,8 +82,8 @@
 }
 
 body {
-  background: #0a0c12;
-  color: #eaecf4;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-family: -apple-system, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
@@ -71,5 +144,14 @@ body {
 @media (max-width: 768px) {
   .mobile-p-2 {
     padding: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

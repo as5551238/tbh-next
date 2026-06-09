@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useMatrixCell, useApprovals } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Clock, AlertTriangle, ChevronRight, User, Loader2 } from 'lucide-react';
-import { useModal } from '@/components/Modal';
+import { CheckCircle2, Clock, AlertTriangle, ChevronRight, User, Loader2, X, Plus } from 'lucide-react';
+import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
-import type { ApprovalRow } from '@/lib/dataLayer';
+import type { ApprovalInput } from '@/contracts/dataContracts';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 
 
@@ -17,27 +17,50 @@ const STATUS_STYLES: Record<string, string> = { pending: 'bg-warn/10 text-warn',
 const STATUS_LABELS: Record<string, string> = { pending: '待审批', approved: '已通过', rejected: '已驳回' };
 
 const APPROVAL_FIELDS: FieldDef[] = [
-  { key: 'title', label: '标题', type: 'text' },
-  { key: 'status', label: '状态', type: 'select', options: [
+  { key: 'title', label: '标题', type: 'text', editable: true },
+  { key: 'status', label: '状态', type: 'select', editable: true, options: [
     { value: 'pending', label: '待审批' },
     { value: 'approved', label: '已通过' },
     { value: 'rejected', label: '已驳回' },
   ]},
-  { key: 'type', label: '类型', type: 'text' },
-  { key: 'amount', label: '金额', type: 'text' },
+  { key: 'type', label: '类型', type: 'text', editable: true },
+  { key: 'description', label: '描述', type: 'text', editable: true },
+  { key: 'urgency', label: '紧急程度', type: 'select', editable: true, options: [
+    { value: 'urgent', label: '紧急' },
+    { value: 'normal', label: '普通' },
+    { value: 'low', label: '低' },
+  ]},
 ];
 
 export default function ApprovalsView() {
   const { cell, loading: cellLoading } = useMatrixCell();
-  const { approvals, editApproval, loading } = useApprovals();
+  const { approvals, addApproval, editApproval, removeApproval, loading } = useApprovals();
   const { triggerFeedback } = useMLOOFeedback();
   const industry = useAppStore((s) => s.industry);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const detailModal = useModal();
+  const createModal = useModal();
   const [selected, setSelected] = useState<ApprovalRow | null>(null);
+  const [form, setForm] = useState({ title: '', type: 'expense', description: '', urgency: 'normal' });
 
   const filtered = filter === 'all' ? approvals : approvals.filter((a) => a.status === filter);
   const pendingCount = approvals.filter((a) => a.status === 'pending').length;
+
+  async function handleCreate() {
+    if (!form.title.trim()) return;
+    await addApproval({
+      title: form.title.trim(),
+      type: form.type,
+      description: form.description || undefined,
+      urgency: form.urgency,
+      status: 'pending',
+      applicant_id: '我',
+      created_at: new Date().toISOString(),
+    } as ApprovalInput);
+    setForm({ title: '', type: 'expense', description: '', urgency: 'normal' });
+    setForm({ title: '', type: 'expense', amount: '', urgency: 'normal' });
+    createModal.closeModal();
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -48,6 +71,7 @@ export default function ApprovalsView() {
           <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">{pendingCount} 待审批</span>
         )}
         <div className="ml-auto flex gap-1">
+          <button onClick={createModal.openModal} className="rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 提交审批</button>
           {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
             <button
               key={f}
@@ -99,16 +123,16 @@ export default function ApprovalsView() {
               </span>
             </div>
             <div className="flex items-center gap-4 text-[10px] text-text-3">
-              <span className="flex items-center gap-1"><User size={10} />{item.requester} · {item.department}</span>
+              <span className="flex items-center gap-1"><User size={10} />{item.applicant_id}</span>
               <span>{TYPE_LABELS[item.type]}</span>
-              {item.amount && <span>金额: {item.amount}</span>}
+              {item.description && <span>{item.description}</span>}
                 <span className="flex items-center gap-1"><Clock size={10} />{item.created_at}</span>
             </div>
             {item.status === 'pending' && (
               <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={(e) => { e.stopPropagation(); editApproval(item.id, { status: 'approved' }); triggerFeedback({ type: 'approval', action: 'approved', entity: item }); }} className="rounded-lg bg-success/10 px-3 py-1.5 text-[10px] font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
                 <button onClick={(e) => { e.stopPropagation(); editApproval(item.id, { status: 'rejected' }); triggerFeedback({ type: 'approval', action: 'rejected', entity: item }); }} className="rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
-                <button className="rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] font-semibold text-text-3 hover:text-text transition-colors">
+                <button onClick={(e) => { e.stopPropagation(); setSelected(item); detailModal.openModal(); }} className="rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] font-semibold text-text-3 hover:text-text transition-colors">
                   详情 <ChevronRight size={10} className="inline" />
                 </button>
               </div>
@@ -118,7 +142,7 @@ export default function ApprovalsView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="审批详情" fields={APPROVAL_FIELDS} data={selected} onSave={(updated) => { if (selected) { editApproval(selected.id, updated); } }} extraFooter={
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="审批详情" fields={APPROVAL_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'approval', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editApproval(selected.id, updated); } }} onDelete={() => { if (selected) { removeApproval(selected.id); detailModal.closeModal(); } }} extraFooter={
         selected?.status === 'pending' ? (
           <>
             <button type="button" onClick={() => { if (selected) { editApproval(selected.id, { status: 'approved' }); detailModal.closeModal(); triggerFeedback({ type: 'approval', action: 'approved', entity: selected }); } }} className="rounded-lg bg-success/10 px-4 py-2 text-xs font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
@@ -126,6 +150,52 @@ export default function ApprovalsView() {
           </>
         ) : undefined
       } />
+
+      {/* Create Approval Modal */}
+      {createModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={createModal.closeModal}>
+          <div className="w-96 rounded-xl border border-border bg-surface-2 p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold">提交审批</span>
+              <button onClick={createModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-text-3 mb-1 block">审批标题 *</label>
+                <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="输入审批标题" className={inputCls + ' w-full'} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-text-3 mb-1 block">类型</label>
+                  <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} className={inputCls + ' w-full'}>
+                    <option value="expense">报销</option>
+                    <option value="leave">请假</option>
+                    <option value="purchase">采购</option>
+                    <option value="access">权限</option>
+                    <option value="project">项目</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-3 mb-1 block">紧急程度</label>
+                  <select value={form.urgency} onChange={(e) => setForm((f) => ({ ...f, urgency: e.target.value }))} className={inputCls + ' w-full'}>
+                    <option value="normal">普通</option>
+                    <option value="urgent">紧急</option>
+                    <option value="low">低</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-text-3 mb-1 block">描述</label>
+                <input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="输入描述（如有）" className={inputCls + ' w-full'} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <button onClick={handleCreate} disabled={!form.title.trim()} className={`${btnPrimary} disabled:opacity-40`}>提交</button>
+              <button onClick={createModal.closeModal} className={btnSecondary}>取消</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

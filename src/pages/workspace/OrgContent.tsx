@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useOrgInfo, useMembers } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
-import { getDepartments } from '@/matrix/data';
+import { getDepartments, getAllIndustries, getIndustryColor } from '@/matrix/data';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Building2, Globe, Users, Calendar, Settings, Loader2, Plus, Pencil, UserCog } from 'lucide-react';
+import { Building2, Globe, Users, Calendar, Settings, Loader2, Plus, Pencil, UserCog, Trash2 } from 'lucide-react';
+import { useToast, ToastOverlay } from '@/hooks/useToast';
+import { generateMatrixCellAI, saveCustomCell, getColorForIndustry } from '@/lib/matrixGenerator';
 
 export default function OrgContent() {
-  const { orgInfo, setOrgInfo, loading } = useOrgInfo();
+  const { orgInfo, save, loading } = useOrgInfo();
   const { members, editMember } = useMembers();
   const setContext = useAppStore((s) => s.setContext);
   const industry = useAppStore((s) => s.industry);
+  const allIndustries = getAllIndustries();
   const deptOptions = getDepartments(industry);
   const editOrgModal = useModal();
   const addDeptModal = useModal();
@@ -19,6 +22,7 @@ export default function OrgContent() {
   const [deptForm, setDeptForm] = useState({ name: '', head: '', color: '#7b6cf0' });
   const [editingDept, setEditingDept] = useState<string | null>(null);
   const [personForm, setPersonForm] = useState({ id: '', name: '', department: '', role: 'member', email: '', phone: '' });
+  const { toasts, success, error: toastError } = useToast();
 
   if (loading || !orgInfo) {
     return <div className="flex flex-1 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary-2" /></div>;
@@ -33,15 +37,26 @@ export default function OrgContent() {
 
   function handleEditOrg() {
     if (orgForm.name.trim()) {
-      setContext(orgForm.industry || 'IT业', '产品部');
-      setOrgInfo({ ...orgInfo, name: orgForm.name, industry: orgForm.industry, size: orgForm.size });
+      const depts = getDepartments(orgForm.industry || 'IT业');
+      setContext(orgForm.industry || 'IT业', depts[0] || '产品部');
+      try {
+        save({ name: orgForm.name, industry: orgForm.industry, size: orgForm.size });
+        success('组织信息已保存');
+      } catch {
+        toastError('保存失败，请重试');
+      }
     }
     editOrgModal.closeModal();
   }
 
   function handleAddDept() {
     if (!deptForm.name.trim()) return;
-    setOrgInfo({ ...orgInfo, departments: [...(orgInfo.departments ?? []), { name: deptForm.name, head: deptForm.head, color: deptForm.color, members: 0, goals: 0 }] });
+    try {
+      save({ departments: [...(orgInfo.departments ?? []), { name: deptForm.name, head: deptForm.head, color: deptForm.color, members: 0, goals: 0 }] });
+      success(`部门"${deptForm.name}"已创建`);
+    } catch {
+      toastError('创建部门失败，请重试');
+    }
     addDeptModal.closeModal();
     setDeptForm({ name: '', head: '', color: '#7b6cf0' });
   }
@@ -53,9 +68,27 @@ export default function OrgContent() {
   }
 
   function handleEditDept() {
-    setOrgInfo({ ...orgInfo, departments: (orgInfo.departments ?? []).map((d) => d.name === editingDept ? { ...d, name: deptForm.name, head: deptForm.head, color: deptForm.color } : d) });
+    try {
+      save({ departments: (orgInfo.departments ?? []).map((d) => d.name === editingDept ? { ...d, name: deptForm.name, head: deptForm.head, color: deptForm.color } : d) });
+      success('部门信息已更新');
+    } catch {
+      toastError('保存部门失败，请重试');
+    }
     editDeptModal.closeModal();
     setEditingDept(null);
+  }
+
+  function handleDeleteDept() {
+    if (!editingDept) return;
+    try {
+      save({ departments: (orgInfo.departments ?? []).filter((d) => d.name !== editingDept) });
+      success(`部门"${editingDept}"已删除`);
+    } catch {
+      toastError('删除部门失败，请重试');
+    }
+    editDeptModal.closeModal();
+    setEditingDept(null);
+    setDeptForm({ name: '', head: '', color: '#7b6cf0' });
   }
 
   function openPersonSettings(m: typeof members[0]) {
@@ -65,6 +98,7 @@ export default function OrgContent() {
 
   function handleSavePerson() {
     editMember(personForm.id, { name: personForm.name, department: personForm.department, role: personForm.role, email: personForm.email, phone: personForm.phone });
+    success('个人设置已保存');
     personModal.closeModal();
   }
 
@@ -72,6 +106,7 @@ export default function OrgContent() {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <ToastOverlay toasts={toasts} />
       <div className="flex items-center gap-2">
         <Building2 size={18} className="text-primary-2" />
         <span className="text-sm font-bold">组织设置</span>
@@ -179,12 +214,13 @@ export default function OrgContent() {
           <input type="text" value={orgForm.name} onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })} className={inputCls} />
         </ModalField>
         <ModalField label="行业">
-          <select value={orgForm.industry} onChange={(e) => setOrgForm({ ...orgForm, industry: e.target.value })} className={selectCls}>
-            <option value="IT业">IT业</option>
-            <option value="制造业">制造业</option>
-            <option value="教育行业">教育行业</option>
-            <option value="金融行业">金融行业</option>
-          </select>
+           <select value={orgForm.industry} onChange={(e) => {
+             const newInd = e.target.value;
+             const depts = getDepartments(newInd);
+             setOrgForm({ ...orgForm, industry: newInd });
+           }} className={selectCls}>
+             {allIndustries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
+           </select>
         </ModalField>
         <ModalField label="团队规模">
           <input type="text" value={orgForm.size} onChange={(e) => setOrgForm({ ...orgForm, size: e.target.value })} className={inputCls} />
@@ -204,7 +240,7 @@ export default function OrgContent() {
 
       {/* Edit Department Modal */}
       <Modal open={editDeptModal.open} onClose={editDeptModal.closeModal} title={`编辑部门: ${editingDept ?? ''}`}
-        footer={<><button onClick={editDeptModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleEditDept} className={btnPrimary}>保存</button></>}>
+        footer={<><button onClick={handleDeleteDept} className="flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto"><Trash2 size={10} />删除部门</button><div className="flex-1" /><button onClick={editDeptModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleEditDept} className={btnPrimary}>保存</button></>}>
         <ModalField label="部门名称">
           <input type="text" value={deptForm.name} onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })} className={inputCls} />
         </ModalField>

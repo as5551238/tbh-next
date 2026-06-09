@@ -1,18 +1,22 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, type LazyExoticComponent, type CSSProperties } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { useIndustryColor, useDepartments } from '@/hooks/useMatrix';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useAuth } from '@/lib/auth';
 import GlobalSidebar from '@/components/GlobalSidebar';
 import ModuleSidebar from '@/components/ModuleSidebar';
 import TopBar from '@/components/TopBar';
 import ContextPanel from '@/components/ContextPanel';
 import PageErrorBoundary from '@/components/PageErrorBoundary';
+import OnboardingOverlay from '@/components/OnboardingOverlay';
+import OnboardingFlow from '@/components/OnboardingFlow';
 import { cn } from '@/lib/utils';
+import { retryLazy } from '@/lib/retryLazy';
 
-const Workspace = lazy(() => import('@/pages/Workspace'));
-const Collab = lazy(() => import('@/pages/Collab'));
-const PersonalAI = lazy(() => import('@/pages/PersonalAI'));
+const Workspace = lazy(() => retryLazy(() => import('@/pages/Workspace')));
+const Collab = lazy(() => retryLazy(() => import('@/pages/Collab')));
+const PersonalAI = lazy(() => retryLazy(() => import('@/pages/PersonalAI')));
 
 function PageLoader() {
   return (
@@ -25,7 +29,7 @@ function PageLoader() {
   );
 }
 
-const PAGE_MAP: Record<string, React.LazyExoticComponent<() => JSX.Element>> = {
+const PAGE_MAP: Record<string, LazyExoticComponent<() => JSX.Element>> = {
   workspace: Workspace,
   collab: Collab,
   ai: PersonalAI,
@@ -34,18 +38,20 @@ const PAGE_MAP: Record<string, React.LazyExoticComponent<() => JSX.Element>> = {
 /** Sync URL → zustand store (interface + module from path) */
 function RouteSync() {
   const location = useLocation();
-  const setInterface = useAppStore((s) => s.setInterface);
-  const setActiveModule = useAppStore((s) => s.setActiveModule);
 
   useEffect(() => {
     const segments = location.pathname.split('/').filter(Boolean);
     if (segments[0] && ['workspace', 'collab', 'ai'].includes(segments[0])) {
-      setInterface(segments[0]);
+      // Use navigateTo for L2 protected entry + L3 invariant consistency
+      const store = useAppStore.getState();
+      const iface = segments[0];
+      const mod = segments[1];
+      // Only sync if different from current state (avoid infinite loop)
+      if (store.interface !== iface || (mod && store.activeModule !== mod)) {
+        store.navigateTo(iface, mod);
+      }
     }
-    if (segments[1]) {
-      setActiveModule(segments[1]);
-    }
-  }, [location.pathname, setInterface, setActiveModule]);
+  }, [location.pathname]);
 
   return null;
 }
@@ -62,8 +68,7 @@ export function useNavigateModule() {
 /** Mobile bottom tab bar */
 function MobileTabBar() {
   const iface = useAppStore((s) => s.interface);
-  const setInterface = useAppStore((s) => s.setInterface);
-  const setActiveModule = useAppStore((s) => s.setActiveModule);
+  const navigateTo = useAppStore((s) => s.navigateTo);
   const setMobileDrawerOpen = useAppStore((s) => s.setMobileDrawerOpen);
   const navigate = useNavigate();
 
@@ -78,9 +83,7 @@ function MobileTabBar() {
     if (id === 'menu') {
       setMobileDrawerOpen(true);
     } else {
-      setInterface(id);
-      setActiveModule('overview');
-      navigate(`/${id}/overview`);
+      navigate(navigateTo(id));
     }
   }
 
@@ -130,13 +133,61 @@ function MobileDrawer() {
   );
 }
 
+/** Global keyboard shortcuts hook */
+function useGlobalShortcuts() {
+  const navigateTo = useAppStore((s) => s.navigateTo);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Ignore when typing in input/textarea/select
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      // Ctrl+N: New task (navigate to workspace tasks)
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        navigate(navigateTo('workspace', 'tasks'));
+      }
+      // Ctrl+G: Quick navigation (navigate to workspace overview)
+      if (e.ctrlKey && e.key === 'g') {
+        e.preventDefault();
+        navigate(navigateTo('workspace', 'overview'));
+      }
+      // Ctrl+K: Search / command palette (navigate to AI chat)
+      if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        navigate(navigateTo('ai'));
+      }
+      // Ctrl+Shift+N: New goal
+      if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+        e.preventDefault();
+        navigate(navigateTo('workspace', 'goals'));
+      }
+      // Ctrl+Shift+P: Quick settings (navigate to AI subscription)
+      if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        navigate(navigateTo('ai', 'subscription'));
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [navigateTo, navigate]);
+}
+
 export default function App() {
   const iface = useAppStore((s) => s.interface);
   const ctxPanelOpen = useAppStore((s) => s.ctxPanelOpen);
   const indColor = useIndustryColor();
   const isMobile = useIsMobile();
 
+  // Initialize auth state (syncs user to appStore.authUser)
+  useAuth();
+
   const Page = PAGE_MAP[iface] ?? Workspace;
+
+  // Global keyboard shortcuts
+  useGlobalShortcuts();
 
   // Auto-collapse module sidebar on mobile
   useEffect(() => {
@@ -147,12 +198,12 @@ export default function App() {
 
   if (isMobile) {
     return (
-      <div className="flex h-screen flex-col" style={{ '--ind-color': indColor } as React.CSSProperties}>
+      <div className="flex h-screen flex-col" style={{ '--ind-color': indColor } as CSSProperties}>
         <RouteSync />
         <MobileDrawer />
         <TopBar />
         <div className="flex-1 overflow-hidden">
-          <PageErrorBoundary>
+          <PageErrorBoundary key={iface}>
             <Suspense fallback={<PageLoader />}>
               <Page />
             </Suspense>
@@ -165,14 +216,14 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen" style={{ '--ind-color': indColor } as React.CSSProperties}>
+    <div className="flex h-screen" style={{ '--ind-color': indColor } as CSSProperties}>
       <RouteSync />
       <GlobalSidebar />
       <ModuleSidebar />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <TopBar />
         <div className="flex-1 overflow-hidden">
-          <PageErrorBoundary>
+          <PageErrorBoundary key={iface}>
             <Suspense fallback={<PageLoader />}>
               <Page />
             </Suspense>
@@ -180,6 +231,8 @@ export default function App() {
         </div>
       </div>
       {ctxPanelOpen && <ContextPanel />}
+      <OnboardingOverlay />
+      <OnboardingFlow />
     </div>
   );
 }

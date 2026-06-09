@@ -1,47 +1,51 @@
+import { useGateCheck } from '@/hooks/useGateCheck';
+import PaywallModal from '@/components/PaywallModal';
+import { hasFeature } from '@/lib/subscription'; // gate: Pro feature check
 import { useState, useCallback } from 'react';
 import { useReports, useGoals, useTasks, useRisks } from '@/hooks/useMatrix';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
+import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { BarChart3, Download, Loader2, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
+import type { ReportInput, ReportUpdate } from '@/contracts/dataContracts';
 
 const TYPE_STYLES: Record<string, string> = { weekly: 'bg-primary/10 text-primary-2', monthly: 'bg-accent/10 text-accent', custom: 'bg-success/10 text-success' };
 
 export default function ReportsContent() {
-  const { reports, setReports, loading } = useReports();
+  const { showPaywall: rpShow, paywallReason: rpReason, paywallFeature: rpFeat, closePaywall: rpClose, requireFeature: rpRequire } = useGateCheck();
+  const { reports, addReport, editReport, removeReport, loading } = useReports();
   const { goals } = useGoals();
   const { tasks } = useTasks();
   const { risks } = useRisks();
   const { user } = useAuth();
+  const { toasts, error } = useToast();
   const genModal = useModal();
   const editModal = useModal();
   const [selectedReport, setSelectedReport] = useState<(typeof reports)[number] | null>(null);
-  const [form, setForm] = useState({ name: '', type: 'weekly' });
+  const [form, setForm] = useState({ title: '', type: 'weekly' });
 
   const handleOpenGen = useCallback(() => {
-    setForm({ name: '', type: 'weekly' });
+    setForm({ title: '', type: 'weekly' });
     genModal.openModal();
   }, [genModal.openModal]);
 
   const handleGenReport = useCallback(() => {
-    if (!form.name.trim()) return;
-    const newReport = {
-      id: `rpt-${Date.now()}`,
-      name: form.name.trim(),
+    if (!form.title.trim()) return;
+    addReport({
+      title: form.title.trim(),
       type: form.type,
       generated_at: new Date().toLocaleDateString('zh-CN'),
-      generated_by: user?.name ?? '当前用户',
-      status: 'generating' as const,
-      size: '0 KB',
-    };
-    setReports((prev) => [newReport, ...prev]);
+      status: 'generating',
+    } as ReportInput).then((row) => {
+      const id = row.id;
+      setTimeout(() => {
+        editReport(id, { status: 'ready' } as ReportUpdate);
+      }, 2000);
+    }).catch((err) => { console.error('[reports]', err); error('报表创建失败，请重试'); });
     genModal.closeModal();
-    // Simulate generation completing after 2s
-    setTimeout(() => {
-      setReports((prev) => prev.map((r) => r.id === newReport.id ? { ...r, status: 'ready' as const, size: '1.2 MB' } : r));
-    }, 2000);
-  }, [form, genModal.closeModal]);
+  }, [form, genModal.closeModal, addReport, editReport]);
 
   const handleExport = useCallback((report: typeof reports[number]) => {
     const now = new Date();
@@ -53,11 +57,10 @@ export default function ReportsContent() {
     const riskCount = risks.length;
     const deviationCount = goals.filter(g => g.progress < 50 && g.progress > 0).length;
     const lines = [
-      `# ${report.name}`,
+      `# ${report.title}`,
       '',
       `- 类型: ${report.type === 'weekly' ? '周报' : report.type === 'monthly' ? '月报' : '自定义'}`,
       `- 生成时间: ${report.generated_at}`,
-      `- 生成者: ${report.generated_by}`,
       `- 状态: ${report.status === 'ready' ? '已完成' : '生成中'}`,
       '',
       '---',
@@ -74,7 +77,7 @@ export default function ReportsContent() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${report.name}.md`;
+    a.download = `${report.title}.md`;
     a.click();
     URL.revokeObjectURL(url);
   }, [goals, tasks, risks]);
@@ -89,10 +92,11 @@ export default function ReportsContent() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
+      <ToastOverlay toasts={toasts} />
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <BarChart3 size={16} className="text-primary-2" />
         <span className="text-sm font-bold">报表中心</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:opacity-80" onClick={handleOpenGen}>
+        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:opacity-80" onClick={() => { if (!rpRequire('customReports', '自定义报表需要专业版或企业版')) return; handleOpenGen(); }}>
           <Plus size={12} />生成报表
         </button>
       </div>
@@ -108,15 +112,16 @@ export default function ReportsContent() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-semibold text-text">{report.name}</span>
+                  <span className="text-xs font-semibold text-text">{report.title}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold', TYPE_STYLES[report.type])}>
                     {report.type === 'weekly' ? '周报' : report.type === 'monthly' ? '月报' : '自定义'}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] text-text-3">
-                  <span>{report.generated_by}</span>
                   <span>{report.generated_at}</span>
-                  <span>{report.size}</span>
+                  <span className={cn('rounded-full px-1.5 py-0.5 text-[8px]', report.status === 'ready' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
+                    {report.status === 'ready' ? '已完成' : '生成中'}
+                  </span>
                 </div>
               </div>
               {report.status === 'ready' && (
@@ -136,11 +141,11 @@ export default function ReportsContent() {
         footer={
           <div className="flex gap-2">
             <button className={btnSecondary} onClick={genModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleGenReport} disabled={!form.name.trim()}>生成</button>
+            <button className={btnPrimary} onClick={handleGenReport} disabled={!form.title.trim()}>生成</button>
           </div>
         }>
         <ModalField label="报表名称">
-          <input className={inputCls} placeholder="输入报表名称" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+          <input className={inputCls} placeholder="输入报表名称" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
         <ModalField label="报表类型">
           <select className={inputCls} value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
@@ -156,18 +161,23 @@ export default function ReportsContent() {
         onClose={editModal.closeModal}
         title="报表详情"
         fields={[
-          { key: 'name', label: '标题', type: 'text' },
+          { key: 'title', label: '标题', type: 'text' },
           { key: 'type', label: '类型', type: 'select', options: [
             { value: 'weekly', label: '周报' }, { value: 'monthly', label: '月报' }, { value: 'quarterly', label: '季报' }, { value: 'annual', label: '年报' },
           ]},
           { key: 'generated_at', label: '周期', type: 'text' },
         ]}
         data={selectedReport as Record<string, unknown> | null}
+        commentTarget={selectedReport?.id ? { type: 'report', id: String(selectedReport.id) } : null}
         onSave={(updated) => {
           const id = updated.id as string;
-          setReports(prev => prev.map(r => r.id === id ? { ...r, ...updated } as (typeof reports)[number] : r));
+          editReport(id, updated as Record<string, unknown>);
+        }}
+        onDelete={() => {
+          if (selectedReport) removeReport(selectedReport.id);
         }}
       />
+      <PaywallModal open={rpShow} onClose={rpClose} reason={rpReason} feature={rpFeat} />
     </div>
   );
 }

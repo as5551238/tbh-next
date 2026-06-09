@@ -9,7 +9,7 @@ const STATUS_LABEL: Record<string, string> = { running: '运行中', idle: '空�
 
 export default function AgentListView() {
   const indColor = useIndustryColor();
-  const { agents, setAgents, loading } = useAgentDetails();
+  const { agents, setAgents, loading, addAgent, editAgent } = useAgentDetails();
   const registerModal = useModal();
   const [formName, setFormName] = useState('');
   const [formModel, setFormModel] = useState('gpt-4o');
@@ -21,31 +21,32 @@ export default function AgentListView() {
     setTimeout(() => setToast(''), 2500);
   }
 
-  function toggleAgent(id: string) {
-    setAgents((prev) => prev.map((a) => a.id === id ? { ...a, enabled: !a.enabled } : a));
+  async function toggleAgent(id: string) {
     const agent = agents.find((a) => a.id === id);
-    if (agent) showToast(agent.enabled ? `${agent.name} 已禁用` : `${agent.name} 已启用`);
+    if (!agent) return;
+    const nextEnabled = !agent.enabled;
+    setAgents((prev) => prev.map((a) => a.id === id ? { ...a, enabled: nextEnabled } : a));
+    await editAgent(id, { enabled: nextEnabled });
+    showToast(nextEnabled ? `${agent.name} 已启用` : `${agent.name} 已禁用`);
   }
 
-  function handleRegister() {
+  async function handleRegister() {
     if (!formName.trim()) return;
-    const newAgent = {
-      id: `agent-${Date.now()}`,
+    const row = await addAgent({
       name: formName.trim(),
       model: formModel,
-      desc: formDesc.trim() || '自定义Agent',
-      status: 'idle' as const,
+      description: formDesc.trim() || '自定义Agent',
+      status: 'idle',
       enabled: true,
       tasks_completed: 0,
       uptime: '0%',
       capabilities: ['自定义'],
-    };
-    setAgents((prev) => [...prev, newAgent]);
+    });
     setFormName('');
     setFormModel('gpt-4o');
     setFormDesc('');
     registerModal.closeModal();
-    showToast(`Agent"${newAgent.name}"已注册`);
+    showToast(`Agent"${row.name}"已注册`);
   }
 
   const runningCount = agents.filter((a) => a.enabled && a.status === 'running').length;
@@ -106,7 +107,7 @@ export default function AgentListView() {
                   )}>{STATUS_LABEL[agent.status]}</span>
                   <span className="text-[9px] text-text-3">{agent.model}</span>
                 </div>
-                <div className="text-[11px] text-text-3 mt-0.5">{agent.desc}</div>
+                <div className="text-[11px] text-text-3 mt-0.5">{agent.description}</div>
               </div>
               <button onClick={() => toggleAgent(agent.id)} className="shrink-0">
                 {agent.enabled ? <ToggleRight size={28} className="text-primary-2" /> : <ToggleLeft size={28} className="text-text-3" />}

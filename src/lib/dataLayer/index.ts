@@ -1,0 +1,108 @@
+// Types
+export type {
+  KeyResultItem, KeyResultValue,
+  GoalRow, TaskRow, ProjectRow, MemberRow, KnowledgeDocRow,
+  ActionItemRow, DeviationAlertRow, MessageRow,
+  InsightRow, WorkflowInstanceRow, ChannelRow, ApiKeyRow,
+  AuditLogRow, SubscriptionRow, UsageEventRow,
+} from './types';
+
+export type {
+  NotificationRow, ReportRow, ApprovalRow, AnnouncementRow,
+  MeetingRow, CollabDocRow, SharedFileRow, ContactRow,
+  AgentDetailRow, AgentConfigRow, RiskRow, WorkflowRow,
+  ScheduleEventRow, OrgInfoRow, RoleRow, PredictionRow,
+  ExperienceRow, DocRow,
+  ActivityRow, NoteRow, SprintRow, TemplateRow, BookmarkRow,
+  CommentRow, TagRow, CategoryRow, FeatureFlagRow, SavedViewRow,
+  AutomationRuleRow, StatusFlowRuleRow, ItemLinkRow,
+} from '@/lib/dataLayerMockData';
+
+// Columns & utilities (internal, but exported for compatibility)
+export { TABLE_COLUMNS, FK_COLUMNS, filterColumns } from './columns';
+
+// Core fetch functions
+export {
+  getAuthenticatedUserId,
+  fetchMatrixCell,
+  fetchIndustries,
+  fetchDepartments,
+  checkSupabaseHealth,
+  fetchGoals,
+  fetchTasks,
+  fetchProjects,
+  fetchMembers,
+  fetchKnowledgeDocs,
+  fetchNotifications,
+  createNotification,
+  fetchReports,
+  fetchApprovals,
+  updateApproval,
+  fetchAnnouncements,
+  fetchMeetings,
+  fetchCollabDocs,
+  fetchSharedFiles,
+  fetchContacts,
+  fetchAgentDetails,
+  fetchAgentConfigs,
+  saveAgentConfig,
+  fetchRisks,
+  fetchWorkflows,
+  fetchScheduleEvents,
+  fetchOrgInfo,
+  fetchRoles,
+  fetchPredictions,
+  fetchExperiences,
+  fetchDocs,
+} from './core';
+
+// CRUD operations
+export {
+  createGoal, updateGoal, deleteGoal,
+  createTask, updateTask, deleteTask,
+  createProject, updateProject, deleteProject,
+  createMember, updateMember, deleteMember,
+  createKnowledgeDoc, updateKnowledgeDoc, deleteKnowledgeDoc,
+  fetchActionItems, createActionItem, updateActionItem, deleteActionItem,
+  fetchDeviationAlerts, createDeviationAlert, updateDeviationAlert, markAlertRead, markAlertResolved,
+  createAnnouncement, updateAnnouncement, deleteAnnouncement,
+  createMeeting, updateMeeting, deleteMeeting,
+  createSharedFile, updateSharedFile, deleteSharedFile,
+  createContact, updateContact, deleteContact,
+  createScheduleEvent, updateScheduleEvent, deleteScheduleEvent,
+  createDoc, updateDoc, deleteDoc,
+  createCollabDoc, updateCollabDoc, deleteCollabDoc,
+  fetchMessages, createMessage,
+  updateAgentDetail, createAgentDetail, deleteAgentDetail,
+  createApproval, deleteApproval,
+  createRisk, updateRisk, deleteRisk,
+  createReport, updateReport, deleteReport,
+  createPrediction, updatePrediction, deletePrediction,
+  createExperience, updateExperience, deleteExperience,
+  createRole, updateRole, deleteRole,
+} from './crud';
+
+// Extended entities
+export {
+  fetchInsights, createInsight, updateInsight, deleteInsight,
+  fetchWorkflowInstances, createWorkflowInstance, updateWorkflowInstance, deleteWorkflowInstance,
+  fetchChannels, createChannel, deleteChannel,
+  saveOrgInfo,
+  fetchActivities, createActivity,
+  fetchNotes, createNote, updateNote, deleteNote,
+  fetchSprints, createSprint, updateSprint, deleteSprint,
+  fetchTemplates, createTemplate, updateTemplate, deleteTemplate,
+  fetchBookmarks, createBookmark, deleteBookmark,
+  fetchComments, createComment, deleteComment,
+  fetchTags, createTag, deleteTag,
+  fetchCategories, createCategory, deleteCategory,
+  fetchFeatureFlags, updateFeatureFlag,
+  fetchSavedViews, createSavedView, deleteSavedView,
+  fetchAutomationRules, createAutomationRule, updateAutomationRule, deleteAutomationRule,
+  fetchStatusFlowRules, createStatusFlowRule, deleteStatusFlowRule,
+  fetchItemLinks, createItemLink, deleteItemLink,
+  fetchApiKeys, createApiKey, updateApiKey, deleteApiKey,
+  fetchAuditLogs,
+  fetchSubscriptionByUserId, createSubscription, upsertSubscription, updateSubscription,
+  recordUsageEvent, fetchUsageEventCount,
+} from './extended';

@@ -10,7 +10,8 @@
  * Otherwise falls back to local mock with Free plan defaults.
  */
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { fetchSubscriptionByUserId, fetchUsageEventCount, recordUsageEvent } from '@/lib/dataLayer';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 // --- Plan Definitions ---
 
@@ -19,12 +20,17 @@ export interface PlanLimits {
   maxAgents: number;
   maxTeamMembers: number;
   maxProjects: number;
+  maxGoals: number;
+  maxTasks: number;
   maxDocs: number;
   advancedAnalytics: boolean;
   customWorkflows: boolean;
   sso: boolean;
   auditExport: boolean;
   prioritySupport: boolean;
+  batchOperations: boolean;
+  customReports: boolean;
+  apiAccess: boolean;
 }
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
@@ -33,36 +39,51 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     maxAgents: 3,
     maxTeamMembers: 5,
     maxProjects: 5,
+    maxGoals: 5,
+    maxTasks: 20,
     maxDocs: 20,
     advancedAnalytics: false,
     customWorkflows: false,
     sso: false,
     auditExport: false,
     prioritySupport: false,
+    batchOperations: false,
+    customReports: false,
+    apiAccess: false,
   },
   pro: {
     aiQueriesPerDay: 500,
     maxAgents: 10,
     maxTeamMembers: 50,
     maxProjects: 50,
+    maxGoals: 50,
+    maxTasks: 500,
     maxDocs: 500,
     advancedAnalytics: true,
     customWorkflows: true,
     sso: false,
     auditExport: true,
     prioritySupport: true,
+    batchOperations: true,
+    customReports: true,
+    apiAccess: true,
   },
   enterprise: {
-    aiQueriesPerDay: -1, // unlimited
+    aiQueriesPerDay: -1,
     maxAgents: -1,
     maxTeamMembers: -1,
     maxProjects: -1,
+    maxGoals: -1,
+    maxTasks: -1,
     maxDocs: -1,
     advancedAnalytics: true,
     customWorkflows: true,
     sso: true,
     auditExport: true,
     prioritySupport: true,
+    batchOperations: true,
+    customReports: true,
+    apiAccess: true,
   },
 };
 
@@ -89,6 +110,8 @@ export interface UsageSummary {
   teamMembersLimit: number;
   projects: number;
   projectsLimit: number;
+  goals: number;
+  tasks: number;
   docs: number;
   docsLimit: number;
 }
@@ -96,17 +119,9 @@ export interface UsageSummary {
 // --- Fetch subscription ---
 
 export async function fetchSubscription(userId: string): Promise<SubscriptionInfo> {
-  if (!isSupabaseConfigured() || !supabase) {
-    return { plan: 'free', status: 'active', currentPeriodEnd: null };
-  }
+  const data = await fetchSubscriptionByUserId(userId);
 
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !data) {
+  if (!data) {
     return { plan: 'free', status: 'active', currentPeriodEnd: null };
   }
 
@@ -120,35 +135,18 @@ export async function fetchSubscription(userId: string): Promise<SubscriptionInf
 // --- Fetch usage ---
 
 export async function fetchUsageToday(userId: string): Promise<{ aiQueries: number }> {
-  if (!isSupabaseConfigured() || !supabase) {
-    // Simulate moderate free usage
-    return { aiQueries: 12 };
-  }
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const { count, error } = await supabase
-    .from('usage_events')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('event_type', 'ai_query')
-    .gte('created_at', today.toISOString());
-
-  if (error) return { aiQueries: 0 };
-
-  return { aiQueries: count ?? 0 };
+  const count = await fetchUsageEventCount(userId, 'ai_query', today.toISOString());
+  // When Supabase is not configured, fetchUsageEventCount returns 0 and we simulate
+  return { aiQueries: count || 12 };
 }
 
 // --- Record usage event ---
 
 export async function recordUsage(userId: string, eventType: string, detail?: Record<string, unknown>): Promise<void> {
-  if (!isSupabaseConfigured() || !supabase) {
-    // In demo mode, audit store already captures this
-    return;
-  }
-
-  await supabase.from('usage_events').insert({
+  await recordUsageEvent({
     user_id: userId,
     event_type: eventType,
     detail: detail ?? {},
@@ -175,6 +173,19 @@ export function isActionAllowed(plan: string, action: string, currentUsage: Usag
       }
       return { allowed: true };
 
+    case 'add_goal':
+      if (limits.maxGoals === -1) return { allowed: true };
+      if (currentUsage.goals >= limits.maxGoals) {
+        return { allowed: false, reason: `目标数量已达上限（${limits.maxGoals}个），升级可解锁更多` };
+      }
+      return { allowed: true };
+
+    case 'add_task':
+      if (limits.maxTasks === -1) return { allowed: true };
+      if (currentUsage.tasks >= limits.maxTasks) {
+        return { allowed: false, reason: `任务数量已达上限（${limits.maxTasks}个），升级专业版可获得更多额度` };
+      }
+      return { allowed: true };
     case 'add_member':
       if (limits.maxTeamMembers === -1) return { allowed: true };
       if (currentUsage.teamMembers >= limits.maxTeamMembers) {
@@ -194,7 +205,124 @@ export function isActionAllowed(plan: string, action: string, currentUsage: Usag
     case 'audit_export':
       return { allowed: limits.auditExport, reason: limits.auditExport ? undefined : '审计日志导出需要专业版或企业版' };
 
+    case 'batch_operations':
+      return { allowed: limits.batchOperations, reason: limits.batchOperations ? undefined : '批量操作需要专业版或企业版' };
+
+    case 'custom_reports':
+      return { allowed: limits.customReports, reason: limits.customReports ? undefined : '自定义报告需要专业版或企业版' };
+
+    case 'api_access':
+      return { allowed: limits.apiAccess, reason: limits.apiAccess ? undefined : 'API访问需要专业版或企业版' };
+
     default:
       return { allowed: true };
   }
 }
+
+// --- Get current plan (server-verified with localStorage cache fallback) ---
+
+const SUB_PLAN_KEY = 'tbh-sub-plan';
+const SUB_PLAN_VERIFIED_KEY = 'tbh-sub-plan-verified';
+const SUB_PLAN_EXPIRY_KEY = 'tbh-sub-plan-expiry';
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function getCachedVerifiedPlan(): string | null {
+  try {
+    const expiry = localStorage.getItem(SUB_PLAN_EXPIRY_KEY);
+    if (expiry && Date.now() < Number(expiry)) {
+      return localStorage.getItem(SUB_PLAN_VERIFIED_KEY);
+    }
+  } catch {}
+  return null;
+}
+
+function setCachedVerifiedPlan(plan: string): void {
+  localStorage.setItem(SUB_PLAN_VERIFIED_KEY, plan);
+  localStorage.setItem(SUB_PLAN_EXPIRY_KEY, String(Date.now() + CACHE_TTL_MS));
+}
+
+export function getCurrentPlan(): string {
+  const verified = getCachedVerifiedPlan();
+  if (verified) return verified;
+  return localStorage.getItem(SUB_PLAN_KEY) || 'free';
+}
+
+export function setCurrentPlan(plan: string): void {
+  localStorage.setItem(SUB_PLAN_KEY, plan);
+  localStorage.setItem(SUB_PLAN_VERIFIED_KEY, plan);
+  localStorage.setItem(SUB_PLAN_EXPIRY_KEY, String(Date.now() + CACHE_TTL_MS));
+}
+
+export async function refreshPlanFromServer(userId: string): Promise<string> {
+  if (!isSupabaseConfigured()) {
+    return getCurrentPlan();
+  }
+  try {
+    const info = await fetchSubscription(userId);
+    if (info.plan) {
+      setCachedVerifiedPlan(info.plan);
+      localStorage.setItem(SUB_PLAN_KEY, info.plan);
+      return info.plan;
+    }
+  } catch {}
+  return getCurrentPlan();
+}
+
+/** Quick feature gate check (synchronous). Returns true if the current plan allows the feature AND it is not disabled by admin flag override. */
+export function hasFeature(feature: keyof PlanLimits): boolean {
+  // L1: Admin flag override — if explicitly disabled, block regardless of plan
+  if (feature in _flagOverrides && _flagOverrides[feature] === false) return false;
+
+  // L2: Plan-based check
+  const plan = getCurrentPlan();
+  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  const val = limits[feature];
+  return typeof val === 'boolean' ? val : val === -1;
+}
+
+// --- Feature Flag Override Layer ---
+// Admin can force-disable features via FeatureFlagsContent regardless of plan.
+// This in-memory map is persisted to localStorage for cross-session durability.
+
+const FLAG_OVERRIDE_KEY = 'tbh-flag-overrides';
+const _flagOverrides: Partial<Record<keyof PlanLimits, boolean>> = _loadFlagOverrides();
+
+function _loadFlagOverrides(): Partial<Record<keyof PlanLimits, boolean>> {
+  try {
+    const raw = localStorage.getItem(FLAG_OVERRIDE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function _persistFlagOverrides(): void {
+  localStorage.setItem(FLAG_OVERRIDE_KEY, JSON.stringify(_flagOverrides));
+}
+
+/** Set or clear a feature flag override. `enabled=true` removes the override, `enabled=false` forces the feature off. */
+export function setFeatureFlagOverride(feature: keyof PlanLimits, enabled: boolean): void {
+  if (enabled) {
+    delete _flagOverrides[feature];
+  } else {
+    _flagOverrides[feature] = false;
+  }
+  _persistFlagOverrides();
+}
+
+/** Get all current flag overrides (for debugging / admin UI). */
+export function getFeatureFlagOverrides(): Readonly<Partial<Record<keyof PlanLimits, boolean>>> {
+  return { ..._flagOverrides };
+}
+
+/** Map from feature_flags.key (DB) → PlanLimits key, for bridging admin UI to runtime. */
+export const FLAG_KEY_TO_FEATURE: Record<string, keyof PlanLimits> = {
+  advanced_analytics: 'advancedAnalytics',
+  custom_workflows: 'customWorkflows',
+  sso: 'sso',
+  audit_export: 'auditExport',
+  priority_support: 'prioritySupport',
+  batch_operations: 'batchOperations',
+  custom_reports: 'customReports',
+  api_access: 'apiAccess',
+};

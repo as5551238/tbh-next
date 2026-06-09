@@ -9,11 +9,11 @@ import type { MeetingRow } from '@/lib/dataLayer';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 
 const MEETING_FIELDS: FieldDef[] = [
-  { key: 'title', label: '会议主题', type: 'text', editable: false },
-  { key: 'time', label: '时间', type: 'text', editable: false },
-  { key: 'location', label: '地点', type: 'text', editable: false },
-  { key: 'organizer', label: '发起人', type: 'text', editable: false },
-  { key: 'status', label: '状态', type: 'select', editable: false, options: [
+  { key: 'title', label: '会议主题', type: 'text', editable: true },
+  { key: 'time', label: '时间', type: 'text', editable: true },
+  { key: 'location', label: '地点', type: 'text', editable: true },
+  { key: 'organizer', label: '发起人', type: 'text', editable: true },
+  { key: 'status', label: '状态', type: 'select', editable: true, options: [
     { value: 'upcoming', label: '即将开始' },
     { value: 'ongoing', label: '进行中' },
     { value: 'ended', label: '已结束' },
@@ -119,7 +119,7 @@ export default function MeetingsView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="会议详情" fields={MEETING_FIELDS} data={selected}
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="会议详情" fields={MEETING_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'meeting', id: String(selected.id) } : null}
         onSave={(updated) => {
           if (selected) {
             editMeeting(selected.id, updated);

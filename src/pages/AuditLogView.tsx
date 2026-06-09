@@ -1,18 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { fetchAuditLogs } from '@/lib/dataLayer';
+import type { AuditLogRow } from '@/lib/dataLayer';
 
-interface AuditEntry {
-  id: string;
-  table_name: string;
-  record_id: string;
-  action: string;
-  performed_by: string;
-  old_data: Record<string, unknown> | null;
-  new_data: Record<string, unknown> | null;
-  team_id: string | null;
-  created_at: string;
-}
-
+type AuditEntry = AuditLogRow;
 const ACTION_COLORS: Record<string, string> = {
   INSERT: 'text-[#00d4aa]',
   UPDATE: 'text-[#f5a623]',
@@ -42,27 +32,13 @@ export default function AuditLogView() {
   const PAGE_SIZE = 20;
 
   const fetchLogs = useCallback(async (pageNum: number, reset = false) => {
-    if (!isSupabaseConfigured()) {
-      setLoading(false);
-      return;
-    }
-
     try {
-      let query = supabase!
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
-
-      if (filter.table) query = query.eq('table_name', filter.table);
-      if (filter.action) query = query.eq('action', filter.action);
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const entries = (data || []) as AuditEntry[];
-      setLogs(reset ? entries : (prev) => [...prev, ...entries]);
-      setHasMore(entries.length === PAGE_SIZE);
+      const result = await fetchAuditLogs('__default__', {
+        table: filter.table || undefined,
+        action: filter.action || undefined,
+      }, pageNum, PAGE_SIZE);
+      setLogs(reset ? result.data : (prev) => [...prev, ...result.data]);
+      setHasMore(result.hasMore);
     } catch {
       // Silently fail - audit logs may not be accessible for non-admins
     } finally {
@@ -116,46 +92,28 @@ export default function AuditLogView() {
             记录所有数据变更操作，确保合规与可追溯性
           </p>
         </div>
-        <button
-          onClick={exportLogs}
-          className="px-3 py-1.5 bg-[#7b6cf0] text-white text-sm rounded-lg hover:bg-[#6b5ce0] transition-colors"
-          disabled={logs.length === 0}
-        >
+        <button onClick={exportLogs} className="px-3 py-1.5 bg-[#7b6cf0] text-white text-sm rounded-lg hover:bg-[#6b5ce0] transition-colors" disabled={logs.length === 0}>
           导出 CSV
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex gap-3 mb-4">
-        <select
-          value={filter.table}
-          onChange={(e) => setFilter({ ...filter, table: e.target.value })}
-          className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm"
-        >
+        <select value={filter.table} onChange={(e) => setFilter({ ...filter, table: e.target.value })} className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm">
           <option value="">全部表</option>
           {Object.entries(TABLE_LABELS).map(([key, label]) => (
             <option key={key} value={key}>{label}</option>
           ))}
         </select>
 
-        <select
-          value={filter.action}
-          onChange={(e) => setFilter({ ...filter, action: e.target.value })}
-          className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm"
-        >
+        <select value={filter.action} onChange={(e) => setFilter({ ...filter, action: e.target.value })} className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm">
           <option value="">全部操作</option>
           <option value="INSERT">创建</option>
           <option value="UPDATE">更新</option>
           <option value="DELETE">删除</option>
         </select>
 
-        <input
-          type="text"
-          placeholder="搜索..."
-          value={filter.search}
-          onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-          className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm flex-1 max-w-xs"
-        />
+        <input type="text" placeholder="搜索..." value={filter.search} onChange={(e) => setFilter({ ...filter, search: e.target.value })} className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm flex-1 max-w-xs" />
       </div>
 
       {/* Log table */}
@@ -202,10 +160,7 @@ export default function AuditLogView() {
 
           {hasMore && (
             <div className="p-3 text-center border-t border-[#1e2030]">
-              <button
-                onClick={loadMore}
-                className="text-[#7b6cf0] hover:underline text-sm"
-              >
+              <button onClick={loadMore} className="text-[#7b6cf0] hover:underline text-sm">
                 加载更多
               </button>
             </div>

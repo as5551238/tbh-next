@@ -1,3 +1,6 @@
+import { useGateCheck } from '@/hooks/useGateCheck';
+import PaywallModal from '@/components/PaywallModal';
+import { hasFeature } from '@/lib/subscription'; // gate: Pro feature check
 import { useState, useCallback, useEffect } from 'react';
 import { usePredictions, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
@@ -6,43 +9,48 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import ItemDetailModal from '@/components/ItemDetailModal';
 
 export default function PredictionContent() {
+  const { showPaywall: pdShow, paywallReason: pdReason, paywallFeature: pdFeat, closePaywall: pdClose, requireFeature: pdRequire } = useGateCheck();
   const { cell, loading: cellLoading } = useMatrixCell();
   const indColor = useIndustryColor();
-  const { predictions, setPredictions, loading } = usePredictions();
+  const { predictions, addPrediction, editPrediction, removePrediction, loading } = usePredictions();
   const modal = useModal();
   const editModal = useModal();
   const [selectedPred, setSelectedPred] = useState<(typeof predictions)[number] | null>(null);
   const [form, setForm] = useState({ title: '', impact: 'medium' as 'positive' | 'high' | 'medium', probability: 50, reason: '', suggestion: '' });
   const { toasts, success } = useToast();
   const PRED_STORAGE = 'tbh-predictions';
-  const [localPredictions, setLocalPredictions] = useState<typeof predictions extends never[] ? never[] : typeof predictions>(() => {
-    try { const s = localStorage.getItem(PRED_STORAGE); return s ? JSON.parse(s) : []; } catch { return []; }
-  });
 
+  // Migrate localStorage items to DB on first load
   useEffect(() => {
-    try { localStorage.setItem(PRED_STORAGE, JSON.stringify(localPredictions)); } catch {}
-  }, [localPredictions]);
+    if (loading) return;
+    try {
+      const s = localStorage.getItem(PRED_STORAGE);
+      if (!s) return;
+      const old = JSON.parse(s) as Record<string, unknown>[];
+      if (old.length === 0) return;
+      old.forEach((item) => { addPrediction(item); });
+      localStorage.removeItem(PRED_STORAGE);
+    } catch {}
+  }, [loading]);
 
   const handleOpen = useCallback(() => {
     setForm({ title: '', impact: 'medium', probability: 50, reason: '', suggestion: '' });
     modal.openModal();
   }, [modal.openModal]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!form.title.trim()) return;
-    const newItem = {
-      id: `custom-${Date.now()}`,
+    await addPrediction({
       title: form.title,
       impact: form.impact,
       probability: form.probability,
-      trend: 'flat' as const,
+      trend: 'flat',
       reason: form.reason || '用户自定义预测',
       suggestion: form.suggestion || '待补充建议',
-    };
-    setLocalPredictions((prev) => [newItem, ...prev]);
+    });
     modal.closeModal();
     success(`预测"${form.title}"已创建`);
-  }, [form, modal.closeModal]);
+  }, [form, modal.closeModal, addPrediction]);
 
   if (loading) {
     return (
@@ -52,7 +60,7 @@ export default function PredictionContent() {
     );
   }
 
-  const allPredictions = [...localPredictions, ...predictions];
+  const allPredictions = predictions;
 
   const positiveRatio = allPredictions.length > 0
     ? Math.round(allPredictions.filter((p) => p.impact === 'positive').length / allPredictions.length * 100)
@@ -66,7 +74,7 @@ export default function PredictionContent() {
         <span className="text-sm font-bold">预测引擎</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>AI驱动</span>
         <span className="text-[10px] text-text-3">基于 {cell.kpis.length} 个指标 · 每日更新</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleOpen}>
+        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!pdRequire('advancedAnalytics', 'AI预测需要专业版或企业版')) return; handleOpen(); }}>
           <Plus size={12} />自定义预测
         </button>
       </div>
@@ -188,24 +196,20 @@ export default function PredictionContent() {
           { key: 'reason', label: '描述', type: 'textarea' },
         ]}
         data={selectedPred as Record<string, unknown> | null}
-        onSave={(updated) => {
+        commentTarget={selectedPred?.id ? { type: 'prediction', id: String(selectedPred.id) } : null}
+        onSave={async (updated) => {
           const id = updated.id as string;
-          if (id.startsWith('custom-')) {
-            setLocalPredictions(prev => prev.map(p => p.id === id ? { ...p, ...updated } as (typeof predictions)[number] : p));
-          } else {
-            setPredictions(prev => prev.map(p => p.id === id ? { ...p, ...updated } as (typeof predictions)[number] : p));
-          }
+          await editPrediction(id, updated);
         }}
-        onDelete={() => {
+        onDelete={async () => {
           if (selectedPred) {
-            if (selectedPred.id.startsWith('custom-')) {
-              setLocalPredictions(prev => prev.filter(p => p.id !== selectedPred.id));
-            } else {
-              setPredictions(prev => prev.filter(p => p.id !== selectedPred.id));
-            }
+            await removePrediction(selectedPred.id);
+            editModal.closeModal();
           }
         }}
       />
+
+      <PaywallModal open={pdShow} onClose={pdClose} reason={pdReason} feature={pdFeat} />
     </div>
   );
 }

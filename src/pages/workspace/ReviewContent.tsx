@@ -1,22 +1,29 @@
+import { useGateCheck } from '@/hooks/useGateCheck';
+import PaywallModal from '@/components/PaywallModal';
+import { hasFeature } from '@/lib/subscription';
+const PRO_FEATURES = { deepReview: hasFeature('customWorkflows' as never), customReport: hasFeature('advancedAnalytics' as never), automation: hasFeature('customWorkflows' as never), prediction: hasFeature('advancedAnalytics' as never), statusFlow: hasFeature('customWorkflows' as never), knowledge: hasFeature('advancedAnalytics' as never), aiQuery: hasFeature('advancedAnalytics' as never) };
 import { useState, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
-import { useGoals, useTasks } from '@/hooks/useMatrix';
+import { useGoals, useTasks, useActionItems } from '@/hooks/useMatrix';
 import { ChatMessage, chatCompletion } from '@/lib/aiService';
 import {
-  REVIEW_MODELS, recommendModels, detectDeviations, computeAutoProgress, buildReviewDraftPrompt,
+  REVIEW_MODELS, recommendModels, detectDeviations, computeAutoProgress, buildReviewDraftPrompt, computePerformanceScore,
   type ReviewModel, type ReviewSession, type DeviationAlert,
 } from '@/lib/reviewEngine';
 import {
   createActionItem, fetchActionItems, updateActionItem,
+  createTask,
   createDeviationAlert, fetchDeviationAlerts, updateDeviationAlert,
   type ActionItemRow, type DeviationAlertRow,
 } from '@/lib/dataLayer';
-import { btnPrimary, btnSecondary } from '@/components/Modal';
-import { RotateCcw, AlertTriangle, ChevronRight, Loader2, Sparkles, CheckCircle2, ArrowRight, FileText, Lightbulb, ListChecks, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
+import { RotateCcw, AlertTriangle, ChevronRight, Loader2, Sparkles, CheckCircle2, ArrowRight, FileText, Lightbulb, ListChecks, X, Zap } from 'lucide-react';
 
 type Phase = 'alerts' | 'pick' | 'guide' | 'draft' | 'done';
 
 export default function ReviewContent() {
+  const { showPaywall: rvShow, paywallReason: rvReason, paywallFeature: rvFeat, closePaywall: rvClose, requireFeature: rvRequire } = useGateCheck();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const { goals, loading: goalsLoading } = useGoals();
@@ -87,7 +94,7 @@ export default function ReviewContent() {
 
   // 加载已有 ActionItem
   useEffect(() => {
-    fetchActionItems().then(setActionItems).catch(() => {});
+    fetchActionItems().then(setActionItems).catch((_e) => { /* fetchActionItems: intentionally silently fail */ });
   }, []);
 
   // 从复盘草稿中提取行动项
@@ -345,7 +352,7 @@ export default function ReviewContent() {
           ) : (
             <div className="space-y-2">
               {alerts.map((a) => (
-                <div key={a.id} onClick={() => startReview(a)}
+                <div key={a.id} onClick={() => { if (!rvRequire('customWorkflows', '深度复盘模式需要专业版或企业版')) return; startReview(a); }}
                   className={`rounded-xl border p-3 cursor-pointer transition-all hover:shadow-lg ${sevCls[a.severity]}`}>
                   <div className="flex items-center gap-2 mb-1">
                     <AlertTriangle size={13} className={sevIcon[a.severity]} />
@@ -391,7 +398,7 @@ export default function ReviewContent() {
           </div>
           <div className="flex flex-wrap gap-2">
             {REVIEW_MODELS.map((m) => (
-              <button key={m.id} onClick={() => { setSelectedAlert(null); setSelectedModel(m); setPhase('pick'); }}
+              <button key={m.id} onClick={() => { if (!rvRequire('customWorkflows', '深度复盘模式需要专业版或企业版')) return; setSelectedAlert(null); setSelectedModel(m); setPhase('pick'); }}
                 className="rounded-lg border border-border bg-surface px-3 py-2 text-left transition-all hover:border-primary/50 hover:shadow-md">
                 <div className="flex items-center gap-2">
                   <span className="text-base">{m.icon}</span>
@@ -404,6 +411,8 @@ export default function ReviewContent() {
             ))}
           </div>
         </div>
+
+        <PaywallModal open={rvShow} onClose={rvClose} reason={rvReason} feature={rvFeat} />
       </div>
     );
   }
@@ -450,6 +459,8 @@ export default function ReviewContent() {
             </button>
           ))}
         </div>
+
+        <PaywallModal open={rvShow} onClose={rvClose} reason={rvReason} feature={rvFeat} />
       </div>
     );
   }
@@ -521,12 +532,14 @@ export default function ReviewContent() {
 
         {/* Quick-fill all steps */}
         <button
-          onClick={generateDraft}
+          onClick={() => { if (!rvRequire('customWorkflows', 'AI复盘生成需要专业版或企业版')) return; generateDraft(); }}
           disabled={isGenerating}
           className="w-full rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-[10px] text-primary-2 hover:bg-primary/10 transition-colors disabled:opacity-40"
         >
           {isGenerating ? 'AI正在分析...' : '跳过手动填写，AI一键生成复盘草稿 →'}
         </button>
+
+        <PaywallModal open={rvShow} onClose={rvClose} reason={rvReason} feature={rvFeat} />
       </div>
     );
   }
@@ -576,6 +589,8 @@ export default function ReviewContent() {
             <Sparkles size={12} /> 重新AI生成
           </button>
         </div>
+
+        <PaywallModal open={rvShow} onClose={rvClose} reason={rvReason} feature={rvFeat} />
       </div>
     );
   }
@@ -622,6 +637,25 @@ export default function ReviewContent() {
                 </span>
                 {ai.closed_loop && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-success/10 text-success font-bold">闭环</span>}
                 {ai.goal_id && <span className="text-[8px] text-text-3">→ 目标</span>}
+                {ai.status !== 'completed' && !ai.closed_loop && ai.goal_id && (
+                  <button
+                    className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[8px] font-semibold text-primary-2 hover:bg-primary/10"
+                    onClick={async () => {
+                      await createTask({
+                        title: ai.title,
+                        description: ai.description,
+                        goal_id: ai.goal_id,
+                        assignee_id: ai.assignee_id,
+                        priority: ai.priority,
+                        status: 'todo',
+                      } as Parameters<typeof createTask>[0]);
+                      await updateActionItem(ai.id, { status: 'completed', closed_loop: true });
+                      setActionItems((prev) => prev.map((p) => p.id === ai.id ? { ...p, status: 'completed', closed_loop: true } : p));
+                    }}
+                  >
+                    <Zap size={8} />转任务
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -636,7 +670,50 @@ export default function ReviewContent() {
         </div>
       )}
 
+      {/* Performance Score for reviewed goal */}
+      {(() => {
+        const goalId = selectedAlert?.targetId ?? session?.targetId;
+        const goal = goals.find((g) => g.id === goalId);
+        if (!goalId || !goal) return null;
+        const goalTasks = tasks.filter((t) => t.goal_id === goalId);
+        const goalActionItems = actionItems.filter((a) => a.goal_id === goalId);
+        const score = computePerformanceScore({
+          goalId, goalTitle: goal.title,
+          targetProgress: 100,
+          actualProgress: goal.progress,
+          totalTasks: goalTasks.length,
+          completedTasks: goalTasks.filter((t) => t.status === 'done' || t.status === 'completed').length,
+          onTimeTasks: goalTasks.filter((t) => (t.status === 'done' || t.status === 'completed') && t.due_date && t.completed_at && t.completed_at <= t.due_date).length,
+          totalActionItems: goalActionItems.length,
+          closedActionItems: goalActionItems.filter((a) => a.closed_loop).length,
+        });
+        const GRADE_COLOR: Record<string, string> = { S: 'text-success', A: 'text-primary-2', B: 'text-warn', C: 'text-orange-400', D: 'text-danger' };
+        return (
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb size={14} className="text-accent" />
+              <span className="text-xs font-bold">绩效评分</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className={cn('text-3xl font-extrabold', GRADE_COLOR[score.grade])}>{score.grade}</div>
+              <div className="flex-1 grid grid-cols-2 gap-2 text-[10px]">
+                <div><span className="text-text-3">达成率</span> <span className="font-semibold text-text">{score.achievementRate}%</span></div>
+                <div><span className="text-text-3">任务完成</span> <span className="font-semibold text-text">{score.taskCompletionRate}%</span></div>
+                <div><span className="text-text-3">按时率</span> <span className="font-semibold text-text">{score.onTimeRate}%</span></div>
+                <div><span className="text-text-3">闭环率</span> <span className="font-semibold text-text">{score.actionItemCloseRate}%</span></div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-extrabold text-text">{score.overall}</div>
+                <div className="text-[9px] text-text-3">综合分</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <button onClick={() => { setPhase('alerts'); setSession(null); setSelectedAlert(null); }} className={btnPrimary}>返回复盘中心</button>
+
+      <PaywallModal open={rvShow} onClose={rvClose} reason={rvReason} feature={rvFeat} />
     </div>
   );
 }

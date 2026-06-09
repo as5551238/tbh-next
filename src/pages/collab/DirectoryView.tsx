@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useIndustryColor, useContacts } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Phone, Mail, MessageSquare, Search, User, Loader2, X } from 'lucide-react';
-import { useModal } from '@/components/Modal';
+import { Phone, Mail, MessageSquare, Search, User, Loader2, X, Plus } from 'lucide-react';
+import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { ContactRow } from '@/lib/dataLayer';
@@ -34,26 +34,44 @@ const CONTACT_FIELDS: FieldDef[] = [
 
 export default function DirectoryView() {
   const indColor = useIndustryColor();
-  const setCurrentPage = useAppStore((s) => s.setCurrentPage);
-  const { contacts, editContact, loading } = useContacts();
+  const navigateTo = useAppStore((s) => s.navigateTo);
+  const { contacts, addContact, editContact, removeContact, loading } = useContacts();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const detailModal = useModal();
+  const createModal = useModal();
   const [selected, setSelected] = useState<ContactRow | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [form, setForm] = useState({ name: '', department: '', role: '', email: '', phone: '', status: 'online' });
 
   const filteredContacts = searchQuery
     ? contacts.filter((c) => c.name.includes(searchQuery) || c.department?.includes(searchQuery) || c.role?.includes(searchQuery))
     : contacts;
 
-  const humanContacts = filteredContacts.filter((c) => !c.role.includes('AI'));
-  const aiContacts = filteredContacts.filter((c) => c.role.includes('AI'));
+  const humanContacts = filteredContacts.filter((c) => !(c.role || '').toLowerCase().includes('ai'));
+  const aiContacts = filteredContacts.filter((c) => (c.role || '').toLowerCase().includes('ai'));
+
+  async function handleCreate() {
+    if (!form.name.trim()) return;
+    await addContact({
+      name: form.name.trim(),
+      department: form.department || dept,
+      role: form.role || '成员',
+      email: form.email,
+      phone: form.phone,
+      status: form.status as ContactRow['status'],
+      avatar: form.name.trim().charAt(0),
+    });
+    setForm({ name: '', department: '', role: '', email: '', phone: '', status: 'online' });
+    createModal.closeModal();
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">通讯录</span>
         <span className="text-[10px] text-text-3">{contacts.length} 人</span>
+        <button onClick={createModal.openModal} className="ml-2 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 添加</button>
         <div className="ml-auto flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
           <Search size={12} className="text-text-3" />
           <input
@@ -98,7 +116,7 @@ export default function DirectoryView() {
                   )}>{STATUS_LABELS[contact.status]}</span>
                 </div>
                 <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={(e) => { e.stopPropagation(); setCurrentPage('main-chat'); }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><MessageSquare size={9} />消息</button>
+                  <button onClick={(e) => { e.stopPropagation(); navigateTo('ai', 'main'); }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><MessageSquare size={9} />消息</button>
                   <button onClick={(e) => { e.stopPropagation(); if (contact.phone) window.location.href = 'tel:' + contact.phone; }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Phone size={9} />电话</button>
                   <button onClick={(e) => { e.stopPropagation(); if (contact.email) window.location.href = 'mailto:' + contact.email; }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Mail size={9} />邮件</button>
                 </div>
@@ -135,7 +153,49 @@ export default function DirectoryView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="联系人详情" fields={CONTACT_FIELDS} data={selected} onSave={(updated) => { if (selected) { editContact(selected.id, updated); setSelected({ ...selected, ...updated } as ContactRow); } }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="联系人详情" fields={CONTACT_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'contact', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editContact(selected.id, updated); setSelected({ ...selected, ...updated } as ContactRow); } }} onDelete={() => { if (selected) { removeContact(selected.id); detailModal.closeModal(); } }} />
+
+      {/* Create Contact Modal */}
+      {createModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={createModal.closeModal}>
+          <div className="w-96 rounded-xl border border-border bg-surface-2 p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold">添加联系人</span>
+              <button onClick={createModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-text-3 mb-1 block">姓名 *</label>
+                <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="输入姓名" className={inputCls + ' w-full'} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-text-3 mb-1 block">部门</label>
+                  <input value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} placeholder="部门" className={inputCls + ' w-full'} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-3 mb-1 block">职位</label>
+                  <input value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} placeholder="职位" className={inputCls + ' w-full'} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-text-3 mb-1 block">邮箱</label>
+                  <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="邮箱" className={inputCls + ' w-full'} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-3 mb-1 block">电话</label>
+                  <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="电话" className={inputCls + ' w-full'} />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <button onClick={handleCreate} disabled={!form.name.trim()} className={`${btnPrimary} disabled:opacity-40`}>添加</button>
+              <button onClick={createModal.closeModal} className={btnSecondary}>取消</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

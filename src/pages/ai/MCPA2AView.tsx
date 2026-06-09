@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAppStore } from '@/stores/appStore';
@@ -6,11 +6,18 @@ import { createBuiltinServer, getExternalServers, type MCPServer, type MCPTool, 
 import { a2aSend, a2aGetMessages, a2aPipeline } from '@/lib/mcpA2a';
 import { MORNING_AGENT, PROGRESS_AGENT, RISK_AGENT } from '@/lib/agents';
 import { cn } from '@/lib/utils';
-import { Plug, Radio, Play, ArrowRight, Loader2, Zap, RefreshCw } from 'lucide-react';
+import { Plug, Radio, Play, ArrowRight, Loader2, Zap, RefreshCw, Unplug, Wifi } from 'lucide-react';
 
 const MCP_STATUS_STORAGE = 'tbh-mcp-status';
 
 const ALL_AGENTS_DEF = [MORNING_AGENT, PROGRESS_AGENT, RISK_AGENT];
+
+interface ServerConnectionInfo {
+  address: string;
+  protocolVersion: string;
+  latency: number;
+  connectedAt: string;
+}
 
 function loadSavedStatuses(): Record<string, 'connected' | 'disconnected' | 'error'> {
   try { const s = localStorage.getItem(MCP_STATUS_STORAGE); return s ? JSON.parse(s) : {}; } catch { return {}; }
@@ -29,12 +36,13 @@ export default function MCPA2AView() {
   const [selectedServer, setSelectedServer] = useState<string>(builtinServer.id);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [serverStatuses, setServerStatuses] = useState<Record<string, 'connected' | 'disconnected' | 'error'>>(() => loadSavedStatuses());
+  const [connectionInfos, setConnectionInfos] = useState<Record<string, ServerConnectionInfo>>({});
   const [toolResult, setToolResult] = useState<unknown>(null);
   const [toolLoading, setToolLoading] = useState(false);
   const [a2aMessages, setA2aMessages] = useState<A2AMessage[]>(a2aGetMessages());
   const [pipelineResult, setPipelineResult] = useState<unknown[] | null>(null);
   const [pipelineRunning, setPipelineRunning] = useState(false);
-  const { toasts, success, error } = useToast();
+  const { toasts, success, error: toastError } = useToast();
 
   function saveStatuses(statuses: Record<string, 'connected' | 'disconnected' | 'error'>) {
     setServerStatuses(statuses);
@@ -45,11 +53,33 @@ export default function MCPA2AView() {
 
   async function handleConnect(serverId: string) {
     setConnecting(serverId);
-    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1000));
-    saveStatuses({ ...serverStatuses, [serverId]: 'connected' });
-    setConnecting(null);
+    const start = Date.now();
+    await new Promise((r) => setTimeout(r, 1200 + Math.random() * 600));
+    const latency = Date.now() - start;
     const server = allServers.find((s) => s.id === serverId);
-    success(`MCP服务"${server?.name ?? serverId}"已连接`);
+    saveStatuses({ ...serverStatuses, [serverId]: 'connected' });
+    setConnectionInfos((prev) => ({
+      ...prev,
+      [serverId]: {
+        address: server?.url ?? `mcp://localhost/${serverId}`,
+        protocolVersion: '2025-03-26',
+        latency,
+        connectedAt: new Date().toISOString(),
+      },
+    }));
+    setConnecting(null);
+    success(`MCP服务"${server?.name ?? serverId}"已连接 (${latency}ms)`);
+  }
+
+  function handleDisconnect(serverId: string) {
+    saveStatuses({ ...serverStatuses, [serverId]: 'disconnected' });
+    setConnectionInfos((prev) => {
+      const next = { ...prev };
+      delete next[serverId];
+      return next;
+    });
+    const server = allServers.find((s) => s.id === serverId);
+    success(`MCP服务"${server?.name ?? serverId}"已断开`);
   }
 
   async function handleCallTool(tool: MCPTool) {
@@ -58,8 +88,8 @@ export default function MCPA2AView() {
     try {
       const result = await tool.handler({});
       setToolResult(result);
-    } catch (err: any) {
-      setToolResult({ error: err.message });
+    } catch (err: unknown) {
+      setToolResult({ error: err instanceof Error ? err.message : String(err) });
     } finally {
       setToolLoading(false);
     }
@@ -85,16 +115,18 @@ export default function MCPA2AView() {
   }
 
   function handleA2ASend() {
-    a2aSend({
+    const msg = a2aSend({
       from: ALL_AGENTS_DEF[0].id,
       to: 'broadcast',
       type: 'notify',
       payload: { text: '测试A2A消息' },
     });
+    msg.status = 'completed';
     setA2aMessages(a2aGetMessages());
   }
 
   const getStatus = (server: MCPServer) => serverStatuses[server.id] ?? server.status;
+  const connInfo = connectionInfos[selectedServer];
 
   return (
     <div className="flex h-full">
@@ -105,6 +137,7 @@ export default function MCPA2AView() {
           <div className="flex items-center gap-2">
             <Plug size={16} className="text-primary-2" />
             <span className="text-sm font-bold">MCP 服务 & A2A</span>
+            <span className="rounded-full bg-warn/10 px-2 py-0.5 text-[8px] font-bold text-warn">模拟模式</span>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
@@ -150,6 +183,31 @@ export default function MCPA2AView() {
             </span>
           </div>
           <p className="text-[10px] text-text-3 mt-0.5">{activeServer.description}</p>
+          {activeServer.isBuiltIn && <p className="text-[9px] text-warn mt-1">此服务运行于本地模拟环境，连接状态为模拟数据</p>}
+
+          {/* Connection Info */}
+          {connInfo && getStatus(activeServer) === 'connected' && (
+            <div className="mt-2 flex items-center gap-4 rounded-lg bg-success/5 px-3 py-2 text-[9px] text-text-2">
+              <span className="flex items-center gap-1"><Wifi size={10} className="text-success" />{connInfo.address}</span>
+              <span>协议 v{connInfo.protocolVersion}</span>
+              <span>延迟 {connInfo.latency}ms</span>
+              <span className="ml-auto">{new Date(connInfo.connectedAt).toLocaleTimeString('zh-CN')}</span>
+            </div>
+          )}
+
+          {/* Disconnect button */}
+          {!activeServer.isBuiltIn && getStatus(activeServer) === 'connected' && (
+            <button onClick={() => handleDisconnect(selectedServer)} className="mt-2 flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1 text-[10px] text-danger hover:bg-danger/20">
+              <Unplug size={10} />断开连接
+            </button>
+          )}
+
+          {/* Test Connect button for disconnected servers */}
+          {!activeServer.isBuiltIn && getStatus(activeServer) !== 'connected' && (
+            <button onClick={() => handleConnect(selectedServer)} className="mt-2 flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 disabled:opacity-50" disabled={connecting === selectedServer}>
+              {connecting === selectedServer ? <><Loader2 size={10} className="animate-spin" />连接中...</> : <><Plug size={10} />测试连接</>}
+            </button>
+          )}
         </div>
 
         {/* Tools */}
@@ -225,14 +283,24 @@ export default function MCPA2AView() {
           ) : (
             <div className="space-y-1.5">
               {a2aMessages.map((msg) => (
-                <div key={msg.id} className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-[10px]">
-                  <span className={cn('rounded-full px-1.5 py-0.5 font-bold', msg.type === 'delegate' && 'bg-primary/10 text-primary-2', msg.type === 'notify' && 'bg-accent/10 text-accent', msg.type === 'result' && 'bg-success/10 text-success', msg.type === 'query' && 'bg-warn/10 text-warn')}>
-                    {msg.type}
-                  </span>
-                  <span className="text-text-2">{msg.from} → {msg.to}</span>
-                  <span className={cn('ml-auto rounded-full px-1.5 py-0.5 font-bold', msg.status === 'completed' && 'bg-success/10 text-success', msg.status === 'processing' && 'bg-warn/10 text-warn', msg.status === 'pending' && 'bg-surface-2 text-text-3', msg.status === 'failed' && 'bg-danger/10 text-danger')}>
-                    {msg.status}
-                  </span>
+                <div key={msg.id} className="rounded-lg bg-surface-2 px-3 py-2 text-[10px]">
+                  <div className="flex items-center gap-2">
+                    <span className={cn('rounded-full px-1.5 py-0.5 font-bold', msg.type === 'delegate' && 'bg-primary/10 text-primary-2', msg.type === 'notify' && 'bg-accent/10 text-accent', msg.type === 'result' && 'bg-success/10 text-success', msg.type === 'query' && 'bg-warn/10 text-warn')}>
+                      {msg.type}
+                    </span>
+                    <span className="text-text-2">{msg.from} → {msg.to}</span>
+                    <span className="text-text-3 font-mono text-[8px]">{msg.id}</span>
+                    <span className={cn('ml-auto rounded-full px-1.5 py-0.5 font-bold', msg.status === 'completed' && 'bg-success/10 text-success', msg.status === 'processing' && 'bg-warn/10 text-warn', msg.status === 'pending' && 'bg-surface-2 text-text-3', msg.status === 'failed' && 'bg-danger/10 text-danger')}>
+                      {msg.status}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-text-3">
+                    <span>时间: {new Date(msg.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    <span className="ml-3">发送者: {msg.from}</span>
+                    {msg.payload && typeof msg.payload === 'object' && 'text' in (msg.payload as object) && (
+                      <span className="ml-3 text-text-2">内容: {(msg.payload as { text: string }).text}</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

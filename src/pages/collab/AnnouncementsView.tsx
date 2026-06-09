@@ -29,7 +29,7 @@ const ANN_FIELDS: FieldDef[] = [
 
 export default function AnnouncementsView() {
   const indColor = useIndustryColor();
-  const { announcements, addAnnouncement, editAnnouncement, loading } = useAnnouncements();
+  const { announcements, addAnnouncement, editAnnouncement, removeAnnouncement, loading } = useAnnouncements();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const detailModal = useModal();
@@ -91,7 +91,7 @@ export default function AnnouncementsView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="公告详情" fields={ANN_FIELDS} data={selected} onSave={(updated) => { if (selected) { editAnnouncement(selected.id, updated); } }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="公告详情" fields={ANN_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'announcement', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editAnnouncement(selected.id, updated); } }} onDelete={() => { if (selected) { removeAnnouncement(selected.id); detailModal.closeModal(); } }} />
 
       {/* Create Announcement Modal */}
       {createModal.open && (

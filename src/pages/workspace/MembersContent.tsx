@@ -3,16 +3,18 @@ import { useMembers } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { getDepartments } from '@/matrix/data';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Users, Plus, Search, MoreHorizontal, Mail, Phone, Loader2 } from 'lucide-react';
+import { hasFeature } from '@/lib/subscription';
+import { Users, Plus, Lock, Search, MoreHorizontal, Mail, Phone, Loader2, Trash2 } from 'lucide-react';
 
 export default function MembersContent() {
-  const { members, loading, addMember, editMember } = useMembers();
+  const isPro = hasFeature('advancedAnalytics' as never);
+  const { members, loading, addMember, editMember, removeMember } = useMembers();
   const industry = useAppStore((s) => s.industry);
   const deptOptions = getDepartments(industry);
   const inviteModal = useModal();
   const editModal = useModal();
   const [editingMember, setEditingMember] = useState<{ id: string; name: string; department: string; email: string; role: string } | null>(null);
-  const [form, setForm] = useState({ name: '', department: '', email: '', role: 'member' });
+  const [form, setForm] = useState({ name: '', department: '', email: '', role: 'member', phone: '' });
   const [searchTerm, setSearchTerm] = useState('');
 
   const roleMap: Record<string, { label: string; cls: string }> = {
@@ -28,8 +30,8 @@ export default function MembersContent() {
 
   function handleInvite() {
     if (!form.name.trim() || !form.email.trim()) return;
-    addMember({ name: form.name, department: form.department, email: form.email, role: form.role, phone: '', avatar: '', status: 'active', join_date: new Date().toISOString().split('T')[0] });
-    setForm({ name: '', department: '', email: '', role: 'member' });
+    addMember({ name: form.name, department: form.department, email: form.email, role: form.role, phone: form.phone, avatar: '', status: 'active', join_date: new Date().toISOString().split('T')[0] });
+    setForm({ name: '', department: '', email: '', role: 'member', phone: '' });
     inviteModal.closeModal();
   }
 
@@ -54,7 +56,7 @@ export default function MembersContent() {
         <Users size={18} className="text-primary-2" />
         <span className="text-sm font-bold">成员管理</span>
         <span className="ml-auto text-[10px] text-text-3">{members.length} 人</span>
-        <button onClick={inviteModal.openModal} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:bg-primary-2">
+        <button onClick={() => { if (!isPro) return; inviteModal.openModal(); }} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:bg-primary-2">
           <Plus size={12} />
           邀请成员
         </button>
@@ -111,6 +113,9 @@ export default function MembersContent() {
         <ModalField label="邮箱">
           <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="输入邮箱" className={inputCls} />
         </ModalField>
+        <ModalField label="电话">
+          <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="输入电话号码" className={inputCls} />
+        </ModalField>
         <ModalField label="部门">
           <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className={selectCls}>
             <option value="">选择部门</option>
@@ -128,9 +133,15 @@ export default function MembersContent() {
 
       {/* Edit Modal */}
       <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑成员"
-        footer={<><button onClick={editModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleEdit} className={btnPrimary}>保存</button></>}>
+        footer={<><button onClick={() => { if (editingMember) { removeMember(editingMember.id); editModal.closeModal(); } }} className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10">删除</button><button onClick={editModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleEdit} className={btnPrimary}>保存</button></>}>
         <ModalField label="姓名">
           <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+        </ModalField>
+        <ModalField label="邮箱">
+          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
+        </ModalField>
+        <ModalField label="电话">
+          <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
         </ModalField>
         <ModalField label="部门">
           <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className={selectCls}>

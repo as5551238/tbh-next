@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, type FC } from 'react';
 import { useCollabDocs } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/lib/auth';
@@ -8,7 +8,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { FileText, FileSpreadsheet, FileImage, File, Clock, User, Edit3, Eye, Loader2, X, Save, Users } from 'lucide-react';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 
-const TYPE_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
+const TYPE_ICONS: Record<string, FC<{ size?: number; className?: string }>> = {
   doc: FileText,
   sheet: FileSpreadsheet,
   slide: FileImage,
@@ -22,7 +22,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function CollabDocsView() {
-  const { docs, addDoc, editDoc, loading } = useCollabDocs();
+  const { docs, addDoc, editDoc, removeDoc, loading } = useCollabDocs();
   const { triggerFeedback } = useMLOOFeedback();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
@@ -149,26 +149,38 @@ export default function CollabDocsView() {
           const Icon = TYPE_ICONS[doc.type] ?? File;
           return (
             <div key={doc.id} onClick={() => setActiveDoc(doc.id)} className="group rounded-xl border border-border bg-surface p-4 transition-all hover:border-primary/30 hover:shadow-lg cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                  <Icon size={16} className="text-primary-2" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-semibold text-text truncate">{doc.title}</span>
-                    <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold shrink-0', STATUS_STYLES[doc.status])}>
-                      {doc.status === 'editing' ? '编辑中' : doc.status === 'review' ? '评审中' : '已定稿'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[10px] text-text-3">
-                    <span className="flex items-center gap-1"><Clock size={9} />{doc.last_edited}</span>
-                    <span className="flex items-center gap-1"><User size={9} />{doc.last_edited_by}</span>
-                    <span className="flex items-center gap-1"><Edit3 size={9} />{doc.editors}人编辑</span>
-                    <span className="flex items-center gap-1"><Eye size={9} />{doc.viewers}人查看</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+               <div className="flex items-center gap-3">
+                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                   <Icon size={16} className="text-primary-2" />
+                 </div>
+                 <div className="min-w-0 flex-1">
+                   <div className="flex items-center gap-2 mb-0.5">
+                     <span className="text-xs font-semibold text-text truncate">{doc.title}</span>
+                     <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold shrink-0', STATUS_STYLES[doc.status])}>
+                       {doc.status === 'editing' ? '编辑中' : doc.status === 'review' ? '评审中' : '已定稿'}
+                     </span>
+                   </div>
+                   <div className="flex items-center gap-3 text-[10px] text-text-3">
+                     <span className="flex items-center gap-1"><Clock size={9} />{doc.last_edited}</span>
+                     <span className="flex items-center gap-1"><User size={9} />{doc.last_edited_by}</span>
+                     <span className="flex items-center gap-1"><Edit3 size={9} />{doc.editors}人编辑</span>
+                     <span className="flex items-center gap-1"><Eye size={9} />{doc.viewers}人查看</span>
+                   </div>
+                 </div>
+                 <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={(e) => e.stopPropagation()}>
+                   {doc.status === 'editing' && (
+                     <button onClick={() => editDoc(doc.id, { status: 'review' })} className="rounded bg-warn/10 px-2 py-0.5 text-[8px] font-semibold text-warn hover:bg-warn/20">送审</button>
+                   )}
+                   {doc.status === 'review' && (
+                     <button onClick={() => editDoc(doc.id, { status: 'final' })} className="rounded bg-primary/10 px-2 py-0.5 text-[8px] font-semibold text-primary-2 hover:bg-primary/20">定稿</button>
+                   )}
+                   {doc.status === 'final' && (
+                     <button onClick={() => editDoc(doc.id, { status: 'editing' })} className="rounded bg-surface-2 px-2 py-0.5 text-[8px] font-semibold text-text-3 hover:bg-primary/10">重编</button>
+                   )}
+                   <button onClick={() => removeDoc(doc.id)} className="rounded bg-danger/10 px-2 py-0.5 text-[8px] font-semibold text-danger hover:bg-danger/20">删除</button>
+                 </div>
+               </div>
+             </div>
           );
         })
         )}

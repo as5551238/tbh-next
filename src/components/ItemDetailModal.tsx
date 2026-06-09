@@ -5,7 +5,10 @@
  * Supports: text, textarea, select, number, date input types.
  */
 import { type ReactNode } from 'react';
+import { type FormEvent } from 'react';
 import { Modal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import CommentSection from '@/components/CommentSection';
+import ItemLinksPanel from '@/components/ItemLinksPanel';
 
 export interface FieldDef {
   key: string;
@@ -24,12 +27,14 @@ interface Props<T extends Record<string, unknown> = Record<string, unknown>> {
   onSave: (updated: T) => void;
   onDelete?: () => void;
   extraFooter?: ReactNode;
+  /** When provided, renders a CommentSection inside the modal body */
+  commentTarget?: { type: string; id: string } | null;
 }
 
-export default function ItemDetailModal<T extends Record<string, unknown> = Record<string, unknown>>({ open, onClose, title, fields, data, onSave, onDelete, extraFooter }: Props<T>) {
+export default function ItemDetailModal<T extends Record<string, unknown> = Record<string, unknown>>({ open, onClose, title, fields, data, onSave, onDelete, extraFooter, commentTarget }: Props<T>) {
   if (!data) return null;
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
@@ -108,6 +113,8 @@ export default function ItemDetailModal<T extends Record<string, unknown> = Reco
           );
         })}
       </form>
+      {commentTarget && <CommentSection targetType={commentTarget.type} targetId={commentTarget.id} />}
+      {commentTarget && <ItemLinksPanel sourceId={commentTarget.id} sourceType={commentTarget.type} />}
     </Modal>
   );
 }

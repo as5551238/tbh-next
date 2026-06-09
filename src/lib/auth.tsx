@@ -1,5 +1,7 @@
+import { type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useAppStore } from '@/stores/appStore';
 import { useEffect, useState, useCallback } from 'react';
 
 // --- Types ---
@@ -44,11 +46,16 @@ function setDemoAuth(user: AuthUser | null): void {
  * so !!Promise is always true. This async version awaits the result.
  */
 export async function isAuthenticatedAsync(): Promise<boolean> {
-  if (isSupabaseConfigured() && supabase) {
-    const { data: { session } } = await supabase.auth.getSession();
-    return !!session;
+  try {
+    if (isSupabaseConfigured() && supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      return !!session;
+    }
+    return !!getDemoUser();
+  } catch (err) {
+    console.error('[isAuthenticatedAsync]', err);
+    return false;
   }
-  return !!getDemoUser();
 }
 
 /**
@@ -69,20 +76,26 @@ export function isAuthenticated(): boolean {
  * Async version: gets the current authenticated user.
  */
 export async function getCurrentUserAsync(): Promise<AuthUser | null> {
-  if (isSupabaseConfigured() && supabase) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const meta = session.user.user_metadata ?? {};
-      return {
-        id: session.user.id,
-        email: session.user.email ?? '',
-        role: meta.role ?? 'member',
-        name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
-      };
+  try {
+    if (isSupabaseConfigured() && supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const meta = session.user.user_metadata ?? {};
+        return {
+          id: session.user.id,
+          email: session.user.email ?? '',
+          role: meta.role ?? 'member',
+          name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
+        };
+      }
+      return null;
     }
+    return getDemoUser();
+  } catch (err) {
+    console.error('[getCurrentUserAsync]', err);
+    clearAuth();
     return null;
   }
-  return getDemoUser();
 }
 
 /**
@@ -108,89 +121,134 @@ export function clearAuth(): void {
 // --- Demo login ---
 
 export async function demoLogin(name: string, email: string, role: string = 'member'): Promise<AuthUser> {
-  const user: AuthUser = {
-    id: `demo-${Date.now()}`,
-    email,
-    role,
-    name,
-  };
-  setDemoAuth(user);
-  return user;
+  try {
+    const user: AuthUser = {
+      id: `demo-${Date.now()}`,
+      email,
+      role,
+      name,
+    };
+    setDemoAuth(user);
+    return user;
+  } catch (err) {
+    console.error('[demoLogin]', err);
+    clearAuth();
+    throw err;
+  }
 }
 
 // --- Supabase Auth login ---
 
 export async function supabaseLogin(email: string, password: string): Promise<AuthUser> {
-  if (!supabase) throw new Error('Supabase not configured');
+  try {
+    if (!supabase) throw new Error('Supabase not configured');
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
 
-  const meta = data.user?.user_metadata ?? {};
-  return {
-    id: data.user.id,
-    email: data.user.email ?? email,
-    role: meta.role ?? 'member',
-    name: meta.name ?? email.split('@')[0],
-  };
+    const meta = data.user?.user_metadata ?? {};
+    return {
+      id: data.user.id,
+      email: data.user.email ?? email,
+      role: meta.role ?? 'member',
+      name: meta.name ?? email.split('@')[0],
+    };
+  } catch (err) {
+    console.error('[supabaseLogin]', err);
+    clearAuth();
+    throw err;
+  }
 }
 
 export async function supabaseSignup(email: string, password: string, name: string): Promise<AuthUser> {
-  if (!supabase) throw new Error('Supabase not configured');
+  try {
+    if (!supabase) throw new Error('Supabase not configured');
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { name, role: 'member' } },
-  });
-  if (error) throw error;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name, role: 'member' } },
+    });
+    if (error) throw error;
 
-  return {
-    id: data.user?.id ?? '',
-    email,
-    role: 'member',
-    name,
-  };
+    return {
+      id: data.user?.id ?? '',
+      email,
+      role: 'member',
+      name,
+    };
+  } catch (err) {
+    console.error('[supabaseSignup]', err);
+    clearAuth();
+    throw err;
+  }
+}
+
+/** Send password reset email via Supabase Auth */
+export async function supabaseResetPassword(email: string): Promise<void> {
+  try {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[supabaseResetPassword]', err);
+    clearAuth();
+    throw err;
+  }
 }
 
 // --- React hook for auth state ---
 
+const SESSION_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const setStoreAuthUser = useAppStore((s) => s.setAuthUser);
+
+  const syncUser = useCallback((u: AuthUser | null) => {
+    setUser(u);
+    setStoreAuthUser(u);
+  }, [setStoreAuthUser]);
 
   const initAuth = useCallback(async () => {
-    if (isSupabaseConfigured() && supabase) {
-      // Try to get existing session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const meta = session.user.user_metadata ?? {};
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? '',
-          role: meta.role ?? 'member',
-          name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
-        });
-      }
-      // Listen for auth changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           const meta = session.user.user_metadata ?? {};
-          setUser({
+          syncUser({
             id: session.user.id,
             email: session.user.email ?? '',
             role: meta.role ?? 'member',
             name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
           });
-        } else {
-          setUser(null);
         }
-      });
-      setLoading(false);
-      return () => subscription.unsubscribe();
-    } else {
-      // Demo mode
-      setUser(getDemoUser());
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (session?.user) {
+            const meta = session.user.user_metadata ?? {};
+            syncUser({
+              id: session.user.id,
+              email: session.user.email ?? '',
+              role: meta.role ?? 'member',
+              name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
+            });
+          } else {
+            syncUser(null);
+          }
+        });
+        setLoading(false);
+        return () => subscription.unsubscribe();
+      } else {
+        syncUser(getDemoUser());
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('[initAuth]', err);
+      clearAuth();
+      syncUser(null);
       setLoading(false);
     }
   }, []);
@@ -200,28 +258,64 @@ export function useAuth() {
     return () => { cleanup?.then?.((fn) => fn?.()); };
   }, [initAuth]);
 
+  // Session keep-alive: refresh every 5 minutes, auto-logout on failure
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !supabase) return;
+    const interval = setInterval(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          const { data: { session: refreshed }, error } = await supabase.auth.refreshSession();
+          if (error || !refreshed) {
+            console.warn('[useAuth] Session refresh failed, logging out');
+            clearAuth();
+            syncUser(null);
+          }
+        }
+      } catch (err) {
+        console.error('[useAuth] Session refresh error:', err);
+        clearAuth();
+        syncUser(null);
+      }
+    }, SESSION_REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [syncUser]);
+
   const login = useCallback(async (email: string, password: string) => {
-    if (isSupabaseConfigured()) {
-      const u = await supabaseLogin(email, password);
-      setUser(u);
+    try {
+      if (isSupabaseConfigured()) {
+        const u = await supabaseLogin(email, password);
+        syncUser(u);
+        return u;
+      }
+      const u = await demoLogin(email.split('@')[0] ?? 'User', email);
+      syncUser(u);
       return u;
+    } catch (err) {
+      console.error('[login]', err);
+      clearAuth();
+      syncUser(null);
+      throw err;
     }
-    const u = await demoLogin(email.split('@')[0] ?? 'User', email);
-    setUser(u);
-    return u;
-  }, []);
+  }, [syncUser]);
 
   const logout = useCallback(async () => {
-    clearAuth();
-    setUser(null);
-  }, []);
+    try {
+      clearAuth();
+      syncUser(null);
+    } catch (err) {
+      console.error('[logout]', err);
+      clearAuth();
+      syncUser(null);
+    }
+  }, [syncUser]);
 
   return { user, loading, login, logout, isAuthenticated: !!user };
 }
 
 // --- Route guard component ---
 
-export default function RequireAuth({ children }: { children: React.ReactNode }) {
+export default function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 

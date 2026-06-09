@@ -4,8 +4,8 @@ import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import ItemDetailModal from '@/components/ItemDetailModal';
-import { FileText, Plus, Clock, Users, MoreHorizontal, Loader2 } from 'lucide-react';
-import { createDoc } from '@/lib/dataLayer';
+import { hasFeature } from '@/lib/subscription';
+import { FileText, Plus, Lock, Clock, Users, MoreHorizontal, Loader2 } from 'lucide-react';
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   editing: { label: '编辑中', cls: 'bg-success/10 text-success' },
@@ -15,8 +15,9 @@ const statusMap: Record<string, { label: string; cls: string }> = {
 };
 
 export default function DocsContent() {
+  const isPro = hasFeature('advancedAnalytics' as never);
   const { cell, loading: cellLoading } = useMatrixCell();
-  const { docs, setDocs, loading } = useDocs();
+  const { docs, addDoc, editDoc, removeDoc, loading } = useDocs();
 
   const createModal = useModal();
   const editModal = useModal();
@@ -30,21 +31,14 @@ export default function DocsContent() {
 
   async function handleCreate() {
     if (!newTitle.trim()) return;
-    const newDoc = {
-      id: `doc-${Date.now()}`,
+    const row = await addDoc({
       title: newTitle.trim(),
       type: newType,
-      status: 'draft' as const,
+      status: 'draft',
       updated: new Date().toLocaleDateString('zh-CN'),
       editors: 0,
-    };
-    setDocs((prev) => [newDoc, ...prev]);
-    try {
-      await createDoc(newDoc);
-      success(`文档"${newDoc.title}"已创建`);
-    } catch (e) {
-      toastError('创建失败，数据仅保存在本地');
-    }
+    });
+    success(`文档"${row.title}"已创建`);
     setNewTitle('');
     setNewType('doc');
     createModal.closeModal();
@@ -64,7 +58,7 @@ export default function DocsContent() {
       <div className="flex items-center gap-2">
         <FileText size={18} className="text-primary-2" />
         <span className="text-sm font-bold">文档协作</span>
-        <button onClick={createModal.openModal} className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white transition-all hover:bg-primary-2">
+        <button onClick={() => { if (!isPro) return; createModal.openModal(); }} className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white transition-all hover:bg-primary-2">
           <Plus size={12} />
           新建文档
         </button>
@@ -147,12 +141,13 @@ export default function DocsContent() {
           { key: 'content', label: '内容', type: 'textarea' },
         ]}
         data={selectedDoc as Record<string, unknown> | null}
+        commentTarget={selectedDoc?.id ? { type: 'doc', id: String(selectedDoc.id) } : null}
         onSave={(updated) => {
           const id = updated.id as string;
-          setDocs(prev => prev.map(doc => doc.id === id ? { ...doc, ...updated } as (typeof docs)[number] : doc));
+          editDoc(id, updated);
         }}
         onDelete={() => {
-          if (selectedDoc) setDocs(prev => prev.filter(doc => doc.id !== selectedDoc.id));
+          if (selectedDoc) removeDoc(selectedDoc.id);
         }}
       />
     </div>

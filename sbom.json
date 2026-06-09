@@ -1,9 +1,7 @@
 {
-  "$schema": "https://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "version": 1,
-  "serialNumber": "urn:uuid:95d03d4a-7c23-4288-bc18-6bd163ca5c6a",
   "metadata": {
     "component": {
       "type": "application",
@@ -11,10 +9,10 @@
       "version": "0.1.0",
       "purl": "pkg:npm/tbh-next@0.1.0"
     },
-    "timestamp": "2026-06-05T04:11:28.897Z",
+    "timestamp": "2026-06-08T13:20:35.522Z",
     "tools": [
       {
-        "name": "tbh-sbom-gen",
+        "name": "pnpm-lockfile-sbom",
         "version": "1.0.0"
       }
     ]
@@ -24,7 +22,7 @@
       "type": "library",
       "name": "@supabase/supabase-js",
       "version": "2.104.0",
-      "purl": "pkg:npm/@supabase/supabase-js@2.104.0"
+      "purl": "pkg:npm/%40supabase%2Fsupabase-js@2.104.0"
     },
     {
       "type": "library",
@@ -70,45 +68,63 @@
     },
     {
       "type": "library",
+      "name": "@axe-core/playwright",
+      "version": "4.11.3",
+      "purl": "pkg:npm/%40axe-core%2Fplaywright@4.11.3"
+    },
+    {
+      "type": "library",
       "name": "@eslint/js",
       "version": "9.39.4",
-      "purl": "pkg:npm/@eslint/js@9.39.4"
+      "purl": "pkg:npm/%40eslint%2Fjs@9.39.4"
+    },
+    {
+      "type": "library",
+      "name": "@playwright/test",
+      "version": "1.60.0",
+      "purl": "pkg:npm/%40playwright%2Ftest@1.60.0"
     },
     {
       "type": "library",
       "name": "@testing-library/jest-dom",
       "version": "6.9.1",
-      "purl": "pkg:npm/@testing-library/jest-dom@6.9.1"
+      "purl": "pkg:npm/%40testing-library%2Fjest-dom@6.9.1"
     },
     {
       "type": "library",
       "name": "@testing-library/react",
       "version": "16.3.2",
-      "purl": "pkg:npm/@testing-library/react@16.3.2"
+      "purl": "pkg:npm/%40testing-library%2Freact@16.3.2"
+    },
+    {
+      "type": "library",
+      "name": "@testing-library/user-event",
+      "version": "14.6.1",
+      "purl": "pkg:npm/%40testing-library%2Fuser-event@14.6.1"
     },
     {
       "type": "library",
       "name": "@types/node",
       "version": "24.12.2",
-      "purl": "pkg:npm/@types/node@24.12.2"
+      "purl": "pkg:npm/%40types%2Fnode@24.12.2"
     },
     {
       "type": "library",
       "name": "@types/react",
       "version": "19.2.14",
-      "purl": "pkg:npm/@types/react@19.2.14"
+      "purl": "pkg:npm/%40types%2Freact@19.2.14"
     },
     {
       "type": "library",
       "name": "@types/react-dom",
       "version": "19.2.3",
-      "purl": "pkg:npm/@types/react-dom@19.2.3"
+      "purl": "pkg:npm/%40types%2Freact-dom@19.2.3"
     },
     {
       "type": "library",
       "name": "@vitejs/plugin-react",
       "version": "4.3.4",
-      "purl": "pkg:npm/@vitejs/plugin-react@4.3.4"
+      "purl": "pkg:npm/%40vitejs%2Fplugin-react@4.3.4"
     },
     {
       "type": "library",
@@ -175,6 +191,12 @@
       "name": "typescript",
       "version": "6.0.2",
       "purl": "pkg:npm/typescript@6.0.2"
+    },
+    {
+      "type": "library",
+      "name": "typescript-eslint",
+      "version": "8.60.1",
+      "purl": "pkg:npm/typescript-eslint@8.60.1"
     },
     {
       "type": "library",

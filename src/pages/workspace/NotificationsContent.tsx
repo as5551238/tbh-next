@@ -12,7 +12,7 @@ const TYPE_STYLES: Record<string, string> = {
 };
 
 export default function NotificationsContent() {
-  const { notifications, markRead, markAllRead, loading } = useNotifications();
+  const { notifications, markRead, markAllRead, removeNotification, clearAll, loading } = useNotifications();
   const [filter, setFilter] = useState<'all' | 'unread' | 'alert'>('all');
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -57,6 +57,7 @@ export default function NotificationsContent() {
             >{f === 'all' ? '全部' : f === 'unread' ? '未读' : '预警'}</button>
           ))}
           <button onClick={handleMarkAllRead} className="rounded-lg px-2.5 py-1 text-[10px] text-text-3 hover:bg-surface-2">全部已读</button>
+          {notifications.length > 0 && <button onClick={() => { setConfirmAction({ label: '将清空所有通知，此操作不可恢复', onConfirm: () => { clearAll(); confirmModal.closeModal(); } }); confirmModal.openModal(); }} className="rounded-lg px-2.5 py-1 text-[10px] text-danger hover:bg-danger/10">清空全部</button>}
         </div>
       </div>
 
@@ -73,6 +74,7 @@ export default function NotificationsContent() {
               {!notif.read && <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
               <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                 {!notif.read && <button onClick={() => markRead(notif.id)} className="rounded p-1 text-text-3 hover:text-success"><Check size={12} /></button>}
+                <button onClick={() => { setConfirmAction({ label: '确认删除此通知？', onConfirm: () => { removeNotification(notif.id); confirmModal.closeModal(); } }); confirmModal.openModal(); }} className="rounded p-1 text-text-3 hover:text-danger"><Trash2 size={12} /></button>
               </div>
             </div>
             <p className="text-[11px] text-text-2 leading-relaxed">{displayMsg(notif)}</p>
@@ -89,6 +91,7 @@ export default function NotificationsContent() {
         footer={
           activeNotif ? (
             <>
+              <button onClick={() => { if (activeNotif) { removeNotification(activeNotif.id); detailModal.closeModal(); } }} className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10">删除</button>
               <button onClick={detailModal.closeModal} className={btnPrimary}>关闭</button>
             </>
           ) : undefined

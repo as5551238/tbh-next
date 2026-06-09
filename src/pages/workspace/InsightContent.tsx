@@ -1,19 +1,18 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
+import { useState, useCallback } from 'react';
+import { useMatrixCell, useIndustryColor, useInsights } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, Lightbulb, ArrowUpRight, ArrowDownRight, BarChart3, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Lightbulb, ArrowUpRight, ArrowDownRight, Plus, Trash2, Lock } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import ItemDetailModal from '@/components/ItemDetailModal';
-
-const INSIGHTS_STORAGE = 'tbh-insights';
+import { hasFeature } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
 
 const DEFAULT_INSIGHTS = [
-  { title: '需求交付周期趋势', desc: '近4周维持在13-14天，稳定在目标范围内', impact: 'positive', kpi: '需求交付周期' },
-  { title: '功能使用率异常', desc: '导出功能使用率从25%骤降至12%，与上次UI改版时间吻合', impact: 'negative', kpi: '功能使用率' },
-  { title: 'PRD评审效率提升', desc: '引入标准化模板后，PRD一次性通过率从65%提升至82%', impact: 'positive', kpi: 'PRD通过率' },
-  { title: 'NPS下降预警', desc: '连续2周低于目标线，主要集中在Onboarding环节', impact: 'negative', kpi: 'NPS' },
+  { title: '需求交付周期趋势', description: '近4周维持在13-14天，稳定在目标范围内', impact: 'positive', kpi: '需求交付周期' },
+  { title: '功能使用率异常', description: '导出功能使用率从25%骤降至12%，与上次UI改版时间吻合', impact: 'negative', kpi: '功能使用率' },
+  { title: 'PRD评审效率提升', description: '引入标准化模板后，PRD一次性通过率从65%提升至82%', impact: 'positive', kpi: 'PRD通过率' },
+  { title: 'NPS下降预警', description: '连续2周低于目标线，主要集中在Onboarding环节', impact: 'negative', kpi: 'NPS' },
 ];
 
 const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
@@ -21,32 +20,49 @@ const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
 export default function InsightContent() {
   const { cell, loading } = useMatrixCell();
   const indColor = useIndustryColor();
-  const industry = useAppStore((s) => s.industry);
+  const { insights, addInsight, editInsight, removeInsight } = useInsights();
   const modal = useModal();
   const editModal = useModal();
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [selectedInsight, setSelectedInsight] = useState<(typeof localInsights)[number] | null>(null);
-  const [form, setForm] = useState({ title: '', desc: '', impact: 'positive' as 'positive' | 'negative', kpi: '' });
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({ title: '', description: '', impact: 'positive' as 'positive' | 'negative', kpi: '' });
+  const [editForm, setEditForm] = useState({ title: '', description: '', impact: 'positive' as string, kpi: '' });
+  const [showPaywall, setShowPaywall] = useState(false);
   const { toasts, success } = useToast();
-  const [localInsights, setLocalInsights] = useState(() => {
-    try { const s = localStorage.getItem(INSIGHTS_STORAGE); return s ? JSON.parse(s) : DEFAULT_INSIGHTS; } catch { return DEFAULT_INSIGHTS; }
-  });
 
-  useEffect(() => {
-    try { localStorage.setItem(INSIGHTS_STORAGE, JSON.stringify(localInsights)); } catch {}
-  }, [localInsights]);
+  const displayInsights = insights.length > 0 ? insights : DEFAULT_INSIGHTS.map((d, i) => ({
+    id: `default-${i}`, ...d, team_id: 'default', created_at: '', updated_at: '',
+  }));
 
   const handleOpen = useCallback(() => {
-    setForm({ title: '', desc: '', impact: 'positive', kpi: '' });
+    setForm({ title: '', description: '', impact: 'positive', kpi: '' });
     modal.openModal();
-  }, [modal.openModal]);
+  }, [modal]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!form.title.trim()) return;
-    setLocalInsights((prev) => [{ title: form.title, desc: form.desc, impact: form.impact, kpi: form.kpi }, ...prev]);
+    await addInsight({ title: form.title, description: form.description, impact: form.impact, kpi: form.kpi, team_id: 'default' });
     modal.closeModal();
     success(`洞察"${form.title}"已创建`);
-  }, [form, modal.closeModal]);
+  }, [form, addInsight, modal, success]);
+
+  const handleEditOpen = useCallback((insight: typeof displayInsights[0]) => {
+    setEditId(insight.id);
+    setEditForm({ title: insight.title, description: insight.description, impact: insight.impact, kpi: insight.kpi });
+    editModal.openModal();
+  }, [editModal]);
+
+  const handleEditSave = useCallback(async () => {
+    if (!editId || !editForm.title.trim()) return;
+    await editInsight(editId, editForm);
+    editModal.closeModal();
+    success('洞察已更新');
+  }, [editId, editForm, editInsight, editModal, success]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    await removeInsight(id);
+    editModal.closeModal();
+    success('洞察已删除');
+  }, [removeInsight, editModal, success]);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -63,15 +79,15 @@ export default function InsightContent() {
       <div className="mx-4 mt-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
         <div className="flex items-center gap-2 text-xs font-semibold text-primary-2 mb-1"><Lightbulb size={14} />洞察概览</div>
         <p className="text-[11px] text-text-2 leading-relaxed">
-          {localInsights.length > 0
-            ? `当前共 ${localInsights.length} 条洞察：${localInsights.filter((i) => i.impact === 'negative').length} 个需关注项，${localInsights.filter((i) => i.impact === 'positive').length} 个正向趋势。建议优先处理负面指标。`
+          {displayInsights.length > 0
+            ? `当前共 ${displayInsights.length} 条洞察：${displayInsights.filter((i) => i.impact === 'negative').length} 个需关注项，${displayInsights.filter((i) => i.impact === 'positive').length} 个正向趋势。建议优先处理负面指标。`
             : '暂无洞察数据，点击"新建洞察"添加。'}
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {localInsights.map((insight, i) => (
-          <div key={i} className="rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg cursor-pointer" onClick={() => { setSelectedIdx(i); setSelectedInsight(insight); editModal.openModal(); }}>
+        {displayInsights.map((insight) => (
+          <div key={insight.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg cursor-pointer" onClick={() => handleEditOpen(insight)}>
             <div className="flex items-center gap-2 mb-2">
               <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
                 insight.impact === 'positive' ? 'bg-success/10' : 'bg-danger/10'
@@ -85,28 +101,41 @@ export default function InsightContent() {
                 {insight.impact === 'positive' ? '正向' : '需关注'}
               </span>
             </div>
-            <p className="text-xs text-text-2 leading-relaxed mb-2">{insight.desc}</p>
+            <p className="text-xs text-text-2 leading-relaxed mb-2">{insight.description}</p>
             <div className="text-[9px] text-text-3">关联指标: {insight.kpi}</div>
           </div>
         ))}
 
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">指标趋势总览</div>
-          <div className="grid grid-cols-2 gap-2">
-            {cell.kpis.map((kpi) => {
-              const TI = TREND_ICON[kpi.trend];
-              return (
-                <div key={kpi.name} className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
-                  <TI size={13} className={kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger'} />
-                  <div className="min-w-0">
-                    <div className="text-[10px] text-text-3 truncate">{kpi.name}</div>
-                    <div className={cn('text-xs font-bold', kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger')}>{kpi.value}</div>
+        {hasFeature('advancedAnalytics') ? (
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">指标趋势总览</div>
+            <div className="grid grid-cols-2 gap-2">
+              {cell.kpis.map((kpi) => {
+                const TI = TREND_ICON[kpi.trend];
+                return (
+                  <div key={kpi.name} className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
+                    <TI size={13} className={kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger'} />
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-text-3 truncate">{kpi.name}</div>
+                      <div className={cn('text-xs font-bold', kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger')}>{kpi.value}</div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+            <Lock size={18} className="mx-auto mb-1 text-primary-2" />
+            <p className="text-[11px] text-text-3 mb-2">指标趋势总览需要专业版</p>
+            <button
+              className="rounded-lg bg-primary px-3 py-1 text-[10px] font-semibold text-white hover:opacity-80"
+              onClick={() => setShowPaywall(true)}
+            >
+              升级专业版
+            </button>
+          </div>
+        )}
       </div>
 
       <Modal open={modal.open} onClose={modal.closeModal} title="新建洞察"
@@ -120,7 +149,7 @@ export default function InsightContent() {
           <input className={inputCls} placeholder="输入洞察标题" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
         <ModalField label="详细描述">
-          <textarea className={inputCls} rows={3} placeholder="输入洞察描述" value={form.desc} onChange={(e) => setForm((p) => ({ ...p, desc: e.target.value }))} />
+          <textarea className={inputCls} rows={3} placeholder="输入洞察描述" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
         </ModalField>
         <ModalField label="影响方向">
           <select className={inputCls} value={form.impact} onChange={(e) => setForm((p) => ({ ...p, impact: e.target.value as 'positive' | 'negative' }))}>
@@ -133,30 +162,36 @@ export default function InsightContent() {
         </ModalField>
       </Modal>
 
-      <ItemDetailModal
-        open={editModal.open}
-        onClose={editModal.closeModal}
-        title="编辑洞察"
-        fields={[
-          { key: 'title', label: '标题', type: 'text' },
-          { key: 'kpi', label: '分类', type: 'text' },
-          { key: 'desc', label: '描述', type: 'textarea' },
-          { key: 'impact', label: '影响', type: 'select', options: [
-            { value: 'positive', label: '高' }, { value: 'medium', label: '中' }, { value: 'negative', label: '低' },
-          ]},
-        ]}
-        data={selectedInsight}
-        onSave={(updated) => {
-          if (selectedIdx !== null) {
-            setLocalInsights(prev => prev.map((item, idx) => idx === selectedIdx ? { ...item, ...updated } as (typeof localInsights)[number] : item));
-          }
-        }}
-        onDelete={() => {
-          if (selectedIdx !== null) {
-            setLocalInsights(prev => prev.filter((_, idx) => idx !== selectedIdx));
-          }
-        }}
-      />
+      <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑洞察"
+        footer={
+          <div className="flex gap-2">
+            {editId && !editId.startsWith('default-') && (
+              <button className="flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={() => handleDelete(editId)}>
+                <Trash2 size={10} />删除
+              </button>
+            )}
+            <button className={btnSecondary} onClick={editModal.closeModal}>取消</button>
+            <button className={btnPrimary} onClick={handleEditSave} disabled={!editForm.title.trim()}>保存</button>
+          </div>
+        }>
+        <ModalField label="洞察标题">
+          <input className={inputCls} value={editForm.title} onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))} />
+        </ModalField>
+        <ModalField label="详细描述">
+          <textarea className={inputCls} rows={3} value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} />
+        </ModalField>
+        <ModalField label="影响方向">
+          <select className={inputCls} value={editForm.impact} onChange={(e) => setEditForm((p) => ({ ...p, impact: e.target.value }))}>
+            <option value="positive">正向</option>
+            <option value="negative">需关注</option>
+          </select>
+        </ModalField>
+        <ModalField label="关联指标">
+          <input className={inputCls} value={editForm.kpi} onChange={(e) => setEditForm((p) => ({ ...p, kpi: e.target.value }))} />
+        </ModalField>
+      </Modal>
+
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="指标趋势总览需要专业版或企业版" feature="advanced_analytics" />
     </div>
   );
 }

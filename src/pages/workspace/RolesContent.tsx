@@ -1,27 +1,27 @@
 import { useState } from 'react';
 import { useRoles } from '@/hooks/useMatrix';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Shield, Plus, Users, Lock, Eye, Loader2 } from 'lucide-react';
+import { Shield, Plus, Users, Lock, Eye, Loader2, Trash2 } from 'lucide-react';
 
 const ALL_PERMISSIONS = ['系统配置', '成员管理', '目标管理', '审批', '任务管理', '文档协作', '数据分析', '只读访问'];
 
 export default function RolesContent() {
-  const { roles, setRoles, loading } = useRoles();
+  const { roles, addRole, editRole, removeRole, loading } = useRoles();
   const { open, openModal, closeModal } = useModal();
-  const [editRole, setEditRole] = useState<typeof roles[number] | null>(null);
+  const [activeRole, setActiveRole] = useState<typeof roles[number] | null>(null);
   const [form, setForm] = useState({ key: '', name: '', description: '' });
   const [formPerms, setFormPerms] = useState<string[]>([]);
 
   function openCreate() {
-    setEditRole(null);
+    setActiveRole(null);
     setForm({ key: '', name: '', description: '' });
     setFormPerms(['只读访问']);
     openModal();
   }
 
   function openEdit(r: typeof roles[number]) {
-    setEditRole(r);
-    setForm({ key: r.key, name: r.name, description: (r as any).description ?? '' });
+    setActiveRole(r);
+    setForm({ key: r.key, name: r.name, description: r.description ?? '' });
     setFormPerms([...r.permissions]);
     openModal();
   }
@@ -30,13 +30,17 @@ export default function RolesContent() {
     setFormPerms((prev) => prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]);
   }
 
-  function handleSave() {
-    if (editRole) {
-      setRoles((prev) => prev.map((r) => r.id === editRole.id ? { ...r, key: form.key, name: form.name, permissions: formPerms, description: form.description } as typeof r : r));
+  async function handleSave() {
+    if (activeRole) {
+      await editRole(activeRole.id, { key: form.key, name: form.name, permissions: formPerms, description: form.description });
     } else {
-      setRoles((prev) => [...prev, { id: crypto.randomUUID(), key: form.key, name: form.name, members: 0, permissions: formPerms, color: `hsl(${Math.random() * 360},60%,50%)` } as typeof prev[number]]);
+      await addRole({ key: form.key, name: form.name, members: 0, permissions: formPerms, color: `hsl(${Math.random() * 360},60%,50%)` });
     }
     closeModal();
+  }
+
+  async function handleDelete(id: string) {
+    await removeRole(id);
   }
 
   if (loading) {
@@ -112,6 +116,7 @@ export default function RolesContent() {
               <div className="flex items-center gap-1 text-text-3">
                 <Users size={12} />
                 <span className="text-[10px]">{r.members} 人</span>
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }} className="ml-2 rounded p-1 text-text-3 hover:text-danger hover:bg-danger/10 transition-colors"><Trash2 size={12} /></button>
               </div>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -130,11 +135,11 @@ export default function RolesContent() {
       <Modal
         open={open}
         onClose={closeModal}
-        title={editRole ? '编辑角色' : '新建角色'}
+        title={activeRole ? '编辑角色' : '新建角色'}
         footer={
           <>
             <button onClick={closeModal} className={btnSecondary}>取消</button>
-            <button onClick={handleSave} className={btnPrimary}>{editRole ? '保存' : '创建'}</button>
+            <button onClick={handleSave} className={btnPrimary}>{activeRole ? '保存' : '创建'}</button>
           </>
         }
       >

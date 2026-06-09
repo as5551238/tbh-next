@@ -16,13 +16,13 @@ export interface NotificationRow {
   source?: string; time?: string; action_url?: string | null;
 }
 export interface ReportRow {
-  id: string; name: string; type: string; generated_at: string;
-  generated_by: string; status: string; size: string;
+  id: string; title: string; type: string; generated_at: string;
+  status: string; content?: string;
 }
 export interface ApprovalRow {
-  id: string; title: string; type: string; requester: string;
-  department: string; urgency: string; status: string;
-  created_at: string; amount: string | null;
+  id: string; title: string; type: string; applicant_id: string;
+  approver_id?: string; description?: string; urgency: string; status: string;
+  created_at: string;
 }
 export interface AnnouncementRow {
   id: string; title: string; content: string; author: string;
@@ -48,9 +48,11 @@ export interface ContactRow {
   email: string; phone: string; status: string;
 }
 export interface AgentDetailRow {
-  id: string; name: string; desc: string; model: string;
+  id: string; name: string; description: string; model: string;
   status: string; tasks_completed: number; uptime: string;
   enabled: boolean; capabilities: string[];
+  avatar: string; skills: string[]; team_id: string;
+  created_at: string; updated_at: string;
 }
 export interface AgentConfigRow {
   id: string; name: string; model: string; temperature: number;
@@ -77,19 +79,82 @@ export interface OrgInfoRow {
 }
 export interface RoleRow {
   id: string; name: string; key: string; members: number;
-  permissions: string[]; color: string;
+  permissions: string[]; color: string; description?: string;
 }
 export interface PredictionRow {
   id: string; title: string; probability: number; impact: string;
   trend: string; reason: string; suggestion: string;
 }
 export interface ExperienceRow {
-  id: string; title: string; tags: string[]; author: string;
-  likes: number; comments: number; summary: string;
+  id: string; title: string; tags: string[]; author?: string;
+  content?: string; category?: string;
 }
 export interface DocRow {
   id: string; title: string; type: string; editors: number;
   updated: string; status: string; author: string;
+}
+export interface ActivityRow {
+  id: string; title: string; description: string; type: string;
+  actor: string; target_type: string | null; target_id: string | null;
+  created_at: string; team_id: string;
+}
+export interface NoteRow {
+  id: string; title: string; content: string; tags: string[];
+  color: string; pinned: boolean; member_id: string | null;
+  team_id: string; created_at: string; updated_at: string;
+}
+export interface SprintRow {
+  id: string; name: string; goal_id: string | null; status: string;
+  start_date: string; end_date: string; total_tasks: number;
+  completed_tasks: number; team_id: string; created_at: string; updated_at: string;
+}
+export interface TemplateRow {
+  id: string; name: string; category: string; content: string;
+  usage_count: number; is_built_in: boolean; team_id: string;
+  created_at: string; updated_at: string;
+}
+export interface BookmarkRow {
+  id: string; title: string; url: string; target_type: string;
+  target_id: string; category: string; member_id: string | null;
+  team_id: string; created_at: string;
+}
+export interface CommentRow {
+  id: string; content: string; author_id: string | null;
+  target_type: string; target_id: string; parent_id: string | null;
+  team_id: string; created_at: string; updated_at: string;
+}
+export interface TagRow {
+  id: string; name: string; color: string; target_type: string;
+  usage_count: number; team_id: string; created_at: string; updated_at: string;
+}
+export interface CategoryRow {
+  id: string; name: string; type: string; icon: string; color: string;
+  sort_order: number; team_id: string; created_at: string; updated_at: string;
+}
+export interface FeatureFlagRow {
+  id: string; key: string; name: string; description: string;
+  enabled: boolean; rollout_percentage: number; target_plan: string;
+  team_id: string; created_at: string; updated_at: string;
+}
+export interface SavedViewRow {
+  id: string; name: string; module: string; filters: string;
+  sort_by: string; columns: string; is_default: boolean;
+  member_id: string | null; team_id: string; created_at: string; updated_at: string;
+}
+export interface AutomationRuleRow {
+  id: string; name: string; trigger_type: string; trigger_config: string;
+  action_type: string; action_config: string; is_active: boolean;
+  priority: number; team_id: string; created_at: string; updated_at: string;
+}
+export interface StatusFlowRuleRow {
+  id: string; entity_type: string; from_status: string; to_status: string;
+  condition_config: string; auto_transition: boolean; require_comment: boolean;
+  team_id: string; created_at: string; updated_at: string;
+}
+export interface ItemLinkRow {
+  id: string; source_id: string; source_type: string;
+  target_id: string; target_type: string; label: string | null;
+  created_at: string; team_id: string;
 }
 
 // --- Mock Data Functions ---
@@ -107,22 +172,22 @@ export function localNotifications(): NotificationRow[] {
 
 export function localReports(): ReportRow[] {
   return [
-    { id: 'R-001', name: '周报 - 产品部W23', type: 'weekly', generated_at: '6月2日', generated_by: 'AI产品分析师', status: 'ready', size: '2.1 MB' },
-    { id: 'R-002', name: '月度OKR进展报告', type: 'monthly', generated_at: '6月1日', generated_by: '系统', status: 'ready', size: '4.5 MB' },
-    { id: 'R-003', name: '竞品功能对比分析', type: 'custom', generated_at: '5月30日', generated_by: 'AI竞品侦探', status: 'ready', size: '1.8 MB' },
-    { id: 'R-004', name: '用户行为分析报告', type: 'custom', generated_at: '5月28日', generated_by: 'AI数据看门人', status: 'ready', size: '3.2 MB' },
-    { id: 'R-005', name: '周报 - 产品部W24', type: 'weekly', generated_at: '生成中...', generated_by: 'AI产品分析师', status: 'generating', size: '-' },
+    { id: 'R-001', title: '周报 - 产品部W23', type: 'weekly', generated_at: '6月2日', status: 'ready' },
+    { id: 'R-002', title: '月度OKR进展报告', type: 'monthly', generated_at: '6月1日', status: 'ready' },
+    { id: 'R-003', title: '竞品功能对比分析', type: 'custom', generated_at: '5月30日', status: 'ready' },
+    { id: 'R-004', title: '用户行为分析报告', type: 'custom', generated_at: '5月28日', status: 'ready' },
+    { id: 'R-005', title: '周报 - 产品部W24', type: 'weekly', generated_at: '生成中...', status: 'generating' },
   ];
 }
 
 export function localApprovals(): ApprovalRow[] {
   return [
-    { id: 'AP-001', title: 'Q3路线图预算申请', type: 'project', requester: '张明', department: '产品部', urgency: 'urgent', status: 'pending', created_at: '2小时前', amount: '¥50,000' },
-    { id: 'AP-002', title: '服务器扩容审批', type: 'purchase', requester: '李工', department: '研发部', urgency: 'normal', status: 'pending', created_at: '5小时前', amount: '¥120,000' },
-    { id: 'AP-003', title: '年假申请（6/15-6/19）', type: 'leave', requester: '王琳', department: '设计部', urgency: 'low', status: 'pending', created_at: '1天前', amount: null },
-    { id: 'AP-004', title: '客户数据访问权限', type: 'access', requester: '陈亮', department: '销售部', urgency: 'normal', status: 'approved', created_at: '2天前', amount: null },
-    { id: 'AP-005', title: '差旅报销（深圳出差）', type: 'expense', requester: '赵磊', department: '市场部', urgency: 'low', status: 'approved', created_at: '3天前', amount: null },
-    { id: 'AP-006', title: '办公设备采购', type: 'purchase', requester: '孙婷', department: '行政部', urgency: 'normal', status: 'rejected', created_at: '4天前', amount: '¥8,500' },
+    { id: 'AP-001', title: 'Q3路线图预算申请', type: 'project', applicant_id: '张明', urgency: 'urgent', status: 'pending', created_at: '2小时前', description: 'Q3产品路线图所需额外预算' },
+    { id: 'AP-002', title: '服务器扩容审批', type: 'purchase', applicant_id: '李工', urgency: 'normal', status: 'pending', created_at: '5小时前', description: '研发服务器扩容至32核' },
+    { id: 'AP-003', title: '年假申请（6/15-6/19）', type: 'leave', applicant_id: '王琳', urgency: 'low', status: 'pending', created_at: '1天前' },
+    { id: 'AP-004', title: '客户数据访问权限', type: 'access', applicant_id: '陈亮', urgency: 'normal', status: 'approved', created_at: '2天前' },
+    { id: 'AP-005', title: '差旅报销（深圳出差）', type: 'expense', applicant_id: '赵磊', urgency: 'low', status: 'approved', created_at: '3天前' },
+    { id: 'AP-006', title: '办公设备采购', type: 'purchase', applicant_id: '孙婷', urgency: 'normal', status: 'rejected', created_at: '4天前' },
   ];
 }
 
@@ -184,11 +249,11 @@ export function localContacts(): ContactRow[] {
 
 export function localAgentDetails(): AgentDetailRow[] {
   return [
-    { id: 'AG-001', name: '产品分析师', desc: 'PRD与需求分析，市场趋势洞察', model: 'GPT-4o', status: 'running', tasks_completed: 142, uptime: '99.8%', enabled: true, capabilities: ['PRD生成', '需求排序', '用户画像分析'] },
-    { id: 'AG-002', name: '竞品侦探', desc: '竞品动态监控与对比分析', model: 'Claude-3.5', status: 'running', tasks_completed: 89, uptime: '99.5%', enabled: true, capabilities: ['竞品监控', '功能对比', '趋势预警'] },
-    { id: 'AG-003', name: '数据看门人', desc: '功能使用率追踪与异常检测', model: 'GPT-4o', status: 'running', tasks_completed: 213, uptime: '99.9%', enabled: true, capabilities: ['指标追踪', '异常告警', '报表生成'] },
-    { id: 'AG-004', name: '技术助手', desc: '架构评审与技术债务追踪', model: 'Claude-3.5', status: 'idle', tasks_completed: 67, uptime: '98.2%', enabled: true, capabilities: ['代码审查', '架构评估', '性能诊断'] },
-    { id: 'AG-005', name: '日报编辑', desc: '每日工作总结与进展汇编', model: 'GPT-4o-mini', status: 'idle', tasks_completed: 31, uptime: '99.1%', enabled: false, capabilities: ['日报生成', '进展汇总'] },
+    { id: 'AG-001', name: '产品分析师', description: 'PRD与需求分析，市场趋势洞察', model: 'GPT-4o', status: 'running', tasks_completed: 142, uptime: '99.8%', enabled: true, capabilities: ['PRD生成', '需求排序', '用户画像分析'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
+    { id: 'AG-002', name: '竞品侦探', description: '竞品动态监控与对比分析', model: 'Claude-3.5', status: 'running', tasks_completed: 89, uptime: '99.5%', enabled: true, capabilities: ['竞品监控', '功能对比', '趋势预警'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
+    { id: 'AG-003', name: '数据看门人', description: '功能使用率追踪与异常检测', model: 'GPT-4o', status: 'running', tasks_completed: 213, uptime: '99.9%', enabled: true, capabilities: ['指标追踪', '异常告警', '报表生成'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
+    { id: 'AG-004', name: '技术助手', description: '架构评审与技术债务追踪', model: 'Claude-3.5', status: 'idle', tasks_completed: 67, uptime: '98.2%', enabled: true, capabilities: ['代码审查', '架构评估', '性能诊断'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
+    { id: 'AG-005', name: '日报编辑', description: '每日工作总结与进展汇编', model: 'GPT-4o-mini', status: 'idle', tasks_completed: 31, uptime: '99.1%', enabled: false, capabilities: ['日报生成', '进展汇总'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
   ];
 }
 
@@ -268,10 +333,10 @@ export function localPredictions(): PredictionRow[] {
 
 export function localExperiences(): ExperienceRow[] {
   return [
-    { id: 'e1', title: '敏捷迭代避坑指南', tags: ['敏捷', '迭代', '流程'], author: 'AI同事', likes: 23, comments: 8, summary: '总结了3个季度敏捷迭代的7个常见陷阱及应对方案，被团队反复引用。' },
-    { id: 'e2', title: '导出功能性能优化实战', tags: ['性能', '导出', '优化'], author: '张工', likes: 15, comments: 5, summary: '从内存泄漏到批量导出，记录了完整的性能优化路径，导出速度提升4倍。' },
-    { id: 'e3', title: 'PRD评审高效技巧', tags: ['PRD', '评审', '协作'], author: '我', likes: 31, comments: 12, summary: '提炼自20+次PRD评审，3个关键问题模板让评审效率提升60%。' },
-    { id: 'e4', title: '跨团队协作沟通模板', tags: ['协作', '沟通', '模板'], author: '李工', likes: 19, comments: 6, summary: '标准化的跨团队沟通话术和邮件模板，减少协作摩擦。' },
+    { id: 'e1', title: '敏捷迭代避坑指南', tags: ['敏捷', '迭代', '流程'], author: 'AI同事', content: '总结了3个季度敏捷迭代的7个常见陷阱及应对方案，被团队反复引用。' },
+    { id: 'e2', title: '导出功能性能优化实战', tags: ['性能', '导出', '优化'], author: '张工', content: '从内存泄漏到批量导出，记录了完整的性能优化路径，导出速度提升4倍。' },
+    { id: 'e3', title: 'PRD评审高效技巧', tags: ['PRD', '评审', '协作'], author: '我', content: '提炼自20+次PRD评审，3个关键问题模板让评审效率提升60%。' },
+    { id: 'e4', title: '跨团队协作沟通模板', tags: ['协作', '沟通', '模板'], author: '李工', content: '标准化的跨团队沟通话术和邮件模板，减少协作摩擦。' },
   ];
 }
 
@@ -284,4 +349,132 @@ export function localDocs(): DocRow[] {
     { id: 'd5', title: 'API接口文档', type: '在线文档', editors: 1, updated: '5天前', status: 'draft', author: '李工' },
     { id: 'd6', title: '新人onboarding手册', type: '在线文档', editors: 0, updated: '1周前', status: 'published', author: 'HR' },
   ];
+}
+
+export function localActivities(): ActivityRow[] {
+  return [
+    { id: 'act1', title: '创建了目标', description: '创建了目标「Q3用户增长20%」', type: 'created', actor: '我', target_type: 'goal', target_id: 'g1', created_at: new Date(Date.now() - 600000).toISOString(), team_id: '__default__' },
+    { id: 'act2', title: '完成了任务', description: '完成了任务「首页改版设计稿」', type: 'completed', actor: '王琳', target_type: 'task', target_id: 't3', created_at: new Date(Date.now() - 3600000).toISOString(), team_id: '__default__' },
+    { id: 'act3', title: '评论了PRD', description: '评论了「导出功能PRD v2.1」', type: 'commented', actor: '张明', target_type: 'doc', target_id: 'd2', created_at: new Date(Date.now() - 7200000).toISOString(), team_id: '__default__' },
+    { id: 'act4', title: '更新了风险', description: '将风险「Sprint完成率下降」级别提升为high', type: 'updated', actor: 'AI数据看门人', target_type: 'risk', target_id: 'R-003', created_at: new Date(Date.now() - 10800000).toISOString(), team_id: '__default__' },
+    { id: 'act5', title: '@了你', description: '在PRD中@了你「导出功能技术方案」', type: 'mentioned', actor: '张明', target_type: 'doc', target_id: 'd2', created_at: new Date(Date.now() - 18000000).toISOString(), team_id: '__default__' },
+    { id: 'act6', title: '创建了任务', description: '创建了任务「竞品功能对比分析」', type: 'created', actor: 'AI竞品侦探', target_type: 'task', target_id: 't8', created_at: new Date(Date.now() - 86400000).toISOString(), team_id: '__default__' },
+  ];
+}
+
+export function localNotes(): NoteRow[] {
+  return [
+    { id: 'n1', title: 'Q3路线图要点', content: '1. 用户增长20%\n2. 导出功能优化\n3. PRD标准化推进\n4. NPS提升至45+', tags: ['Q3', '路线图'], color: '#7b6cf0', pinned: true, member_id: null, team_id: '__default__', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 'n2', title: '晨会待确认事项', content: '- 研发资源是否充足\n- 设计稿交付时间\n- QA回归测试覆盖率', tags: ['会议', '待确认'], color: '#00d4aa', pinned: true, member_id: null, team_id: '__default__', created_at: new Date(Date.now() - 3600000).toISOString(), updated_at: new Date(Date.now() - 3600000).toISOString() },
+    { id: 'n3', title: '竞品观察笔记', content: '竞品XX发布AI辅助决策模块，交互设计值得参考，特别是智能推荐列表的实现方式', tags: ['竞品', 'AI'], color: '#ffc44d', pinned: false, member_id: null, team_id: '__default__', created_at: new Date(Date.now() - 86400000).toISOString(), updated_at: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'n4', title: '技术债务清单', content: '1. 旧版API兼容层清理\n2. 单元测试覆盖率提升\n3. 日志规范化', tags: ['技术', '债务'], color: '#ff5c6a', pinned: false, member_id: null, team_id: '__default__', created_at: new Date(Date.now() - 172800000).toISOString(), updated_at: new Date(Date.now() - 172800000).toISOString() },
+  ];
+}
+
+export function localSprints(): SprintRow[] {
+  return [
+    { id: 'sp1', name: 'Sprint 24 (6/2-6/13)', goal_id: 'g1', status: 'active', start_date: '2026-06-02', end_date: '2026-06-13', total_tasks: 12, completed_tasks: 8, team_id: '__default__', created_at: '2026-06-02T00:00:00Z', updated_at: new Date().toISOString() },
+    { id: 'sp2', name: 'Sprint 25 (6/16-6/27)', goal_id: 'g2', status: 'planning', start_date: '2026-06-16', end_date: '2026-06-27', total_tasks: 10, completed_tasks: 0, team_id: '__default__', created_at: '2026-06-01T00:00:00Z', updated_at: '2026-06-01T00:00:00Z' },
+    { id: 'sp3', name: 'Sprint 23 (5/19-5/30)', goal_id: null, status: 'completed', start_date: '2026-05-19', end_date: '2026-05-30', total_tasks: 14, completed_tasks: 12, team_id: '__default__', created_at: '2026-05-19T00:00:00Z', updated_at: '2026-05-30T00:00:00Z' },
+  ];
+}
+
+export function localTemplates(): TemplateRow[] {
+  return [
+    { id: 'tpl1', name: 'PRD模板 v2.0', category: 'PRD', content: '# 产品需求文档\n\n## 背景\n## 目标\n## 用户场景\n## 功能需求\n## 非功能需求\n## 里程碑', usage_count: 34, is_built_in: true, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-15T00:00:00Z' },
+    { id: 'tpl2', name: '周报模板', category: '报告', content: '# 周报 W__\n\n## 本周完成\n## 下周计划\n## 风险&求助', usage_count: 89, is_built_in: true, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-04-20T00:00:00Z' },
+    { id: 'tpl3', name: '复盘模板（GRAI）', category: '评审', content: '# GRAI复盘\n\n## Goal回顾\n## Result对比\n## Analysis分析\n## Insight洞察', usage_count: 22, is_built_in: true, team_id: '__default__', created_at: '2026-02-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'tpl4', name: 'Bug报告模板', category: '流程', content: '# Bug报告\n\n## 复现步骤\n## 期望行为\n## 实际行为\n## 环境\n## 截图', usage_count: 56, is_built_in: false, team_id: '__default__', created_at: '2026-03-01T00:00:00Z', updated_at: '2026-04-10T00:00:00Z' },
+  ];
+}
+
+export function localBookmarks(): BookmarkRow[] {
+  return [
+    { id: 'bk1', title: 'Q3用户增长20%', url: '', target_type: 'goal', target_id: 'g1', category: '核心目标', member_id: null, team_id: '__default__', created_at: new Date().toISOString() },
+    { id: 'bk2', title: '导出功能PRD', url: '', target_type: 'doc', target_id: 'd2', category: '产品设计', member_id: null, team_id: '__default__', created_at: new Date().toISOString() },
+    { id: 'bk3', title: '敏捷迭代避坑指南', url: '', target_type: 'knowledge', target_id: 'e1', category: '最佳实践', member_id: null, team_id: '__default__', created_at: new Date().toISOString() },
+    { id: 'bk4', title: 'Sprint 24进度', url: '', target_type: 'task', target_id: 'sp1', category: '迭代', member_id: null, team_id: '__default__', created_at: new Date().toISOString() },
+  ];
+}
+
+export function localComments(targetType?: string, targetId?: string): CommentRow[] {
+  const all: CommentRow[] = [
+    { id: 'cmt1', content: '这个目标的KPI需要和运营对齐后再确认', author_id: '张明', target_type: 'goal', target_id: 'g1', parent_id: null, team_id: '__default__', created_at: new Date(Date.now() - 3600000).toISOString(), updated_at: new Date(Date.now() - 3600000).toISOString() },
+    { id: 'cmt2', content: '已和运营确认，KPI调整为月活增长15%', author_id: '我', target_type: 'goal', target_id: 'g1', parent_id: 'cmt1', team_id: '__default__', created_at: new Date(Date.now() - 1800000).toISOString(), updated_at: new Date(Date.now() - 1800000).toISOString() },
+    { id: 'cmt3', content: '技术方案已评审通过，可以开始开发', author_id: '李工', target_type: 'task', target_id: 't3', parent_id: null, team_id: '__default__', created_at: new Date(Date.now() - 7200000).toISOString(), updated_at: new Date(Date.now() - 7200000).toISOString() },
+    { id: 'cmt4', content: '设计稿需在周三前交付', author_id: '我', target_type: 'task', target_id: 't8', parent_id: null, team_id: '__default__', created_at: new Date(Date.now() - 86400000).toISOString(), updated_at: new Date(Date.now() - 86400000).toISOString() },
+  ];
+  if (targetType && targetId) return all.filter((c) => c.target_type === targetType && c.target_id === targetId);
+  return all;
+}
+
+export function localTags(): TagRow[] {
+  return [
+    { id: 'tag1', name: '高优先级', color: '#ef4444', target_type: 'task', usage_count: 23, team_id: '__default__', created_at: '2026-01-15T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'tag2', name: '技术债', color: '#f59e0b', target_type: 'task', usage_count: 15, team_id: '__default__', created_at: '2026-02-01T00:00:00Z', updated_at: '2026-05-18T00:00:00Z' },
+    { id: 'tag3', name: 'Q3核心', color: '#7b6cf0', target_type: 'goal', usage_count: 8, team_id: '__default__', created_at: '2026-04-01T00:00:00Z', updated_at: '2026-05-22T00:00:00Z' },
+    { id: 'tag4', name: '客户需求', color: '#00d4aa', target_type: 'task', usage_count: 31, team_id: '__default__', created_at: '2026-01-20T00:00:00Z', updated_at: '2026-05-21T00:00:00Z' },
+    { id: 'tag5', name: '内部优化', color: '#6366f1', target_type: 'project', usage_count: 12, team_id: '__default__', created_at: '2026-03-10T00:00:00Z', updated_at: '2026-05-15T00:00:00Z' },
+    { id: 'tag6', name: '安全相关', color: '#dc2626', target_type: 'risk', usage_count: 6, team_id: '__default__', created_at: '2026-03-01T00:00:00Z', updated_at: '2026-04-28T00:00:00Z' },
+  ];
+}
+
+export function localCategories(): CategoryRow[] {
+  return [
+    { id: 'cat1', name: '产品', type: 'module', icon: '📦', color: '#7b6cf0', sort_order: 1, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'cat2', name: '技术', type: 'module', icon: '⚙️', color: '#00d4aa', sort_order: 2, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'cat3', name: '运营', type: 'module', icon: '📊', color: '#f59e0b', sort_order: 3, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'cat4', name: '设计', type: 'module', icon: '🎨', color: '#ec4899', sort_order: 4, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'cat5', name: '市场', type: 'module', icon: '📢', color: '#06b6d4', sort_order: 5, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'cat6', name: '紧急', type: 'priority', icon: '🔥', color: '#ef4444', sort_order: 1, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+  ];
+}
+
+export function localFeatureFlags(): FeatureFlagRow[] {
+  return [
+    { id: 'ff1', key: 'batchOperations', name: '批量操作', description: '允许批量编辑、删除、指派任务/目标', enabled: true, rollout_percentage: 100, target_plan: 'pro', team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'ff2', key: 'advancedAnalytics', name: '高级数据分析', description: 'KPI趋势分析、预测模型、异常检测', enabled: true, rollout_percentage: 80, target_plan: 'pro', team_id: '__default__', created_at: '2026-02-01T00:00:00Z', updated_at: '2026-05-18T00:00:00Z' },
+    { id: 'ff3', key: 'customWorkflows', name: '自定义工作流', description: '创建和编辑自定义自动化工作流', enabled: false, rollout_percentage: 0, target_plan: 'enterprise', team_id: '__default__', created_at: '2026-03-01T00:00:00Z', updated_at: '2026-04-10T00:00:00Z' },
+    { id: 'ff4', key: 'aiCocreate', name: 'AI共创', description: 'AI辅助生成行业/部门矩阵内容', enabled: true, rollout_percentage: 100, target_plan: 'free', team_id: '__default__', created_at: '2026-01-15T00:00:00Z', updated_at: '2026-05-22T00:00:00Z' },
+    { id: 'ff5', key: 'realtimeCollab', name: '实时协作', description: '多人实时编辑文档和光标位置同步', enabled: false, rollout_percentage: 20, target_plan: 'enterprise', team_id: '__default__', created_at: '2026-04-01T00:00:00Z', updated_at: '2026-05-10T00:00:00Z' },
+  ];
+}
+
+export function localSavedViews(): SavedViewRow[] {
+  return [
+    { id: 'sv1', name: '我的待办', module: 'tasks', filters: '{"status":"todo","assignee":"me"}', sort_by: 'priority', columns: 'title,status,priority,due_date', is_default: true, member_id: null, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'sv2', name: '本周目标进度', module: 'goals', filters: '{"status":"on_track"}', sort_by: 'progress', columns: 'title,progress,status,end_date', is_default: false, member_id: null, team_id: '__default__', created_at: '2026-02-15T00:00:00Z', updated_at: '2026-05-18T00:00:00Z' },
+    { id: 'sv3', name: '风险任务', module: 'tasks', filters: '{"priority":"urgent"}', sort_by: 'due_date', columns: 'title,priority,due_date,assignee', is_default: false, member_id: null, team_id: '__default__', created_at: '2026-03-01T00:00:00Z', updated_at: '2026-05-10T00:00:00Z' },
+  ];
+}
+
+export function localAutomationRules(): AutomationRuleRow[] {
+  return [
+    { id: 'ar1', name: '逾期任务自动标记', trigger_type: 'schedule', trigger_config: '{"check":"overdue"}', action_type: 'update_task', action_config: '{"status":"blocked"}', is_active: true, priority: 10, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'ar2', name: '目标完成时发送通知', trigger_type: 'goal_completed', trigger_config: '{}', action_type: 'send_notification', action_config: '{"template":"goal_completed"}', is_active: true, priority: 5, team_id: '__default__', created_at: '2026-02-01T00:00:00Z', updated_at: '2026-05-15T00:00:00Z' },
+    { id: 'ar3', name: '风险偏差自动生成行动项', trigger_type: 'deviation_created', trigger_config: '{"severity":"danger"}', action_type: 'create_action_item', action_config: '{"source":"deviation"}', is_active: true, priority: 8, team_id: '__default__', created_at: '2026-03-01T00:00:00Z', updated_at: '2026-05-10T00:00:00Z' },
+    { id: 'ar4', name: '新成员入职自动分配任务', trigger_type: 'member_joined', trigger_config: '{}', action_type: 'assign_tasks', action_config: '{"template":"onboarding"}', is_active: false, priority: 3, team_id: '__default__', created_at: '2026-04-01T00:00:00Z', updated_at: '2026-04-15T00:00:00Z' },
+  ];
+}
+
+export function localStatusFlowRules(): StatusFlowRuleRow[] {
+  return [
+    { id: 'sfr1', entity_type: 'task', from_status: 'todo', to_status: 'in_progress', condition_config: '{}', auto_transition: false, require_comment: false, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'sfr2', entity_type: 'task', from_status: 'in_progress', to_status: 'done', condition_config: '{}', auto_transition: false, require_comment: true, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'sfr3', entity_type: 'task', from_status: 'todo', to_status: 'cancelled', condition_config: '{}', auto_transition: false, require_comment: true, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'sfr4', entity_type: 'goal', from_status: 'on_track', to_status: 'at_risk', condition_config: '{"progressThreshold":50}', auto_transition: true, require_comment: false, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'sfr5', entity_type: 'approval', from_status: 'pending', to_status: 'approved', condition_config: '{}', auto_transition: false, require_comment: false, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'sfr6', entity_type: 'action_item', from_status: 'in_progress', to_status: 'completed', condition_config: '{}', auto_transition: false, require_comment: true, team_id: '__default__', created_at: '2026-02-01T00:00:00Z', updated_at: '2026-05-15T00:00:00Z' },
+  ];
+}
+
+export function localItemLinks(sourceId?: string, sourceType?: string): ItemLinkRow[] {
+  const all: ItemLinkRow[] = [
+    { id: 'il1', source_id: 'g1', source_type: 'goal', target_id: 't3', target_type: 'task', label: '关键交付', created_at: '2026-02-15T00:00:00Z', team_id: '__default__' },
+    { id: 'il2', source_id: 'g1', source_type: 'goal', target_id: 'r1', target_type: 'risk', label: '潜在阻碍', created_at: '2026-03-01T00:00:00Z', team_id: '__default__' },
+    { id: 'il3', source_id: 't5', source_type: 'task', target_id: 't8', target_type: 'task', label: '阻塞', created_at: '2026-04-10T00:00:00Z', team_id: '__default__' },
+    { id: 'il4', source_id: 'g2', source_type: 'goal', target_id: 't1', target_type: 'task', label: '主要任务', created_at: '2026-03-15T00:00:00Z', team_id: '__default__' },
+  ];
+  if (sourceId && sourceType) return all.filter((l) => l.source_id === sourceId && l.source_type === sourceType);
+  return all;
 }

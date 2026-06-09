@@ -466,9 +466,68 @@ export const IND_COLORS: Record<string, string> = {
 };
 
 export function getMatrixCell(industry: string, dept: string): MatrixCell {
+  // Check custom cells first (dynamically generated)
+  try {
+    const customCells: Array<{ industry: string; dept: string; cell: MatrixCell }> =
+      JSON.parse(localStorage.getItem('tbh_custom_matrix_cells') || '[]');
+    const custom = customCells.find((c) => c.industry === industry && c.dept === dept);
+    if (custom) return custom.cell;
+  } catch (err) { console.warn("[matrix]", err); }
+
   return MATRIX[industry]?.[dept] ?? MATRIX['IT业']['产品部'];
 }
 
 export function getDepartments(industry: string): string[] {
-  return Object.keys(MATRIX[industry] ?? {});
+  // Check custom cells for departments in this industry
+  const customDepts: string[] = [];
+  try {
+    const customCells: Array<{ industry: string; dept: string }> =
+      JSON.parse(localStorage.getItem('tbh_custom_matrix_cells') || '[]');
+    for (const c of customCells) {
+      if (c.industry === industry && !customDepts.includes(c.dept)) {
+        customDepts.push(c.dept);
+      }
+    }
+  } catch (err) { console.warn("[matrix]", err); }
+
+  const baseDepts = Object.keys(MATRIX[industry] ?? {});
+  // Merge without duplicates
+  const allDepts = [...baseDepts];
+  for (const d of customDepts) {
+    if (!allDepts.includes(d)) allDepts.push(d);
+  }
+  return allDepts;
+}
+
+/** Get all industries (base + custom) */
+export function getAllIndustries(): string[] {
+  const customIndustries: string[] = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem('tbh_custom_industries') || '[]');
+    if (Array.isArray(stored)) customIndustries.push(...stored);
+  } catch (err) { console.warn("[matrix]", err); }
+
+  const base = Object.keys(MATRIX);
+  const all = [...base];
+  for (const ind of customIndustries) {
+    if (!all.includes(ind)) all.push(ind);
+  }
+  return all;
+}
+
+/** Get color for any industry (base or custom) */
+export function getIndustryColor(industry: string): string {
+  if (IND_COLORS[industry]) return IND_COLORS[industry];
+  // Check custom cells for color
+  try {
+    const customCells: Array<{ industry: string; color: string }> =
+      JSON.parse(localStorage.getItem('tbh_custom_matrix_cells') || '[]');
+    const found = customCells.find((c) => c.industry === industry);
+    if (found?.color) return found.color;
+  } catch (err) { console.warn("[matrix]", err); }
+  // Deterministic fallback
+  const CUSTOM_COLORS = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#01a3a4', '#f368e0', '#10ac84', '#ee5a24'];
+  let hash = 0;
+  for (let i = 0; i < industry.length; i++) { hash = ((hash << 5) - hash + industry.charCodeAt(i)) | 0; }
+  return CUSTOM_COLORS[Math.abs(hash) % CUSTOM_COLORS.length];
 }

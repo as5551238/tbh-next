@@ -1,3 +1,4 @@
+import { type FC } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import ChannelsView from '@/pages/collab/ChannelsView';
 import ApprovalsView from '@/pages/collab/ApprovalsView';
@@ -10,7 +11,7 @@ import DirectoryView from '@/pages/collab/DirectoryView';
 import AiAgentsView from '@/pages/collab/AiAgentsView';
 import ModulePageStub from '@/pages/ModulePageStub';
 
-const COLLAB_MODULES: Record<string, { component: React.FC; title: string; icon: string; desc: string }> = {
+const COLLAB_MODULES: Record<string, { component: FC; title: string; icon: string; desc: string }> = {
   channels: { component: ChannelsView, title: '频道列表', icon: '#', desc: '' },
   teamCal: { component: TeamCalView, title: '团队日历', icon: '📅', desc: '团队日程与会议安排' },
   approvals: { component: ApprovalsView, title: '审批中心', icon: '📋', desc: '待审批与审批记录' },

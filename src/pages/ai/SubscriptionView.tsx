@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
-import { PLAN_LIMITS, PLAN_PRICES, fetchSubscription, fetchUsageToday, type SubscriptionInfo, type UsageSummary } from '@/lib/subscription';
-import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Loader2 } from 'lucide-react';
+import { PLAN_LIMITS, PLAN_PRICES, fetchSubscription, fetchUsageToday, type SubscriptionInfo, type UsageSummary, getCurrentPlan, setCurrentPlan } from '@/lib/subscription';
+import { CHECKOUT_PLANS, initiateCheckout, cancelSubscription, getSubscriptionStatus } from '@/lib/payment';
+import { upsertSubscription } from '@/lib/dataLayer';
+import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Loader2, Lock, CheckCircle2, CreditCard } from 'lucide-react';
 import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs } from '@/hooks/useMatrix';
 
 export default function SubscriptionView() {
@@ -14,18 +16,23 @@ export default function SubscriptionView() {
   const [sub, setSub] = useState<SubscriptionInfo>({ plan: 'free', status: 'active', currentPeriodEnd: null });
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState<string | null>(null);
+  const [upgradeRequested, setUpgradeRequested] = useState<string | null>(null);
+
+  const SUB_PLAN_KEY = 'tbh-sub-plan';
 
   useEffect(() => {
-    async function load() {
-      if (user?.id) {
+        async function load() {
+        if (user?.id) {
         const [subInfo, usageToday] = await Promise.all([
           fetchSubscription(user.id),
           fetchUsageToday(user.id),
         ]);
-        setSub(subInfo);
+        const effectivePlan = getCurrentPlan();
+        const effectiveSub = { ...subInfo, plan: effectivePlan };
+        setSub(effectiveSub);
 
-        // Build usage summary from limits + actual usage
-        const limits = PLAN_LIMITS[subInfo.plan] ?? PLAN_LIMITS.free;
+        const limits = PLAN_LIMITS[effectivePlan] ?? PLAN_LIMITS.free;
         setUsage({
           aiQueries: usageToday.aiQueries,
           aiQueriesLimit: limits.aiQueriesPerDay,
@@ -92,6 +99,135 @@ export default function SubscriptionView() {
           </div>
         )}
 
+        {/* Plan switcher */}
+        <div className="rounded-xl border border-border p-5">
+          <h3 className="text-sm font-bold text-text mb-4">选择方案</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {(['free', 'pro', 'enterprise'] as const).map((p) => {
+              const pPrice = PLAN_PRICES[p];
+              const isCurrent = sub.plan === p;
+              const isSwitching = switching === p;
+              const isRequested = upgradeRequested === p;
+              const isDowngrade = p === 'free' && sub.plan !== 'free';
+              const isUpgrade = !isCurrent && p !== 'free';
+              return (
+                <div key={p} className={cn(
+                  'rounded-xl border p-4 text-center transition-all',
+                  isCurrent ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-border',
+                )}>
+                  <div className="text-sm font-bold text-text mb-1">{pPrice.label}</div>
+                  <div className="text-lg font-extrabold text-text">${pPrice.monthly}</div>
+                  <div className="text-[9px] text-text-3">/用户/月</div>
+                  {isCurrent && (
+                    <div className="mt-2 flex items-center justify-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">
+                      <CheckCircle2 size={10} /> 当前方案
+                    </div>
+                  )}
+                  {isUpgrade && !isRequested && (
+                    <button
+                      onClick={async () => {
+                        setSwitching(p);
+                        // In demo mode: grant immediate access for trial
+                        // In production: this would redirect to Stripe Checkout
+                        setCurrentPlan(p);
+                        if (user?.id) {
+                          await upsertSubscription({ user_id: user.id, plan: p, status: 'active' });
+                        }
+                        setSub((prev) => ({ ...prev, plan: p }));
+                        const newLimits = PLAN_LIMITS[p];
+                        setUsage((prev) => prev ? {
+                          ...prev,
+                          aiQueriesLimit: newLimits.aiQueriesPerDay,
+                          agentsLimit: newLimits.maxAgents,
+                          teamMembersLimit: newLimits.maxTeamMembers,
+                          projectsLimit: newLimits.maxProjects,
+                          docsLimit: newLimits.maxDocs,
+                        } : null);
+                        setUpgradeRequested(p);
+                        setSwitching(null);
+                      }}
+                      disabled={isSwitching !== null}
+                      className={cn(
+                        'mt-2 w-full rounded-full px-2 py-1 text-[9px] font-semibold transition-all',
+                        'bg-primary/20 text-primary-2 hover:bg-primary/30',
+                        isSwitching && 'opacity-60'
+                      )}
+                    >
+                      {isSwitching ? '处理中...' : '升级体验'}
+                    </button>
+                  )}
+                  {isRequested && (
+                    <div className="mt-2 rounded-full bg-[#00d4aa]/10 px-2 py-0.5 text-[8px] font-semibold text-[#00d4aa]">
+                      已激活试用
+                    </div>
+                  )}
+                  {isUpgrade && !isCurrent && !isRequested && !isSwitching && p !== 'free' && (
+                    <div className="mt-1 flex items-center justify-center gap-0.5 text-[8px] text-text-3">
+                      <Lock size={8} /> 需升级
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-text-3 mt-3">
+            当前为试用模式，升级即时生效。正式版将通过Stripe安全支付，支持按月/按年付费。
+          </p>
+        </div>
+
+        {/* Payment checkout */}
+        <div className="rounded-xl border border-border p-5">
+          <h3 className="text-sm font-bold text-text mb-4 flex items-center gap-2">
+            <CreditCard size={14} className="text-primary-2" /> 选择方案并支付
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {CHECKOUT_PLANS.map((plan) => {
+              const isCurrent = (plan.id.includes('pro') && sub.plan === 'pro') || (plan.id.includes('enterprise') && sub.plan === 'enterprise');
+              const [processing, setProcessing] = useState(false);
+              return (
+                <div key={plan.id} className={cn(
+                  'rounded-xl border p-4 transition-all',
+                  plan.highlighted ? 'border-primary/50 bg-primary/5' : 'border-border',
+                  isCurrent && 'ring-1 ring-success/30'
+                )}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-text">{plan.name}</span>
+                    {plan.highlighted && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">推荐</span>}
+                    {isCurrent && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">当前</span>}
+                  </div>
+                  <div className="mb-3">
+                    <span className="text-2xl font-extrabold text-text">${plan.price}</span>
+                    <span className="text-xs text-text-3">/{plan.period === 'monthly' ? '月' : '年'}</span>
+                  </div>
+                  <ul className="space-y-1 mb-3">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-center gap-1 text-[10px] text-text-2">
+                        <CheckCircle2 size={8} className="text-success shrink-0" />{f}
+                      </li>
+                    ))}
+                  </ul>
+                  {!isCurrent && (
+                    <button
+                      onClick={async () => { setProcessing(true); await initiateCheckout(plan.priceId); setSub((prev) => ({ ...prev, plan: plan.id.includes('pro') ? 'pro' : 'enterprise' })); setProcessing(false); }}
+                      disabled={processing}
+                      className={cn(
+                        'w-full rounded-lg py-2 text-xs font-semibold transition-all',
+                        plan.highlighted ? 'bg-primary text-white hover:opacity-80' : 'bg-surface-2 text-text-2 hover:bg-surface-2/80',
+                        processing && 'opacity-60'
+                      )}
+                    >
+                      {processing ? '处理中...' : '立即订阅'}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-text-3 mt-3">
+            当前为演示模式，订阅即时生效。正式版将通过Stripe安全支付，支持信用卡/借记卡。
+          </p>
+        </div>
+
         {/* Feature matrix */}
         <div className="rounded-xl border border-border p-5">
           <h3 className="text-sm font-bold text-text mb-4">功能对比</h3>
@@ -132,7 +268,7 @@ export default function SubscriptionView() {
   );
 }
 
-function UsageMeter({ icon, label, current, limit, color }: { icon: React.ReactNode; label: string; current: number; limit: number; color: string }) {
+function UsageMeter({ icon, label, current, limit, color }: { icon: ReactNode; label: string; current: number; limit: number; color: string }) {
   const isUnlimited = limit === -1;
   const pct = isUnlimited ? 30 : Math.min(100, (current / limit) * 100);
   const isWarn = !isUnlimited && pct >= 80;

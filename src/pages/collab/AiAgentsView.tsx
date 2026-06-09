@@ -9,7 +9,7 @@ import type { AgentDetailRow } from '@/lib/dataLayer';
 interface AgentItem {
   id: string;
   name: string;
-  desc: string;
+  description: string;
   status: string;
   enabled: boolean;
 }
@@ -19,8 +19,8 @@ export default function AiAgentsView() {
   const indColor = useIndustryColor();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
-  const setCurrentPage = useAppStore((s) => s.setCurrentPage);
-  const { agents: dbAgents, editAgent, addAgent, loading } = useAgentDetails();
+  const navigateTo = useAppStore((s) => s.navigateTo);
+  const { agents: dbAgents, editAgent, addAgent, removeAgent, loading } = useAgentDetails();
 
   // Merge cell.agents (matrix fallback) with DB agents
   const [agents, setAgents] = useState<AgentItem[]>([]);
@@ -36,7 +36,7 @@ export default function AiAgentsView() {
       setAgents(dbAgents.map((a) => ({
         id: a.id,
         name: a.name,
-        desc: a.desc,
+        description: a.description,
         status: a.status,
         enabled: a.enabled,
       })));
@@ -45,7 +45,7 @@ export default function AiAgentsView() {
       setAgents(cell.agents.map((a, i) => ({
         id: `cell-agent-${i}`,
         name: a.name,
-        desc: a.desc ?? a.status,
+        description: a.desc ?? a.status,
         status: a.status,
         enabled: true,
       })));
@@ -69,7 +69,7 @@ export default function AiAgentsView() {
     if (!newAgentName.trim()) return;
     const row = await addAgent({
       name: newAgentName.trim(),
-      desc: newAgentDesc.trim() || '自定义AI助手',
+      description: newAgentDesc.trim() || '自定义AI助手',
       status: '在线',
       enabled: true,
       model: 'default',
@@ -80,7 +80,7 @@ export default function AiAgentsView() {
     setAgents((prev) => [...prev, {
       id: row.id,
       name: row.name,
-      desc: row.desc,
+      description: row.description,
       status: row.status,
       enabled: row.enabled,
     }]);
@@ -94,19 +94,20 @@ export default function AiAgentsView() {
     const agent = agents.find((a) => a.id === id);
     if (!agent) return;
     if (action === 'restart') {
-      setAgents((prev) => prev.map((a) => a.id === id ? { ...a, status: '重启中...' } : a));
+      setAgents((prev) => prev.map((a) => a.id === id ? { ...a, status: '重启中' } : a));
+      editAgent(id, { status: '重启中' });
       setTimeout(() => {
         setAgents((prev) => prev.map((a) => a.id === id ? { ...a, status: '在线' } : a));
         editAgent(id, { status: '在线' });
         showToast(`${agent.name} 已重启完成`);
       }, 1500);
     } else if (action === 'chat') {
-      setCurrentPage('main-chat');
+      navigateTo('ai', 'main');
     } else if (action === 'stats') {
       setStatsAgent(agent);
       statsModal.openModal();
     } else if (action === 'config') {
-      setCurrentPage('agent-config');
+      navigateTo('ai', 'agentConfig');
     }
   }
 
@@ -147,13 +148,13 @@ export default function AiAgentsView() {
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-sm font-semibold text-text">{agent.name}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold',
-                    agent.status === '重启中...' ? 'bg-warning/10 text-warning' :
+                    agent.status === '重启中' ? 'bg-warning/10 text-warning' :
                     agent.enabled ? 'bg-success/10 text-success' : 'bg-surface-2 text-text-3'
                   )}>
-                    {agent.status === '重启中...' ? '重启中' : agent.enabled ? '已启用' : '已禁用'}
+                    {agent.status === '重启中' ? '重启中' : agent.enabled ? '已启用' : '已禁用'}
                   </span>
                 </div>
-                <div className="text-[11px] text-text-3">{agent.desc}</div>
+                <div className="text-[11px] text-text-3">{agent.description}</div>
               </div>
               <button onClick={() => toggleAgent(agent.id)} className="shrink-0">
                 {agent.enabled ? (
@@ -177,6 +178,9 @@ export default function AiAgentsView() {
                 <button onClick={() => handleAgentAction(agent.id, 'restart')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <RefreshCw size={10} />重启
                 </button>
+                <button onClick={() => { removeAgent(agent.id); setAgents((prev) => prev.filter((a) => a.id !== agent.id)); }} className="flex items-center gap-1 rounded-lg bg-danger/10 px-2.5 py-1 text-[9px] text-danger hover:bg-danger/20 transition-colors">
+                  删除
+                </button>
               </div>
             )}
           </div>
@@ -185,7 +189,7 @@ export default function AiAgentsView() {
       </div>
 
       {/* Add Agent Modal */}
-      {addModal.isOpen && (
+      {addModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-96 rounded-xl border border-border bg-bg p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
@@ -211,7 +215,14 @@ export default function AiAgentsView() {
       )}
 
       {/* Stats Modal */}
-      {statsModal.isOpen && statsAgent && (
+      {statsModal.open && statsAgent && (() => {
+        const dbAgent = dbAgents.find((a) => a.id === statsAgent.id);
+        const tasksCompleted = dbAgent?.tasks_completed ?? 0;
+        const uptime = dbAgent?.uptime ?? '-';
+        const capabilities = dbAgent?.capabilities ?? [];
+        const allTasks = dbAgents.reduce((s, a) => s + a.tasks_completed, 0);
+        const enabledCount = dbAgents.filter((a) => a.enabled).length;
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-96 rounded-xl border border-border bg-bg p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
@@ -224,24 +235,32 @@ export default function AiAgentsView() {
                 <span className={statsAgent.status === '在线' ? 'text-success' : 'text-warning'}>{statsAgent.status}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-3">今日交互次数</span>
-                <span className="text-text">{statsAgent.name.charCodeAt(0) % 15 + 8}</span>
+                <span className="text-text-3">累计完成任务</span>
+                <span className="text-text">{tasksCompleted}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-3">本周处理任务</span>
-                <span className="text-text">{statsAgent.name.charCodeAt(1) % 20 + 12}</span>
+                <span className="text-text-3">运行时长</span>
+                <span className="text-text">{uptime}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-3">平均响应时间</span>
-                <span className="text-text">{((statsAgent.name.charCodeAt(0) % 15 + 5) / 10).toFixed(1)}s</span>
+                <span className="text-text-3">能力标签</span>
+                <span className="text-text">{capabilities.length > 0 ? capabilities.join('、') : '暂无'}</span>
               </div>
               <div className="mt-3 rounded-lg bg-surface-2 p-3">
-                <div className="text-[10px] font-bold text-text-3 mb-2">过去7天活跃度</div>
-                <div className="flex items-end gap-1 h-12">
-                  {Array.from({ length: 7 }).map((_, i) => {
-                    const h = 30 + ((i * 37 + statsAgent.name.charCodeAt(0)) % 60);
-                    return <div key={i} className="flex-1 rounded-t bg-primary/40" style={{ height: `${h}%` }} />;
-                  })}
+                <div className="text-[10px] font-bold text-text-3 mb-2">团队概览</div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-text-3">AI 同事总数</span>
+                    <span className="text-text">{dbAgents.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-text-3">已启用</span>
+                    <span className="text-text">{enabledCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-text-3">团队总任务量</span>
+                    <span className="text-text">{allTasks}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -250,7 +269,8 @@ export default function AiAgentsView() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

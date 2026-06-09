@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { PLAN_LIMITS, PLAN_PRICES } from '@/lib/subscription';
 import { X, Check, Crown, Zap, Building2 } from 'lucide-react';
@@ -10,7 +10,7 @@ interface PaywallModalProps {
   feature?: string;
 }
 
-const PLAN_ICONS: Record<string, React.ReactNode> = {
+const PLAN_ICONS: Record<string, ReactNode> = {
   free: <Zap size={18} />,
   pro: <Crown size={18} />,
   enterprise: <Building2 size={18} />,

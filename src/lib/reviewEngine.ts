@@ -341,6 +341,69 @@ export function computeAutoProgress(
   return Math.round((doneCount / related.length) * 100);
 }
 
+// --- Performance Scoring (MLOO-Lite 轻量化绩效) ---
+
+export interface PerformanceScore {
+  goalId: string;
+  goalTitle: string;
+  achievementRate: number;      // 目标达成率 (actual/expected * 100), capped at 100
+  taskCompletionRate: number;   // 任务完成率 (completed/total * 100)
+  onTimeRate: number;           // 按时完成率 (tasks done before due / all completed * 100)
+  actionItemCloseRate: number;  // 行动项闭环率 (closed_loop / total * 100)
+  overall: number;              // 综合分 0-100
+  grade: 'S' | 'A' | 'B' | 'C' | 'D';
+}
+
+/**
+ * 计算目标绩效评分 — 轻量化，无需manager校准
+ * 公式：overall = achievementRate * 0.4 + taskCompletionRate * 0.25 + onTimeRate * 0.2 + actionItemCloseRate * 0.15
+ */
+export function computePerformanceScore(params: {
+  goalId: string;
+  goalTitle: string;
+  targetProgress: number;        // 目标预期进度
+  actualProgress: number;        // 目标实际进度
+  totalTasks: number;
+  completedTasks: number;
+  onTimeTasks: number;           // 在截止日期前完成的任务数
+  totalActionItems: number;
+  closedActionItems: number;
+}): PerformanceScore {
+  const achievementRate = params.targetProgress > 0
+    ? Math.min(100, Math.round((params.actualProgress / params.targetProgress) * 100))
+    : params.actualProgress;
+  const taskCompletionRate = params.totalTasks > 0
+    ? Math.round((params.completedTasks / params.totalTasks) * 100)
+    : 0;
+  const onTimeRate = params.completedTasks > 0
+    ? Math.round((params.onTimeTasks / params.completedTasks) * 100)
+    : 100;
+  const actionItemCloseRate = params.totalActionItems > 0
+    ? Math.round((params.closedActionItems / params.totalActionItems) * 100)
+    : 100;
+
+  const overall = Math.round(
+    achievementRate * 0.4 + taskCompletionRate * 0.25 + onTimeRate * 0.2 + actionItemCloseRate * 0.15
+  );
+
+  let grade: PerformanceScore['grade'] = 'D';
+  if (overall >= 95) grade = 'S';
+  else if (overall >= 85) grade = 'A';
+  else if (overall >= 70) grade = 'B';
+  else if (overall >= 50) grade = 'C';
+
+  return {
+    goalId: params.goalId,
+    goalTitle: params.goalTitle,
+    achievementRate,
+    taskCompletionRate,
+    onTimeRate,
+    actionItemCloseRate,
+    overall,
+    grade,
+  };
+}
+
 // --- AI Draft Generation ---
 
 export function buildReviewDraftPrompt(

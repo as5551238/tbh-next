@@ -1,25 +1,78 @@
-import { useState } from 'react';
-import { Settings, Database, Bell, Shield, Palette, Globe, Plug, Info, Save, Plus, Trash2 } from 'lucide-react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useToast, ToastOverlay } from '@/hooks/useToast';
+import { Settings, Database, Bell, Shield, Palette, Globe, Plug, Info, Save, Plus, Trash2, Lock } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { checkSupabaseHealth, fetchApiKeys, createApiKey, deleteApiKey } from '@/lib/dataLayer';
+import { hasFeature, PLAN_LIMITS, getCurrentPlan } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
+import AuditLogView from '@/pages/AuditLogView';
+
+type ApiKeyEntry = { id: string; name: string; key: string; created: string };
+
+function maskKey(key: string): string {
+  if (key.length <= 8) return '****';
+  return key.slice(0, 4) + '****' + key.slice(-4);
+}
+
+function encodeKey(key: string): string {
+  try { return btoa(unescape(encodeURIComponent(key))); } catch { return btoa(key); }
+}
+
+function decodeKey(encoded: string): string {
+  try { return decodeURIComponent(escape(atob(encoded))); } catch { return atob(encoded); }
+}
+
+async function migrateLocalStorageKeys(): Promise<void> {
+  try {
+    const raw = localStorage.getItem('tbh-api-keys');
+    if (!raw) return;
+    const old: ApiKeyEntry[] = JSON.parse(raw);
+    if (!old.length) return;
+    for (const k of old) {
+      try {
+        await createApiKey({ provider: k.name, encrypted_key: encodeKey(k.key) });
+      } catch { /* already exists */ }
+    }
+    localStorage.removeItem('tbh-api-keys');
+  } catch { /* parse error */ }
+}
 
 type ConfigItem = {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
   status: string;
 };
 
+const ADMIN_TABS = ['通用', '通知偏好', '邮件设置', '功能开关', '审计日志'] as const;
+type AdminTab = (typeof ADMIN_TABS)[number];
+
 export default function AdminContent() {
+  const { toasts, error } = useToast();
+  const [activeTab, setActiveTab] = useState<AdminTab>('通用');
   const emailModal = useModal();
   const apiModal = useModal();
   const genericModal = useModal();
 
   const [genericTitle, setGenericTitle] = useState('');
+  const [showPaywall, setShowPaywall] = useState(false);
   const [genericField, setGenericField] = useState<{ label: string; value: string }[]>([]);
 
   const [resendKey, setResendKey] = useState(() => { try { return localStorage.getItem('tbh_resend_key') ?? ''; } catch { return ''; } });
   const [senderEmail, setSenderEmail] = useState(() => { try { return localStorage.getItem('tbh_sender_email') ?? ''; } catch { return ''; } });
   const [smtpServer, setSmtpServer] = useState(() => { try { return localStorage.getItem('tbh_smtp_server') ?? ''; } catch { return ''; } });
+
+  const [notifPrefs, setNotifPrefs] = useState<{ email: boolean; push: boolean; im: boolean; digest: 'none' | 'daily' | 'weekly' }>(() => {
+    try { const raw = localStorage.getItem('tbh-notif-prefs'); return raw ? JSON.parse(raw) : { email: true, push: true, im: false, digest: 'daily' as const }; } catch { return { email: true, push: true, im: false, digest: 'daily' as const }; }
+  });
+  useEffect(() => { try { localStorage.setItem('tbh-notif-prefs', JSON.stringify(notifPrefs)); } catch { /* quota */ } }, [notifPrefs]);
+
+  const [emailSettings, setEmailSettings] = useState<{ address: string }>(() => {
+    try { const raw = localStorage.getItem('tbh-email-settings'); return raw ? JSON.parse(raw) : { address: '' }; } catch { return { address: '' }; }
+  });
+  const [emailTestSending, setEmailTestSending] = useState(false);
+
+  useEffect(() => { try { localStorage.setItem('tbh-email-settings', JSON.stringify(emailSettings)); } catch { /* quota */ } }, [emailSettings]);
 
   function saveEmailConfig() {
     try {
@@ -30,11 +83,27 @@ export default function AdminContent() {
     emailModal.closeModal();
   }
 
-  const [apiKeys, setApiKeys] = useState([
-    { id: '1', name: 'Supabase Anon', key: 'eyJhb...truncated', created: '2026-06-01' },
-    { id: '2', name: 'Resend API', key: 're_xxx...truncated', created: '2026-06-02' },
-    { id: '3', name: 'GitHub Token', key: 'ghp_xxx...truncated', created: '2026-06-03' },
-  ]);
+  const [apiKeys, setApiKeys] = useState<ApiKeyEntry[]>([]);
+  const [keysLoading, setKeysLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      await migrateLocalStorageKeys();
+      try {
+        const rows = await fetchApiKeys();
+        setApiKeys(rows.map((r) => ({ id: r.id, name: r.provider, key: decodeKey(r.encrypted_key), created: r.created_at?.slice(0, 10) ?? '' })));
+      } catch { /* offline */ }
+      setKeysLoading(false);
+    })();
+  }, []);
+
+  const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+  const checkDbHealth = useCallback(() => {
+    setDbStatus('checking');
+    checkSupabaseHealth().then((s) => setDbStatus(s)).catch((err) => { console.error('[admin]', err); error('管理操作失败，请重试'); setDbStatus('error'); });
+  }, []);
+  useEffect(() => { checkDbHealth(); }, [checkDbHealth]);
+
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyValue, setNewKeyValue] = useState('');
 
@@ -42,7 +111,7 @@ export default function AdminContent() {
     {
       title: '系统',
       items: [
-        { icon: <Database size={15} />, label: '数据库连接', value: 'Supabase · 已连接', status: 'ok' },
+        { icon: <Database size={15} />, label: '数据库连接', value: 'Supabase · ' + (dbStatus === 'ok' ? '已连接' : dbStatus === 'error' ? '连接失败' : '检测中…'), status: dbStatus === 'ok' ? 'ok' : dbStatus === 'error' ? 'error' : 'warn' },
         { icon: <Plug size={15} />, label: 'API密钥管理', value: `${apiKeys.length}个已配置`, status: 'ok' },
         { icon: <Globe size={15} />, label: '域名与部署', value: 'GitHub Pages', status: 'ok' },
       ],
@@ -89,7 +158,7 @@ export default function AdminContent() {
     if (item.label === 'API密钥管理') return apiModal.openModal();
 
     const fieldMap: Record<string, { label: string; value: string }[]> = {
-      '数据库连接': [{ label: '连接类型', value: 'Supabase' }, { label: '项目 URL', value: import.meta.env.VITE_SUPABASE_URL || '(环境变量)' }, { label: '状态', value: '已连接' }],
+      '数据库连接': [{ label: '连接类型', value: 'Supabase' }, { label: '项目 URL', value: import.meta.env.VITE_SUPABASE_URL || '(环境变量)' }, { label: '状态', value: dbStatus === 'ok' ? '已连接' : dbStatus === 'error' ? '连接失败' : '检测中…' }],
       '域名与部署': [{ label: '部署平台', value: 'GitHub Pages' }, { label: '域名', value: 'as5551238.github.io/team-business-hub' }, { label: 'CI', value: 'GitHub Actions' }],
       '通知渠道': [{ label: '企业微信', value: '已启用' }, { label: '浏览器推送', value: '已启用' }, { label: '邮件', value: resendKey ? '已启用' : '未启用' }],
       '告警规则': [{ label: '规则数量', value: '5' }, { label: '最近触发', value: '无' }, { label: '通知方式', value: '企微 + 浏览器' }],
@@ -104,19 +173,28 @@ export default function AdminContent() {
     if (fields) openGeneric(item.label, fields);
   }
 
-  function addApiKey() {
+  async function addApiKey() {
     if (!newKeyName.trim() || !newKeyValue.trim()) return;
-    setApiKeys((prev) => [...prev, { id: Date.now().toString(), name: newKeyName.trim(), key: newKeyValue.trim().slice(0, 6) + '...truncated', created: new Date().toISOString().slice(0, 10) }]);
+    const name = newKeyName.trim();
+    const key = newKeyValue.trim();
+    try {
+      const row = await createApiKey({ provider: name, encrypted_key: encodeKey(key) });
+      setApiKeys((prev) => [...prev, { id: row.id, name, key, created: row.created_at?.slice(0, 10) ?? new Date().toISOString().slice(0, 10) }]);
+    } catch {
+      setApiKeys((prev) => [...prev, { id: Date.now().toString(), name, key, created: new Date().toISOString().slice(0, 10) }]);
+    }
     setNewKeyName('');
     setNewKeyValue('');
   }
 
-  function removeApiKey(id: string) {
+  async function removeApiKey(id: string) {
+    try { await deleteApiKey(id); } catch { /* offline */ }
     setApiKeys((prev) => prev.filter((k) => k.id !== id));
   }
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <ToastOverlay toasts={toasts} />
       {/* Header */}
       <div className="flex items-center gap-2">
         <Settings size={18} className="text-primary-2" />
@@ -124,6 +202,15 @@ export default function AdminContent() {
         <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[9px] font-bold text-danger">仅管理员</span>
       </div>
 
+      {/* Tab bar */}
+      <div className="flex gap-1 rounded-xl border border-border bg-surface p-1">
+        {ADMIN_TABS.map((tab) => (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${activeTab === tab ? 'bg-[#7b6cf0] text-white' : 'text-text-3 hover:text-text hover:bg-white/5'}`}>{tab}</button>
+        ))}
+      </div>
+
+      {/* ───── 通用 tab ───── */}
+      {activeTab === '通用' && (<>
       {/* System Health */}
       <div className="rounded-xl border border-border bg-surface p-4">
         <div className="flex items-center justify-between mb-3">
@@ -132,9 +219,9 @@ export default function AdminContent() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: '数据库', status: 'ok' },
-            { label: 'API', status: 'ok' },
-            { label: '部署', status: 'ok' },
+            { label: '数据库', status: dbStatus === 'checking' ? 'warn' : dbStatus },
+            { label: 'API', status: 'ok' as string },
+            { label: '部署', status: 'ok' as string },
             { label: '邮件', status: resendKey ? 'ok' : 'warn' },
           ].map((h) => (
             <div key={h.label} className="text-center">
@@ -156,7 +243,7 @@ export default function AdminContent() {
                 <span className="text-xs text-text-2 min-w-[100px]">{item.label}</span>
                 <span className="flex-1 text-xs font-medium text-text text-right">{item.value}</span>
                 <span className={`text-[9px] ${statusCls[item.status]}`}>
-                  {item.status === 'ok' ? '✓' : '⚠'}
+                  {item.status === 'ok' ? '✓' : item.status === 'error' ? '✗' : '⚠'}
                 </span>
               </div>
             ))}
@@ -171,6 +258,97 @@ export default function AdminContent() {
           TBH Next v0.1.0 · Build 20260604 · React 19 + Vite 5.4 + Supabase
         </div>
       </div>
+      </>)}
+
+      {/* ───── 通知偏好 tab ───── */}
+      {activeTab === '通知偏好' && (
+        <div className="space-y-3">
+          {([
+            { key: 'email' as const, label: '邮件通知', desc: '重要事件通过邮件推送' },
+            { key: 'push' as const, label: '浏览器推送', desc: '浏览器桌面通知' },
+            { key: 'im' as const, label: '企微/Slack', desc: '即时通讯渠道推送' },
+          ]).map((item) => (
+            <div key={item.key} className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
+              <div>
+                <div className="text-xs font-medium text-text">{item.label}</div>
+                <div className="text-[10px] text-text-3">{item.desc}</div>
+              </div>
+              <button onClick={() => setNotifPrefs((p) => ({ ...p, [item.key]: !p[item.key] }))} className={`relative h-5 w-9 rounded-full transition-colors ${notifPrefs[item.key] ? 'bg-[#7b6cf0]' : 'bg-white/10'}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${notifPrefs[item.key] ? 'left-[18px]' : 'left-0.5'}`} />
+              </button>
+            </div>
+          ))}
+          <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
+            <div>
+              <div className="text-xs font-medium text-text">摘要频率</div>
+              <div className="text-[10px] text-text-3">定期推送工作摘要</div>
+            </div>
+            <select value={notifPrefs.digest} onChange={(e) => setNotifPrefs((p) => ({ ...p, digest: e.target.value as 'none' | 'daily' | 'weekly' }))} className="h-7 rounded-md border border-border bg-[#0a0c12] px-2 text-xs text-text">
+              <option value="none">关闭</option>
+              <option value="daily">每日</option>
+              <option value="weekly">每周</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* ───── 邮件设置 tab ───── */}
+      {activeTab === '邮件设置' && (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
+            <div className="text-xs font-bold text-text">收件邮箱</div>
+            <input type="email" placeholder="your@email.com" value={emailSettings.address} onChange={(e) => setEmailSettings((s) => ({ ...s, address: e.target.value }))} className="h-8 w-full rounded-md border border-border bg-[#0a0c12] px-3 text-xs text-text" />
+            <div className="text-[10px] text-text-3">用于接收通知摘要和告警邮件</div>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
+            <div className="text-xs font-bold text-text">测试发送</div>
+            <button onClick={async () => { setEmailTestSending(true); await new Promise((r) => setTimeout(r, 1200)); setEmailTestSending(false); }} disabled={emailTestSending || !emailSettings.address} className="rounded-lg bg-[#7b6cf0] px-4 py-1.5 text-xs font-bold text-white disabled:opacity-40">
+              {emailTestSending ? '发送中…' : '发送测试邮件'}
+            </button>
+            <div className="text-[10px] text-text-3">模拟发送一封测试邮件到上方邮箱</div>
+          </div>
+        </div>
+      )}
+
+      {/* ───── 功能开关 tab ───── */}
+      {activeTab === '功能开关' && (
+        <div className="space-y-2">
+          <div className="text-[10px] text-text-3 mb-2">当前方案: <span className="text-[#7b6cf0] font-bold">{getCurrentPlan() === 'free' ? '免费版' : getCurrentPlan() === 'pro' ? '专业版' : '企业版'}</span></div>
+          {(
+            Object.entries(PLAN_LIMITS.free).filter(([, v]) => typeof v === 'boolean') as [string, boolean][]
+          ).map(([key, freeVal]) => {
+            const enabled = hasFeature(key as keyof import('@/lib/subscription').PlanLimits);
+            return (
+              <div key={key} className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-text">{key}</span>
+                  {freeVal === false && !enabled && <Lock size={11} className="text-text-3" />}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] ${enabled ? 'text-[#00d4aa]' : 'text-text-3'}`}>{enabled ? '已启用' : '未启用'}</span>
+                  {!enabled && <a href="#/ai/subscription" className="text-[10px] text-[#7b6cf0] hover:underline">升级</a>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ───── 审计日志 tab ───── */}
+      {activeTab === '审计日志' && (
+        hasFeature('auditExport') ? (
+          <div className="rounded-xl border border-border bg-surface overflow-hidden">
+            <AuditLogView />
+          </div>
+        ) : (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-8 text-center">
+            <Lock size={24} className="mx-auto mb-2 text-primary-2" />
+            <div className="text-sm font-semibold text-text mb-1">审计日志</div>
+            <p className="text-xs text-text-3 mb-3">审计日志导出需要专业版或企业版</p>
+            <button className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:opacity-80" onClick={() => setShowPaywall(true)}>升级专业版</button>
+          </div>
+        )
+      )}
 
       {/* ========== 邮件推送配置 Modal ========== */}
       <Modal open={emailModal.open} onClose={emailModal.closeModal} title="邮件推送配置"
@@ -206,7 +384,7 @@ export default function AdminContent() {
             <div key={k.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2">
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium text-text truncate">{k.name}</div>
-                <div className="text-[10px] text-text-3">{k.key} · 创建于 {k.created}</div>
+                <div className="text-[10px] text-text-3">{maskKey(k.key)} · 创建于 {k.created}</div>
               </div>
               <button onClick={() => removeApiKey(k.id)} className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-md text-text-3 hover:bg-danger/10 hover:text-danger transition-colors">
                 <Trash2 size={13} />
@@ -251,6 +429,7 @@ export default function AdminContent() {
           </ModalField>
         ))}
       </Modal>
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="审计日志导出需要专业版或企业版" feature="audit_export" />
     </div>
   );
 }

@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
-import { Bot, Sun, RefreshCw, Sparkles } from 'lucide-react';
+import { Bot, Sun, RefreshCw, Sparkles, Target } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
 import { MORNING_AGENT } from '@/lib/agents';
 import { cn } from '@/lib/utils';
-import { useNotifications } from '@/hooks/useMatrix';
+import { useNotifications, useGoals, useTasks, useActionItems } from '@/hooks/useMatrix';
+import { generateFocusPlan, FOCUS_TAG_CONFIG, type Prioritizable, type PrioritizedItem } from '@/lib/priorityEngine';
+import { t } from '@/lib/i18n';
 
 /** Morning Focus - AI-powered dedicated morning briefing view */
 export default function MorningView() {
@@ -19,6 +21,35 @@ export default function MorningView() {
   const [briefingSource, setBriefingSource] = useState<string>('');
   const { addNotification } = useNotifications();
   const briefingPushedRef = useRef(false);
+
+  const { goals } = useGoals();
+  const { tasks } = useTasks();
+  const { actionItems } = useActionItems();
+
+  const focusPlan: PrioritizedItem[] = useMemo(() => {
+    const items: Prioritizable[] = [
+      ...(goals || []).map((g) => ({
+        id: g.id, title: g.title, type: 'goal' as const,
+        status: g.status, progress: g.progress,
+        due_date: g.end_date, start_date: g.start_date,
+        goal_id: null, done: false, closed_loop: false,
+      })),
+      ...(tasks || []).map((t) => ({
+        id: t.id, title: t.title, type: 'task' as const,
+        status: t.status, priority: t.priority,
+        due_date: t.due_date, goal_id: t.goal_id,
+        done: t.done ?? t.status === 'done', closed_loop: false,
+      })),
+      ...(actionItems || []).map((a) => ({
+        id: a.id, title: a.title, type: 'action_item' as const,
+        status: a.status, priority: a.priority,
+        due_date: a.due_date, goal_id: a.goal_id,
+        done: a.status === 'completed', closed_loop: a.closed_loop,
+        source: a.source, owner_id: null, assignee_id: a.assignee_id,
+      })),
+    ];
+    return generateFocusPlan(items).slice(0, 3);
+  }, [goals, tasks, actionItems]);
 
   const generateBriefing = useCallback(async () => {
     setBriefingLoading(true);
@@ -45,12 +76,11 @@ export default function MorningView() {
       });
       setBriefingSource(res.agent ?? 'local');
 
-      // S8.2: Push morning briefing notification (once per session)
       if (!briefingPushedRef.current && res.text) {
         briefingPushedRef.current = true;
         const summary = res.text.slice(0, 120).replace(/[#*_]/g, '').trim();
         addNotification({
-          title: '晨间播报已生成',
+          title: t('morningView.briefingGenerated'),
           message: summary + (res.text.length > 120 ? '...' : ''),
           type: 'system',
           related_id: null,
@@ -60,14 +90,12 @@ export default function MorningView() {
         });
       }
     } catch {
-      // AI generation failed — fallback to cell.morning static data
       setBriefing(cell.morning);
       setBriefingSource('fallback');
       setBriefingLoading(false);
     }
   }, [cell, industry, dept]);
 
-  // Auto-generate briefing on mount or when cell changes
   useEffect(() => {
     if (!loading && cell.morning) {
       generateBriefing();
@@ -84,16 +112,49 @@ export default function MorningView() {
           </div>
           <div className="relative z-10">
             <div className="text-5xl mb-3">☀️</div>
-            <h1 className="text-2xl font-extrabold text-text mb-1">晨间聚焦</h1>
+            <h1 className="text-2xl font-extrabold text-text mb-1">{t('morningView.morningFocus')}</h1>
             <p className="text-sm text-text-3">{industry} · {dept}</p>
           </div>
         </div>
+
+        {/* 今日聚焦 - Priority Engine */}
+        {focusPlan.length > 0 && (
+          <div className="rounded-xl border border-border p-5 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}08 0%, ${indColor}02 100%)` }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10"><Target size={12} className="text-primary-2" /></div>
+              <span className="text-xs font-bold text-text">{t('morningView.todayFocus')}</span>
+              <span className="rounded-full px-2 py-0.5 text-[8px] font-bold bg-primary/10 text-primary-2">{t('morningView.aiSorted')}</span>
+            </div>
+            <div className="space-y-2">
+              {focusPlan.map((item, i) => {
+                const cfg = FOCUS_TAG_CONFIG[item.focusTag];
+                return (
+                  <div key={item.id} className="flex items-center gap-3 rounded-lg bg-[#0d0f16] border border-[#2a2d3a] px-4 py-2.5">
+                    <span className="text-xs font-bold text-[#9ca3b8] w-4">{i + 1}</span>
+                    <span className="text-sm">{cfg.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-[#eaecf4] truncate">{item.title}</div>
+                      <div className="text-[10px] text-[#9ca3b8]">{item.reason}</div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      item.focusTag === 'urgent' ? 'bg-[#ef4444]/10 text-[#ef4444]' :
+                      item.focusTag === 'important' ? 'bg-[#7b6cf0]/10 text-[#7b6cf0]' :
+                      item.focusTag === 'momentum' ? 'bg-[#00d4aa]/10 text-[#00d4aa]' :
+                      item.focusTag === 'low-hanging' ? 'bg-[#f5a623]/10 text-[#f5a623]' :
+                      'bg-white/5 text-[#9ca3b8]'
+                    }`}>{cfg.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* AI Briefing */}
         <div className="rounded-xl border border-border p-5 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}06 0%, ${indColor}02 100%)` }}>
           <div className="flex items-center gap-2 mb-3">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10"><Bot size={12} className="text-primary-2" /></div>
-            <span className="text-xs font-bold text-text">AI 晨间播报</span>
+            <span className="text-xs font-bold text-text">{t('morningView.aiBriefing')}</span>
             <span className={cn(
               'rounded-full px-2 py-0.5 text-[8px] font-bold',
               briefingSource === 'llm' && 'bg-success/10 text-success',
@@ -101,12 +162,12 @@ export default function MorningView() {
               briefingSource === 'local' && 'bg-warn/10 text-warn',
               !briefingSource && 'bg-surface-2 text-text-3',
             )}>
-              {briefingSource === 'llm' ? 'LLM' : briefingSource === 'edge' ? 'Edge' : briefingSource === 'local' ? '离线快照' : 'AI生成'}
+              {briefingSource === 'llm' ? 'LLM' : briefingSource === 'edge' ? 'Edge' : briefingSource === 'local' ? t('morningView.offlineSnapshot') : t('morningView.aiGenerating')}
             </span>
             <button
               onClick={generateBriefing}
               className="ml-auto rounded-lg p-1 text-text-3 transition-all hover:bg-primary/10 hover:text-primary-2"
-              title="重新生成"
+              title={t('morningView.regen')}
               disabled={briefingLoading}
             >
               <RefreshCw size={14} className={cn(briefingLoading && 'animate-spin')} />
@@ -115,7 +176,7 @@ export default function MorningView() {
           {briefingLoading && !briefing ? (
             <div className="flex items-center gap-2 text-sm text-text-3">
               <Sparkles size={14} className="animate-pulse text-primary-2" />
-              <span>AI 正在生成晨间播报...</span>
+              <span>{t('morningView.generating')}</span>
             </div>
           ) : (
             <p className="text-sm text-text-2 leading-relaxed whitespace-pre-line">
@@ -127,17 +188,17 @@ export default function MorningView() {
 
         {/* Key metrics */}
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">行业快照</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">{t('morningView.industrySnapshot')}</div>
           <p className="text-sm text-text-2 mb-4">{cell.ribbon}</p>
           <div className="flex items-center gap-2 text-xs text-primary-2">
             <Bot size={14} />
-            <span>下一步: {cell.nextStep}</span>
+            <span>{t('morningView.nextStep', { step: cell.nextStep })}</span>
           </div>
         </div>
 
         {/* Top 3 alerts */}
         <div className="space-y-2">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3">重点关注</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3">{t('morningView.keyAttention')}</div>
           {cell.top3.map((item, i) => (
             <div key={i} className={`rounded-xl px-4 py-3 text-xs ${
               item.level === 'danger' ? 'bg-danger/5 text-danger border border-danger/10' :

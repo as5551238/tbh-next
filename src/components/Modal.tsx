@@ -1,6 +1,25 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, useId, Children, cloneElement, isValidElement, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
+
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+function getFocusable(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(el => el.offsetParent !== null);
+}
+
+function handleTrap(container: HTMLElement, e: KeyboardEvent) {
+  if (e.key !== 'Tab') return;
+  const els = getFocusable(container);
+  if (els.length === 0) { e.preventDefault(); return; }
+  const first = els[0];
+  const last = els[els.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+  } else {
+    if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Modal Component                                                    */
@@ -18,12 +37,26 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children, width = 'max-w-md', footer }: ModalProps) {
   const ref = useRef<HTMLDivElement>(null);
 
+  const triggerRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
+    triggerRef.current = document.activeElement as HTMLElement;
+    const container = ref.current;
+    if (!container) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { onClose(); return; }
+      handleTrap(container, e);
+    }
     document.addEventListener('keydown', onKey);
-    ref.current?.focus();
-    return () => document.removeEventListener('keydown', onKey);
+    requestAnimationFrame(() => {
+      const focusable = getFocusable(container);
+      (focusable[0] ?? container).focus();
+    });
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      triggerRef.current?.focus();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -62,10 +95,13 @@ export function useModal() {
 /* ------------------------------------------------------------------ */
 
 export function ModalField({ label, children }: { label: string; children: ReactNode }) {
+  const id = useId();
   return (
     <div className="mb-3">
-      <label className="block text-[10px] font-bold uppercase tracking-wider text-text-3 mb-1">{label}</label>
-      {children}
+      <label htmlFor={id} className="block text-[10px] font-bold uppercase tracking-wider text-text-3 mb-1">{label}</label>
+      {Children.map(children, child =>
+        isValidElement(child) ? cloneElement(child as React.ReactElement<Record<string, unknown>>, { id }) : child
+      )}
     </div>
   );
 }
