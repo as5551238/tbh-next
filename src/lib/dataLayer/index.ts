@@ -5,6 +5,7 @@ export type {
   ActionItemRow, DeviationAlertRow, MessageRow,
   InsightRow, WorkflowInstanceRow, ChannelRow, ApiKeyRow,
   AuditLogRow, SubscriptionRow, UsageEventRow,
+  NotificationRow, KnowledgePackRow, MarketplaceAgentRow,
 } from './types';
 
 export type {
@@ -105,4 +106,7 @@ export {
   fetchAuditLogs,
   fetchSubscriptionByUserId, createSubscription, upsertSubscription, updateSubscription,
   recordUsageEvent, fetchUsageEventCount,
+  updateNotification, updateNotifications, deleteNotification, deleteAllNotifications,
+  fetchKnowledgePacks, createKnowledgePack,
+  fetchMarketplaceAgents, createMarketplaceAgent,
 } from './extended';

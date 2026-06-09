@@ -3,11 +3,15 @@ import { useAgentDetails, useIndustryColor } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
 import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Loader2, Plus, Check } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { CardSkeleton } from '@/components/Skeleton';
+import { hasFeature } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
 
 const STATUS_DOT: Record<string, string> = { running: 'bg-success', idle: 'bg-warn', error: 'bg-danger' };
 const STATUS_LABEL: Record<string, string> = { running: '运行中', idle: '空闲', error: '异常' };
 
 export default function AgentListView() {
+  const [showPaywall, setShowPaywall] = useState(false);
   const indColor = useIndustryColor();
   const { agents, setAgents, loading, addAgent, editAgent } = useAgentDetails();
   const registerModal = useModal();
@@ -53,9 +57,7 @@ export default function AgentListView() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 
@@ -147,6 +149,8 @@ export default function AgentListView() {
           <input className={inputCls} value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="输入Agent描述" />
         </ModalField>
       </Modal>
-    </div>
+    
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="AI代理列表需要专业版或企业版" feature="ai_agent_list" />
+</div>
   );
 }

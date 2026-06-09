@@ -5,6 +5,9 @@ import { useAgentDetails } from '@/hooks/useMatrix';
 import { fetchMarketplaceAgents, CATEGORIES, type MarketplaceAgent } from '@/lib/agentMarketplace';
 import { cn } from '@/lib/utils';
 import { Search, Download, Star, X, Check, Crown, Zap, Building2, Loader2 } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
+import { hasFeature } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
 
 const INSTALLED_AGENTS_STORAGE = 'tbh-installed-agents';
 
@@ -15,6 +18,7 @@ const PRICE_ICONS: Record<string, ReactNode> = {
 };
 
 export default function AgentMarketView() {
+  const [showPaywall, setShowPaywall] = useState(false);
   const industry = useAppStore((s) => s.industry);
   const { addAgent, removeAgent } = useAgentDetails();
   const [agents, setAgents] = useState<MarketplaceAgent[]>([]);
@@ -101,7 +105,7 @@ export default function AgentMarketView() {
         {/* Agent grid */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+            <CardSkeleton />
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {filtered.map((agent) => (
@@ -191,6 +195,8 @@ export default function AgentMarketView() {
           </div>
         </div>
       )}
-    </div>
+    
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="AI代理市场需要专业版或企业版" feature="ai_agent_marketplace" />
+</div>
   );
 }

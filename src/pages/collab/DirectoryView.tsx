@@ -7,6 +7,7 @@ import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { ContactRow } from '@/lib/dataLayer';
+import { CardSkeleton } from '@/components/Skeleton';
 
 
 
@@ -88,7 +89,7 @@ export default function DirectoryView() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+          <CardSkeleton />
         ) : (
         <>
         <div>

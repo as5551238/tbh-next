@@ -7,6 +7,7 @@ import { useStatusFlowRules } from '@/hooks/useMatrix';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { GitBranch, Plus, Lock, Loader2, ArrowRight, X, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const ENTITY_OPTIONS = [
   { value: 'task', label: '任务' },
@@ -49,7 +50,7 @@ export default function StatusFlowContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : (
         Object.entries(grouped).map(([entityType, items]) => (
           <div key={entityType}>

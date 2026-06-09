@@ -12,7 +12,8 @@
  * - Enables multi-agent orchestration
  */
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { createTask } from '@/lib/dataLayer';
 import { type MatrixCell } from '@/matrix/data';
 
 // ============================================================
@@ -89,10 +90,13 @@ export function createBuiltinMCPTools(cell: MatrixCell, industry: string, dept: 
       },
       handler: async (params) => {
         const { title, priority = 'medium' } = params;
-        if (isSupabaseConfigured() && supabase) {
-          const { data, error } = await supabase.from('tasks').insert({ title, priority, assignee_id: null, leader_id: null, due_date: null, status: 'todo', team_id: '__default__' }).select().single();
-          if (error) return { success: false, error: error.message };
-          return { success: true, task: data };
+        if (isSupabaseConfigured()) {
+          try {
+            const task = await createTask({ title, priority, assignee_id: null, leader_id: null, due_date: null, status: 'todo', team_id: '__default__' });
+            return { success: true, task };
+          } catch (err: any) {
+            return { success: false, error: err.message };
+          }
         }
         return { success: true, task: { id: `local-${Date.now()}`, title, priority, status: 'todo' } };
       },
@@ -139,7 +143,7 @@ const EXTERNAL_SERVERS: MCPServer[] = [
     url: 'https://mcp.example.com/calendar',
     tools: [
       { name: 'list_events', description: '列出今日日程', parameters: {}, handler: async () => ({ events: [] }) },
-      { name: 'create_event', description: '创建日程', parameters: { title: { type: 'string', required: true }, time: { type: 'string', required: true } }, handler: async () => ({ success: true }) },
+      { name: 'create_event', description: '创建日程', parameters: { title: { type: 'string', description: 'parameter', required: true }, time: { type: 'string', description: 'parameter', required: true } }, handler: async () => ({ success: true }) },
     ],
     status: 'disconnected',
     isBuiltIn: false,
@@ -150,7 +154,7 @@ const EXTERNAL_SERVERS: MCPServer[] = [
     description: '企业微信消息发送与审批集成',
     url: 'https://mcp.example.com/wecom',
     tools: [
-      { name: 'send_message', description: '发送企微消息', parameters: { to: { type: 'string', required: true }, content: { type: 'string', required: true } }, handler: async () => ({ success: true }) },
+      { name: 'send_message', description: '发送企微消息', parameters: { to: { type: 'string', description: 'parameter', required: true }, content: { type: 'string', description: 'parameter', required: true } }, handler: async () => ({ success: true }) },
     ],
     status: 'disconnected',
     isBuiltIn: false,

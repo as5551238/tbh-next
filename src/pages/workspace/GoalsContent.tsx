@@ -1,7 +1,7 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { useState, useCallback, useMemo } from 'react';
-import { useGoals, useTasks, type KeyResultItem } from '@/hooks/useMatrix';
+import { useGoals, useTasks } from '@/hooks/useMatrix';
 import { cn, safeStr } from '@/lib/utils';
 import { Target, CheckCircle2, Zap, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
@@ -30,7 +30,7 @@ export default function GoalsContent() {
   }, [goals, tasks]);
 
   const handleCardClick = useCallback((g: typeof goals[number]) => {
-    const krTexts = g.key_results.map((kr) => typeof kr === 'string' ? kr : (kr as KeyResultItem).text || String(kr));
+    const krTexts = g.key_results.map((kr) => typeof kr === 'string' ? kr : (kr as Record<string, unknown>).text || String(kr));
     setEditGoalData({
       id: g.id,
       title: g.title,
@@ -73,8 +73,8 @@ export default function GoalsContent() {
   }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <Target size={18} className="text-primary-2" />
         <span className="text-sm font-bold">{t('goals.title')}</span>
         <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary-2">{t('goals.inProgress', { count: goals.length })}</span>
@@ -89,7 +89,7 @@ export default function GoalsContent() {
         const hasAuto = autoProg >= 0;
         const progMismatch = hasAuto && autoProg !== g.progress;
         return (
-        <div key={g.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleCardClick(g)}>
+        <div key={g.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleCardClick(g)}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div onClick={(e) => e.stopPropagation()}>
@@ -124,7 +124,7 @@ export default function GoalsContent() {
           </div>
           <div className="space-y-1">
             {g.key_results.map((kr, i) => {
-              const krItem = typeof kr === 'string' ? null : kr as KeyResultItem;
+              const krItem = typeof kr === 'string' ? null : kr as Record<string, unknown>;
               return (
                 <div key={i} className="flex items-center gap-2 text-xs text-text-3">
                   <CheckCircle2 size={12} className={i < Math.ceil(g.progress / 40) ? 'text-success' : 'text-border'} />
@@ -166,7 +166,7 @@ export default function GoalsContent() {
             </ModalField>
             <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-text-3">{t('goals.keyResults')}</div>
             {editGoalData.key_results.map((kr, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
+              <div key={i} className="flex items-center gap-2 mb-2 flex-wrap">
                 <input className={inputCls} value={kr} placeholder={`KR ${i + 1}`} onChange={(e) => handleKrTextChange(i, e.target.value)} />
                 <button className="shrink-0 text-[10px] text-danger hover:text-danger/80" onClick={() => handleRemoveKr(i)}>{t('goals.delete')}</button>
               </div>

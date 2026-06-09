@@ -8,6 +8,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { Tag, Plus, Lock, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const TYPE_OPTIONS = [
   { value: 'task', label: '任务' },
@@ -43,7 +44,7 @@ export default function TagsContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : tags.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-text-3">
           <Tag size={32} className="mb-2 opacity-30" />

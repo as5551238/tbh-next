@@ -6,6 +6,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { Building2, Globe, Users, Calendar, Settings, Loader2, Plus, Pencil, UserCog, Trash2 } from 'lucide-react';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { generateMatrixCellAI, saveCustomCell, getColorForIndustry } from '@/lib/matrixGenerator';
+import { CardSkeleton } from '@/components/Skeleton';
 
 export default function OrgContent() {
   const { orgInfo, save, loading } = useOrgInfo();
@@ -25,13 +26,13 @@ export default function OrgContent() {
   const { toasts, success, error: toastError } = useToast();
 
   if (loading || !orgInfo) {
-    return <div className="flex flex-1 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary-2" /></div>;
+    return <CardSkeleton />;
   }
 
-  const departments = orgInfo.departments ?? [];
+  const departments = orgInfo!.departments ?? [];
 
   function openEditOrg() {
-    setOrgForm({ name: orgInfo.name, industry: orgInfo.industry, size: orgInfo.size });
+    setOrgForm({ name: orgInfo!.name, industry: orgInfo!.industry, size: orgInfo!.size });
     editOrgModal.openModal();
   }
 
@@ -52,7 +53,7 @@ export default function OrgContent() {
   function handleAddDept() {
     if (!deptForm.name.trim()) return;
     try {
-      save({ departments: [...(orgInfo.departments ?? []), { name: deptForm.name, head: deptForm.head, color: deptForm.color, members: 0, goals: 0 }] });
+      save({ departments: [...(orgInfo!.departments ?? []), { name: deptForm.name, head: deptForm.head, color: deptForm.color, members: 0, goals: 0 }] });
       success(`部门"${deptForm.name}"已创建`);
     } catch {
       toastError('创建部门失败，请重试');
@@ -69,7 +70,7 @@ export default function OrgContent() {
 
   function handleEditDept() {
     try {
-      save({ departments: (orgInfo.departments ?? []).map((d) => d.name === editingDept ? { ...d, name: deptForm.name, head: deptForm.head, color: deptForm.color } : d) });
+      save({ departments: (orgInfo!.departments ?? []).map((d) => d.name === editingDept ? { ...d, name: deptForm.name, head: deptForm.head, color: deptForm.color } : d) });
       success('部门信息已更新');
     } catch {
       toastError('保存部门失败，请重试');
@@ -81,7 +82,7 @@ export default function OrgContent() {
   function handleDeleteDept() {
     if (!editingDept) return;
     try {
-      save({ departments: (orgInfo.departments ?? []).filter((d) => d.name !== editingDept) });
+      save({ departments: (orgInfo!.departments ?? []).filter((d) => d.name !== editingDept) });
       success(`部门"${editingDept}"已删除`);
     } catch {
       toastError('删除部门失败，请重试');
@@ -116,11 +117,11 @@ export default function OrgContent() {
       <div className="rounded-xl border border-border bg-surface p-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-xl font-bold text-primary-2">
-            {orgInfo.name[0]}
+            {orgInfo!.name[0]}
           </div>
           <div>
-            <div className="text-base font-bold text-text">{orgInfo.name}</div>
-            <div className="text-[11px] text-text-3">{orgInfo.industry} · {orgInfo.size} · {orgInfo.plan}</div>
+            <div className="text-base font-bold text-text">{orgInfo!.name}</div>
+            <div className="text-[11px] text-text-3">{orgInfo!.industry} · {orgInfo!.size} · {orgInfo!.plan}</div>
           </div>
           <button onClick={openEditOrg} className="ml-auto flex items-center gap-1 rounded-lg bg-surface-2 px-3 py-1 text-[11px] text-text-2 hover:bg-surface-2/80">
             <Pencil size={11} />
@@ -129,7 +130,7 @@ export default function OrgContent() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="rounded-lg bg-surface-2/50 p-2.5 text-center">
-            <div className="text-xs font-bold text-text">{orgInfo.size}</div>
+            <div className="text-xs font-bold text-text">{orgInfo!.size}</div>
             <div className="text-[9px] text-text-3">团队规模</div>
           </div>
           <div className="rounded-lg bg-surface-2/50 p-2.5 text-center">
@@ -137,7 +138,7 @@ export default function OrgContent() {
             <div className="text-[9px] text-text-3">部门数</div>
           </div>
           <div className="rounded-lg bg-surface-2/50 p-2.5 text-center">
-            <div className="text-xs font-bold text-text">{orgInfo.plan}</div>
+            <div className="text-xs font-bold text-text">{orgInfo!.plan}</div>
             <div className="text-[9px] text-text-3">当前版本</div>
           </div>
         </div>
@@ -176,9 +177,9 @@ export default function OrgContent() {
       <div className="space-y-2">
         <span className="text-xs font-bold text-text-3 uppercase tracking-wider">组织配置</span>
         {[
-          { label: '行业类型', value: orgInfo.industry, icon: <Globe size={13} /> },
-          { label: '创建时间', value: orgInfo.created, icon: <Calendar size={13} /> },
-          { label: '订阅方案', value: `${orgInfo.plan} (年付)`, icon: <Settings size={13} /> },
+          { label: '行业类型', value: orgInfo!.industry, icon: <Globe size={13} /> },
+          { label: '创建时间', value: orgInfo!.created, icon: <Calendar size={13} /> },
+          { label: '订阅方案', value: `${orgInfo!.plan} (年付)`, icon: <Settings size={13} /> },
         ].map((s) => (
           <div key={s.label} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5">
             <span className="text-text-3">{s.icon}</span>

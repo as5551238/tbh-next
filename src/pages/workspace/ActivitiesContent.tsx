@@ -5,6 +5,7 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { Activity, Plus, Lock, Loader2, Filter } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const TYPE_CFG: Record<string, { label: string; color: string }> = {
   created: { label: '创建', color: 'bg-blue-500/20 text-blue-400' },
@@ -40,9 +41,7 @@ export default function ActivitiesContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

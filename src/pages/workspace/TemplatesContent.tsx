@@ -5,6 +5,7 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { FileCode2, Plus, Lock, Loader2, Copy, Star } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const CATEGORIES = ['PRD', '报告', '流程', '评审', '其他'] as const;
 
@@ -50,9 +51,7 @@ export default function TemplatesContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

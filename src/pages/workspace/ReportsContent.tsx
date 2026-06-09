@@ -10,6 +10,7 @@ import { BarChart3, Download, Loader2, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { ReportInput, ReportUpdate } from '@/contracts/dataContracts';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const TYPE_STYLES: Record<string, string> = { weekly: 'bg-primary/10 text-primary-2', monthly: 'bg-accent/10 text-accent', custom: 'bg-success/10 text-success' };
 
@@ -84,9 +85,7 @@ export default function ReportsContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

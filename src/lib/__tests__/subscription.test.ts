@@ -28,6 +28,10 @@ const FREE_USAGE: UsageSummary = {
   projectsLimit: 5,
   docs: 5,
   docsLimit: 20,
+      goals: 0,
+      goalsLimit: 0,
+      tasks: 0,
+      tasksLimit: 0,
 };
 
 describe('subscription module', () => {

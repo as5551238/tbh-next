@@ -5,6 +5,7 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { Bookmark, Plus, Lock, Loader2, ExternalLink, Target, ListChecks, FileText, BookOpen } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const TYPE_CFG: Record<string, { label: string; color: string; icon: typeof Target }> = {
   goal: { label: '目标', color: 'bg-purple-500/20 text-purple-400', icon: Target },
@@ -40,9 +41,7 @@ export default function BookmarksContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

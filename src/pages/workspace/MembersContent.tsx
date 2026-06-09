@@ -5,6 +5,7 @@ import { getDepartments } from '@/matrix/data';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { hasFeature } from '@/lib/subscription';
 import { Users, Plus, Lock, Search, MoreHorizontal, Mail, Phone, Loader2, Trash2 } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 export default function MembersContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
@@ -74,7 +75,7 @@ export default function MembersContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : (
         <div className="space-y-2">
           {filteredMembers.map((m) => {

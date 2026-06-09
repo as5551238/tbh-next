@@ -294,6 +294,9 @@ export type WorkflowInstanceUpdate = Partial<WorkflowInstanceInput>;
 export interface MessageInput {
   content: string;
   sender?: string;
+  sender_type?: 'user' | 'ai' | 'system' | 'tool';
+  sender_name?: string;
+  channel?: string;
   channel_id?: string;
   type?: string;
 }
@@ -316,7 +319,7 @@ export type InsightUpdate = Partial<InsightInput>;
 export interface ActionItemInput {
   title: string;
   description?: string;
-  source?: 'review' | 'deviation' | 'manual' | 'ai_suggested';
+  source?: 'review' | 'deviation' | 'manual' | 'ai_suggested' | 'ai_review';
   source_id?: string | null;
   goal_id?: string | null;
   assignee_id?: string | null;
@@ -326,6 +329,7 @@ export interface ActionItemInput {
   closed_loop?: boolean;
   team_id?: string;
   created_by?: string | null;
+  completed_at?: string | null;
 }
 
 export type ActionItemUpdate = Partial<ActionItemInput>;

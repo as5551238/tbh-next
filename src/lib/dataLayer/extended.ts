@@ -576,3 +576,70 @@ export async function deleteApiKey(id: string): Promise<void> {
   const { error } = await supabase.from('api_keys').delete().eq('id', id);
   if (error) throw new Error(`deleteApiKey: ${error.message}`);
 }
+
+// ======== Notifications (update / delete) ========
+
+export async function updateNotification(id: string, data: { read?: boolean }): Promise<import('./types').NotificationRow> {
+  if (!isSupabaseConfigured() || !supabase) return {} as import('./types').NotificationRow;
+  const filtered = filterColumns('notifications', data as Record<string, unknown>);
+  const { data: result, error } = await supabase.from('notifications').update(filtered).eq('id', id).select().single();
+  if (error) throw new Error(`updateNotification: ${error.message}`);
+  return result as import('./types').NotificationRow;
+}
+
+export async function updateNotifications(data: { read?: boolean }, filter: { neq?: [string, unknown] }): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const filtered = filterColumns('notifications', data as Record<string, unknown>);
+  let query = supabase.from('notifications').update(filtered);
+  if (filter.neq) query = query.neq(filter.neq[0], filter.neq[1] as string);
+  const { error } = await query;
+  if (error) throw new Error(`updateNotifications: ${error.message}`);
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const { error } = await supabase.from('notifications').delete().eq('id', id);
+  if (error) throw new Error(`deleteNotification: ${error.message}`);
+}
+
+export async function deleteAllNotifications(): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const { error } = await supabase.from('notifications').delete().neq('id', '__never__');
+  if (error) throw new Error(`deleteAllNotifications: ${error.message}`);
+}
+
+// ======== Knowledge Packs ========
+
+export async function fetchKnowledgePacks(industry?: string): Promise<import('./types').KnowledgePackRow[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  let query = supabase.from('knowledge_packs').select('*').order('downloads', { ascending: false });
+  if (industry) query = query.eq('industry', industry);
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return data as import('./types').KnowledgePackRow[];
+}
+
+export async function createKnowledgePack(data: Record<string, unknown>): Promise<import('./types').KnowledgePackRow> {
+  if (!isSupabaseConfigured() || !supabase) return {} as import('./types').KnowledgePackRow;
+  const filtered = filterColumns('knowledge_packs', data);
+  const { data: result, error } = await supabase.from('knowledge_packs').insert(filtered).select().single();
+  if (error) throw new Error(`createKnowledgePack: ${error.message}`);
+  return result as import('./types').KnowledgePackRow;
+}
+
+// ======== Marketplace Agents ========
+
+export async function fetchMarketplaceAgents(): Promise<import('./types').MarketplaceAgentRow[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  const { data, error } = await supabase.from('marketplace_agents').select('*').order('downloads', { ascending: false });
+  if (error || !data) return [];
+  return data as import('./types').MarketplaceAgentRow[];
+}
+
+export async function createMarketplaceAgent(data: Record<string, unknown>): Promise<import('./types').MarketplaceAgentRow> {
+  if (!isSupabaseConfigured() || !supabase) return {} as import('./types').MarketplaceAgentRow;
+  const filtered = filterColumns('marketplace_agents', data);
+  const { data: result, error } = await supabase.from('marketplace_agents').insert(filtered).select().single();
+  if (error) throw new Error(`createMarketplaceAgent: ${error.message}`);
+  return result as import('./types').MarketplaceAgentRow;
+}

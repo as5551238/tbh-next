@@ -10,6 +10,7 @@ import type { AutomationRuleRow } from '@/lib/dataLayer';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { Zap, Plus, Loader2, Power, PowerOff, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const TRIGGER_OPTIONS = [
   { value: 'schedule', label: '定时触发' },
@@ -50,7 +51,7 @@ export default function AutomationContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : rules.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-text-3">
           <Zap size={32} className="mb-2 opacity-30" />

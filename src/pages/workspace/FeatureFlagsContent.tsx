@@ -6,6 +6,7 @@ import { useFeatureFlags } from '@/hooks/useMatrix';
 import { ToggleLeft, Loader2, Shield, Users, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { setFeatureFlagOverride, FLAG_KEY_TO_FEATURE, type PlanLimits, hasFeature } from '@/lib/subscription';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const PLAN_LABELS: Record<string, string> = { free: '免费版', pro: '专业版', enterprise: '企业版' };
 
@@ -52,7 +53,7 @@ export default function FeatureFlagsContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : (
         <div className="space-y-2">
           {flags.map((f) => (

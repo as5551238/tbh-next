@@ -7,6 +7,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { hasFeature } from '@/lib/subscription';
 import type { ExperienceInput } from '@/contracts/dataContracts';
+import { CardSkeleton } from '@/components/Skeleton';
 
 export default function ExperienceContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
@@ -60,9 +61,7 @@ export default function ExperienceContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

@@ -19,6 +19,7 @@ export interface GoalRow {
   leader_id: string | null;
   end_date: string | null;
   start_date: string | null;
+  priority?: string;
 }
 
 export interface TaskRow {
@@ -31,6 +32,9 @@ export interface TaskRow {
   status: string;
   done: boolean;
   goal_id: string | null;
+  completed_at?: string | null;
+  leader_id?: string | null;
+  done?: boolean;
 }
 
 export interface ProjectRow {
@@ -66,20 +70,20 @@ export interface KnowledgeDocRow {
   color: string;
   created_at: string;
   updated_at: string;
+  completed_at?: string | null;
 }
 
 export interface ActionItemRow {
   id: string;
   title: string;
   description: string;
-  source: 'review' | 'deviation' | 'manual' | 'ai_suggested';
+  source: 'review' | 'deviation' | 'manual' | 'ai_suggested' | 'ai_review';
   source_id: string | null;
   goal_id: string | null;
   assignee_id: string | null;
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'critical';
   due_date: string | null;
-  completed_at: string | null;
   closed_loop: boolean;
   team_id: string;
   created_by: string | null;
@@ -183,4 +187,56 @@ export interface UsageEventRow {
   event_type: string;
   detail: Record<string, unknown>;
   created_at: string;
+}
+
+export interface NotificationRow {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  related_id: string | null;
+  related_type: string | null;
+  member_id: string | null;
+  read: boolean;
+  created_at: string;
+  team_id: string | null;
+  level: string | null;
+}
+
+export interface KnowledgePackRow {
+  id: string;
+  industry: string;
+  title: string;
+  description: string;
+  category: string;
+  content: string | null;
+  tags: string[];
+  author: string;
+  version: string;
+  downloads: number;
+  rating: number;
+  is_official: boolean;
+  plan: string;
+  updated_at: string;
+  team_id: string | null;
+}
+
+export interface MarketplaceAgentRow {
+  id: string;
+  name: string;
+  icon: string;
+  author: string;
+  category: string;
+  description: string;
+  long_description: string | null;
+  version: string;
+  downloads: number;
+  rating: number;
+  review_count: number;
+  tags: string[];
+  system_prompt: string | null;
+  capabilities: string[];
+  is_official: boolean;
+  price: string;
+  team_id: string | null;
 }

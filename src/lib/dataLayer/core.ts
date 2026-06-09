@@ -41,10 +41,10 @@ export async function fetchMatrixCell(industry: string, dept: string): Promise<M
   }
 
   const [cellRes, kpiRes, agentRes, channelRes] = await Promise.all([
-    supabase.from('matrix_cells').select('*').eq('industry', industry).eq('dept', dept).single(),
-    supabase.from('kpis').select('*').eq('industry', industry).eq('dept', dept).order('sort_order'),
-    supabase.from('agents').select('*').eq('industry', industry).eq('dept', dept).order('sort_order'),
-    supabase.from('channels').select('*').eq('industry', industry).eq('dept', dept).order('sort_order'),
+    supabase!.from('matrix_cells').select('*').eq('industry', industry).eq('dept', dept).single(),
+    supabase!.from('kpis').select('*').eq('industry', industry).eq('dept', dept).order('sort_order'),
+    supabase!.from('agents').select('*').eq('industry', industry).eq('dept', dept).order('sort_order'),
+    supabase!.from('channels').select('*').eq('industry', industry).eq('dept', dept).order('sort_order'),
   ]);
 
   if (cellRes.error || !cellRes.data) {
@@ -75,7 +75,7 @@ export async function fetchIndustries(): Promise<string[]> {
   if (!isSupabaseConfigured() || !supabase) {
     return Object.keys(MATRIX);
   }
-  const { data, error } = await supabase.from('industries').select('name, color').order('sort_order');
+  const { data, error } = await supabase!.from('industries').select('name, color').order('sort_order');
   if (error || !data?.length) return Object.keys(MATRIX);
   return data.map((d: { name: string }) => d.name);
 }
@@ -84,14 +84,14 @@ export async function fetchDepartments(industry: string): Promise<string[]> {
   if (!isSupabaseConfigured() || !supabase) {
     return Object.keys(MATRIX[industry] ?? {});
   }
-  const { data, error } = await supabase.from('departments').select('name').eq('industry', industry).order('sort_order');
+  const { data, error } = await supabase!.from('departments').select('name').eq('industry', industry).order('sort_order');
   if (error || !data?.length) return Object.keys(MATRIX[industry] ?? {});
   return data.map((d: { name: string }) => d.name);
 }
 
 export async function checkSupabaseHealth(): Promise<'ok' | 'error'> {
   if (!isSupabaseConfigured() || !supabase) return 'error';
-  const { error } = await supabase.from('members').select('id').limit(1);
+  const { error } = await supabase!.from('members').select('id').limit(1);
   return error ? 'error' : 'ok';
 }
 
@@ -143,7 +143,7 @@ function localKnowledgeDocs(): KnowledgeDocRow[] {
 export async function fetchGoals(): Promise<GoalRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localGoals();
   return withAuthRetry(async () => {
-    const { data, error } = await supabase.from('goals').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase!.from('goals').select('*').order('created_at', { ascending: false });
     if (error || !data?.length) return localGoals();
   return (data as Record<string, unknown>[]).map((g) => ({
     id: String(g.id ?? ''),
@@ -164,7 +164,7 @@ export async function fetchGoals(): Promise<GoalRow[]> {
 export async function fetchTasks(): Promise<TaskRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localTasks();
   return withAuthRetry(async () => {
-    const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase!.from('tasks').select('*').order('created_at', { ascending: false });
     if (error || !data?.length) return localTasks();
   return (data as Record<string, unknown>[]).map((t) => ({
     id: String(t.id ?? ''),
@@ -182,7 +182,7 @@ export async function fetchTasks(): Promise<TaskRow[]> {
 
 export async function fetchProjects(): Promise<ProjectRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localProjects();
-  const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('projects').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localProjects();
   return (data as Record<string, unknown>[]).map((p) => ({
     id: String(p.id ?? ''),
@@ -197,7 +197,7 @@ export async function fetchProjects(): Promise<ProjectRow[]> {
 
 export async function fetchMembers(): Promise<MemberRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localMembers();
-  const { data, error } = await supabase.from('members').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('members').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localMembers();
   return (data as Record<string, unknown>[]).map((m) => ({
     id: String(m.id ?? ''),
@@ -215,7 +215,7 @@ export async function fetchMembers(): Promise<MemberRow[]> {
 
 export async function fetchKnowledgeDocs(): Promise<KnowledgeDocRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localKnowledgeDocs();
-  const { data, error } = await supabase.from('knowledge').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('knowledge').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localKnowledgeDocs();
   return (data as Record<string, unknown>[]).map((k) => ({
     id: String(k.id ?? ''),
@@ -234,7 +234,7 @@ export async function fetchKnowledgeDocs(): Promise<KnowledgeDocRow[]> {
 
 export async function fetchNotifications(): Promise<NotificationRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localNotifications();
-  const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('notifications').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localNotifications();
   return (data as NotificationRow[]).map((n) => ({
     ...n,
@@ -246,70 +246,70 @@ export async function fetchNotifications(): Promise<NotificationRow[]> {
 export async function createNotification(data: Omit<NotificationRow, 'id' | 'created_at' | 'read' | 'team_id'>): Promise<NotificationRow | null> {
   if (!isSupabaseConfigured() || !supabase) return null;
   const filtered = filterColumns('notifications', { ...data, read: false, team_id: '__default__' } as Record<string, unknown>);
-  const { data: row, error } = await supabase.from('notifications').insert(filtered).select().single();
+  const { data: row, error } = await supabase!.from('notifications').insert(filtered).select().single();
   if (error) { console.error('createNotification error:', error); return null; }
   return row as NotificationRow;
 }
 
 export async function fetchReports(): Promise<ReportRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localReports();
-  const { data, error } = await supabase.from('reports').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('reports').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localReports();
   return data as ReportRow[];
 }
 
 export async function fetchApprovals(): Promise<ApprovalRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localApprovals();
-  const { data, error } = await supabase.from('approvals').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('approvals').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localApprovals();
   return data as ApprovalRow[];
 }
 
 export async function updateApproval(id: string, data: Partial<ApprovalRow>): Promise<ApprovalRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as ApprovalRow;
-  const { data: row, error } = await supabase.from('approvals').update(data).eq('id', id).select().single();
+  const { data: row, error } = await supabase!.from('approvals').update(data).eq('id', id).select().single();
   if (error) throw new Error(`updateApproval: ${error.message}`);
   return row as ApprovalRow;
 }
 
 export async function fetchAnnouncements(): Promise<AnnouncementRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localAnnouncements();
-  const { data, error } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('announcements').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localAnnouncements();
   return data as AnnouncementRow[];
 }
 
 export async function fetchMeetings(): Promise<MeetingRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localMeetings();
-  const { data, error } = await supabase.from('meetings').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('meetings').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localMeetings();
   return data as MeetingRow[];
 }
 
 export async function fetchCollabDocs(): Promise<CollabDocRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localCollabDocs();
-  const { data, error } = await supabase.from('collab_docs').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('collab_docs').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localCollabDocs();
   return data as CollabDocRow[];
 }
 
 export async function fetchSharedFiles(): Promise<SharedFileRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localSharedFiles();
-  const { data, error } = await supabase.from('shared_files').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('shared_files').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localSharedFiles();
   return data as SharedFileRow[];
 }
 
 export async function fetchContacts(): Promise<ContactRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localContacts();
-  const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('contacts').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localContacts();
   return data as ContactRow[];
 }
 
 export async function fetchAgentDetails(): Promise<AgentDetailRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localAgentDetails();
-  const { data, error } = await supabase.from('agent_details').select('*').order('sort_order');
+  const { data, error } = await supabase!.from('agent_details').select('*').order('sort_order');
   if (error || !data?.length) return localAgentDetails();
   return (data as Record<string, unknown>[]).map((a) => ({
     id: String(a.id ?? ''),
@@ -332,7 +332,7 @@ export async function fetchAgentDetails(): Promise<AgentDetailRow[]> {
 
 export async function fetchAgentConfigs(): Promise<AgentConfigRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localAgentConfigs();
-  const { data, error } = await supabase.from('agent_configs').select('*').order('sort_order');
+  const { data, error } = await supabase!.from('agent_configs').select('*').order('sort_order');
   if (error || !data?.length) return localAgentConfigs();
   return data as AgentConfigRow[];
 }
@@ -342,7 +342,7 @@ export async function saveAgentConfig(config: AgentConfigRow): Promise<void> {
     console.warn('Supabase not configured — agent config saved to localStorage only');
     return;
   }
-  const { error } = await supabase.from('agent_configs').upsert({
+  const { error } = await supabase!.from('agent_configs').upsert({
     id: config.id,
     name: config.name,
     model: config.model,
@@ -358,56 +358,56 @@ export async function saveAgentConfig(config: AgentConfigRow): Promise<void> {
 
 export async function fetchRisks(): Promise<RiskRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localRisks();
-  const { data, error } = await supabase.from('risks').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('risks').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localRisks();
   return data as RiskRow[];
 }
 
 export async function fetchWorkflows(): Promise<WorkflowRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localWorkflows();
-  const { data, error } = await supabase.from('workflows').select('*').order('usage_count', { ascending: false });
+  const { data, error } = await supabase!.from('workflows').select('*').order('usage_count', { ascending: false });
   if (error || !data?.length) return localWorkflows();
   return data as WorkflowRow[];
 }
 
 export async function fetchScheduleEvents(): Promise<ScheduleEventRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localScheduleEvents();
-  const { data, error } = await supabase.from('schedule_events').select('*').order('time');
+  const { data, error } = await supabase!.from('schedule_events').select('*').order('time');
   if (error || !data?.length) return localScheduleEvents();
   return data as ScheduleEventRow[];
 }
 
 export async function fetchOrgInfo(): Promise<OrgInfoRow> {
   if (!isSupabaseConfigured() || !supabase) return localOrgInfo();
-  const { data, error } = await supabase.from('org_info').select('*').single();
+  const { data, error } = await supabase!.from('org_info').select('*').single();
   if (error || !data) return localOrgInfo();
   return data as OrgInfoRow;
 }
 
 export async function fetchRoles(): Promise<RoleRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localRoles();
-  const { data, error } = await supabase.from('roles').select('*').order('sort_order');
+  const { data, error } = await supabase!.from('roles').select('*').order('sort_order');
   if (error || !data?.length) return localRoles();
   return data as RoleRow[];
 }
 
 export async function fetchPredictions(): Promise<PredictionRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localPredictions();
-  const { data, error } = await supabase.from('predictions').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('predictions').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localPredictions();
   return data as PredictionRow[];
 }
 
 export async function fetchExperiences(): Promise<ExperienceRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localExperiences();
-  const { data, error } = await supabase.from('experiences').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase!.from('experiences').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) return localExperiences();
   return data as ExperienceRow[];
 }
 
 export async function fetchDocs(): Promise<DocRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localDocs();
-  const { data, error } = await supabase.from('docs').select('*').order('updated', { ascending: false });
+  const { data, error } = await supabase!.from('docs').select('*').order('updated', { ascending: false });
   if (error || !data?.length) return localDocs();
   return data as DocRow[];
 }

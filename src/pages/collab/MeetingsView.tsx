@@ -7,6 +7,7 @@ import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { MeetingRow } from '@/lib/dataLayer';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const MEETING_FIELDS: FieldDef[] = [
   { key: 'title', label: '会议主题', type: 'text', editable: true },
@@ -76,7 +77,7 @@ export default function MeetingsView() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+          <CardSkeleton />
         ) : (
         meetings.map((mtg) => (
           <div key={mtg.id} className={cn('rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer',

@@ -1,3 +1,4 @@
+import { CardSkeleton } from '@/components/Skeleton';
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { useState, useCallback } from 'react';
@@ -55,14 +56,14 @@ export default function ProjectsContent() {
   }, [editProject]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <FolderKanban size={18} className="text-primary-2" />
         <span className="text-sm font-bold">项目管理</span>
         <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={handleOpen}>+ 新建项目</button>
       </div>
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : projects.map((p) => (
         <div key={p.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleProjectClick(p)}>
           <div className="flex items-center justify-between mb-2">

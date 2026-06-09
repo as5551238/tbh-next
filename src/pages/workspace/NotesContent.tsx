@@ -5,6 +5,7 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { StickyNote, Plus, Lock, Search, Pin, Loader2 } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const NOTE_COLORS = ['#7b6cf0', '#00d4aa', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899'];
 
@@ -46,9 +47,7 @@ export default function NotesContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

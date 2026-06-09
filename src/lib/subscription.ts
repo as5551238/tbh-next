@@ -111,7 +111,9 @@ export interface UsageSummary {
   projects: number;
   projectsLimit: number;
   goals: number;
+  goalsLimit: number;
   tasks: number;
+  tasksLimit: number;
   docs: number;
   docsLimit: number;
 }

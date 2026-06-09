@@ -181,6 +181,17 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   api_keys: new Set([
     'id', 'team_id', 'user_id', 'provider', 'encrypted_key', 'created_at',
   ]),
+  knowledge_packs: new Set([
+    'id', 'industry', 'title', 'description', 'category', 'content',
+    'tags', 'author', 'version', 'downloads', 'rating',
+    'is_official', 'plan', 'updated_at', 'team_id',
+  ]),
+  marketplace_agents: new Set([
+    'id', 'name', 'icon', 'author', 'category', 'description',
+    'long_description', 'version', 'downloads', 'rating',
+    'review_count', 'tags', 'system_prompt', 'capabilities',
+    'is_official', 'price', 'team_id',
+  ]),
 };
 
 const FK_COLUMNS = new Set([

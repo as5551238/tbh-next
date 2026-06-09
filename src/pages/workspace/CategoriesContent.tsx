@@ -7,6 +7,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { FolderTree, Plus, Lock, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const TYPE_OPTIONS = [
   { value: 'module', label: '模块' },
@@ -47,7 +48,7 @@ export default function CategoriesContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : (
         Object.entries(grouped).map(([type, items]) => (
           <div key={type}>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface ToastMsg {
   id: number;
@@ -7,6 +7,19 @@ export interface ToastMsg {
 }
 
 let _nextId = 0;
+
+// ── Module-level toast for non-hook contexts ──
+type ToastListener = (text: string, type: 'success' | 'error') => void;
+const _listeners = new Set<ToastListener>();
+
+function _emit(text: string, type: 'success' | 'error') {
+  _listeners.forEach((fn) => fn(text, type));
+}
+
+/** Imperative toast — usable outside React component tree (e.g. catch blocks). */
+export function toast(text: string, type: 'success' | 'error' = 'success') {
+  _emit(text, type);
+}
 
 /**
  * Shared toast hook with stacking support.
@@ -25,6 +38,12 @@ export function useToast() {
     }, 2500);
     timers.current.set(id, t);
   }, []);
+
+  // Subscribe to module-level toast() calls
+  useEffect(() => {
+    _listeners.add(show);
+    return () => { _listeners.delete(show); };
+  }, [show]);
 
   const success = useCallback((text: string) => show(text, 'success'), [show]);
   const error = useCallback((text: string) => show(text, 'error'), [show]);

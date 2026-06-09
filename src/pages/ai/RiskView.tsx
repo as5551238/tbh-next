@@ -6,6 +6,9 @@ import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { AlertTriangle, Clock, TrendingDown, Shield, Loader2, Plus, Trash2, Zap } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
+import { hasFeature } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
 
 const LEVEL_STYLES: Record<string, string> = {
   critical: 'bg-danger/10 text-danger border-l-danger',
@@ -17,6 +20,7 @@ const LEVEL_STYLES: Record<string, string> = {
 const LEVEL_DOT: Record<string, string> = { critical: 'bg-danger', high: 'bg-warn', medium: 'bg-primary-2', low: 'bg-text-3' };
 
 export default function RiskView() {
+  const [showPaywall, setShowPaywall] = useState(false);
   const { risks, loading, addRisk, editRisk, removeRisk } = useRisks();
   const { cell } = useMatrixCell();
   const { addActionItem } = useActionItems();
@@ -24,7 +28,8 @@ export default function RiskView() {
   const industry = useAppStore((s) => s.industry);
   const addModal = useModal();
   const detailModal = useModal();
-  const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(null);
+    const { toasts } = useToast();
+const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(null);
   const [form, setForm] = useState({ title: '', level: 'medium' as 'critical' | 'high' | 'medium' | 'low', description: '', source: '', affected_kpi: '', status: 'active' as 'active' | 'watching' | 'resolved' });
 
   const activeRisks = risks.filter((r) => r.status !== 'resolved');
@@ -32,9 +37,7 @@ export default function RiskView() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 
@@ -95,7 +98,7 @@ export default function RiskView() {
         footer={
           <div className="flex gap-2">
             <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={() => { if (!form.title.trim()) return; addRisk({ title: form.title, level: form.level, description: form.description, source: form.source || '手动上报', affected_kpi: form.affected_kpi || null, status: form.status, detected_at: new Date().toISOString().split('T')[0], team_id: '__default__' }).then((risk) => { triggerFeedback({ type: 'risk_created', action: 'created', entity: risk }); }).catch((err) => { console.error('[risk]', err); error('操作失败，请重试'); }); addModal.closeModal(); }} disabled={!form.title.trim()}>创建</button>
+            <button className={btnPrimary} onClick={() => { if (!form.title.trim()) return; addRisk({ title: form.title, level: form.level, description: form.description, source: form.source || '手动上报', affected_kpi: form.affected_kpi || null, status: form.status, detected_at: new Date().toISOString().split('T')[0], team_id: '__default__' }).then((risk) => { triggerFeedback({ type: 'risk_created', action: 'created', entity: risk }); }).catch((err) => { console.error('[risk]', err); toast('操作失败，请重试', 'error'); }); addModal.closeModal(); }} disabled={!form.title.trim()}>创建</button>
           </div>
         }>
         <ModalField label="风险标题">
@@ -157,6 +160,8 @@ export default function RiskView() {
           </div>
         )}
       </Modal>
-    </div>
+    
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="风险分析需要专业版或企业版" feature="ai_risk_analysis" />
+</div>
   );
 }

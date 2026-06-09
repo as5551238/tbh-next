@@ -76,8 +76,8 @@ export default function TasksContent() {
   }, [selectedIds, editTask]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-2">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <CheckCircle2 size={18} className="text-primary-2" />
         <span className="text-sm font-bold">{t('tasks.title')}</span>
         <span className="ml-auto text-[10px] text-text-3">{t('tasks.taskSummary', { total: tasks.length, done: tasks.filter(t => t.done).length, pending: tasks.filter(t => !t.done).length })}</span>
@@ -88,7 +88,7 @@ export default function TasksContent() {
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)}</div>
       ) : tasks.map((t) => (
-        <div key={t.id} className={cn('flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 cursor-pointer', t.done && 'opacity-50')} onClick={() => handleTaskClick(t)}>
+        <div key={t.id} className={cn('flex items-center gap-2 md:gap-3 rounded-xl border border-border bg-surface px-3 md:px-4 py-2.5 md:py-3 transition-all hover:border-border-2 cursor-pointer', t.done && 'opacity-50')} onClick={() => handleTaskClick(t)}>
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
             <input type="checkbox" checked={selectedIds.has(t.id)} onChange={() => toggleSelect(t.id)} className="h-3.5 w-3.5 accent-primary rounded" />
           </div>

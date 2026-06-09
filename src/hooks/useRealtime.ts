@@ -45,7 +45,7 @@ export function useRealtime(
           if (channelRef.current) { supabase.removeChannel(channelRef.current); }
           reconnectTimerRef.current = setTimeout(() => {
             if (!isSupabaseConfigured() || !supabase) return;
-            const newChannel = supabase.channel(`${table}-changes-retry-${reconnectAttemptRef.current}`);
+            const newChannel = supabase!.channel(`${table}-changes-retry-${reconnectAttemptRef.current}`);
             channelRef.current = newChannel;
             subscribeWithReconnect(newChannel);
           }, delay);
@@ -58,7 +58,7 @@ export function useRealtime(
 
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) return;
-    const channel = supabase.channel(`${table}-changes`);
+    const channel = supabase!.channel(`${table}-changes`);
     channelRef.current = channel;
     reconnectAttemptRef.current = 0;
     subscribeWithReconnect(channel);
@@ -80,7 +80,7 @@ export function usePresence(
 
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) return;
-    const channel = supabase.channel(room, { config: { presence: { key: userId } } });
+    const channel = supabase!.channel(room, { config: { presence: { key: userId } } });
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState<{ user: string; online_at: string }>();
       onSyncRef.current?.(state as Record<string, { user: string; online_at: string }>);

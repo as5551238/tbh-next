@@ -6,6 +6,7 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { hasFeature } from '@/lib/subscription';
 import { FileText, Plus, Lock, Clock, Users, MoreHorizontal, Loader2 } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   editing: { label: '编辑中', cls: 'bg-success/10 text-success' },
@@ -46,9 +47,7 @@ export default function DocsContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

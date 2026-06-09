@@ -7,6 +7,7 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight, Loader2, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
+import { CardSkeleton } from '@/components/Skeleton';
 
 export default function PredictionContent() {
   const { showPaywall: pdShow, paywallReason: pdReason, paywallFeature: pdFeat, closePaywall: pdClose, requireFeature: pdRequire } = useGateCheck();
@@ -54,9 +55,7 @@ export default function PredictionContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

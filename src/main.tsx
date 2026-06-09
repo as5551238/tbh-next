@@ -8,6 +8,8 @@ initSentry();
 
 // Use HashRouter on GitHub Pages (sub-directory hosting), BrowserRouter for local dev
 const Router = window.location.hostname === 'localhost' ? BrowserRouter : HashRouter;
+// Basename for BrowserRouter: extract from <base> or use import.meta.env.BASE_URL
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
 import App from './App';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
@@ -31,7 +33,7 @@ if ('serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Router>
+    <Router basename={routerBasename}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/setup" element={<RequireAuth><SupabaseSetupPage /></RequireAuth>} />

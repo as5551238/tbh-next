@@ -1,3 +1,4 @@
+import React from 'react';
 import { lazy, Suspense, useEffect, type LazyExoticComponent, type CSSProperties } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
@@ -14,9 +15,9 @@ import OnboardingFlow from '@/components/OnboardingFlow';
 import { cn } from '@/lib/utils';
 import { retryLazy } from '@/lib/retryLazy';
 
-const Workspace = lazy(() => retryLazy(() => import('@/pages/Workspace')));
-const Collab = lazy(() => retryLazy(() => import('@/pages/Collab')));
-const PersonalAI = lazy(() => retryLazy(() => import('@/pages/PersonalAI')));
+const Workspace = lazy(retryLazy(() => import('@/pages/Workspace')));
+const Collab = lazy(retryLazy(() => import('@/pages/Collab')));
+const PersonalAI = lazy(retryLazy(() => import('@/pages/PersonalAI')));
 
 function PageLoader() {
   return (

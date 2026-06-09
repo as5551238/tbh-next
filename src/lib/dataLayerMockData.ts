@@ -63,6 +63,8 @@ export interface RiskRow {
   id: string; title: string; description: string; level: string;
   source: string; detected_at: string; status: string;
   affected_kpi: string | null;
+  severity?: string; impact?: string; likelihood?: string;
+  owner_id?: string | null; due_date?: string | null;
 }
 export interface WorkflowRow {
   id: string; name: string; steps: string[]; category: string;
@@ -70,7 +72,9 @@ export interface WorkflowRow {
 }
 export interface ScheduleEventRow {
   id: string; time: string; title: string; type: string;
-  location: string | null;
+  location: string | null; date?: string;
+  start_date?: string; end_date?: string;
+  description?: string; created_at?: string;
 }
 export interface OrgInfoRow {
   id: string; name: string; industry: string; size: string;

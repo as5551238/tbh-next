@@ -7,6 +7,7 @@ import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { SharedFileRow } from '@/lib/dataLayer';
+import { CardSkeleton } from '@/components/Skeleton';
 
 
 
@@ -138,7 +139,7 @@ export default function FilesView() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+          <CardSkeleton />
         ) : (
         viewMode === 'list' ? (
           <div className="space-y-1">

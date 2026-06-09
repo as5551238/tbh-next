@@ -7,6 +7,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { Eye, Plus, Lock, Loader2, Star, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const MODULE_OPTIONS = [
   { value: 'tasks', label: '任务' },
@@ -41,7 +42,7 @@ export default function SavedViewsContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : views.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-text-3">
           <Eye size={32} className="mb-2 opacity-30" />

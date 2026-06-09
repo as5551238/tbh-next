@@ -47,10 +47,10 @@ function UserMenu({ onClose }: { onClose: () => void }) {
   const prefModal = useModal();
   const authUser = useAppStore((s) => s.authUser);
   const { t } = useLocale();
-  const [profile, setProfile] = useState(() => {
+  const [profile, setProfile] = useState<{ name: string; email: string; phone: string }>(() => {
     try { const s = localStorage.getItem('tbh-profile'); return s ? JSON.parse(s) : { name: '', email: 'demo@tbh-next.com', phone: '' }; } catch { return { name: '', email: 'demo@tbh-next.com', phone: '' }; }
   });
-  const [prefs, setPrefs] = useState(() => {
+  const [prefs, setPrefs] = useState<{ notify: string; lang: string; tz: string }>(() => {
     try { const s = localStorage.getItem('tbh-prefs'); return s ? JSON.parse(s) : { notify: 'browser', lang: 'zh', tz: 'Asia/Shanghai' }; } catch { return { notify: 'browser', lang: 'zh', tz: 'Asia/Shanghai' }; }
   });
   const aiModelId = useAppStore((s) => s.aiModelId);

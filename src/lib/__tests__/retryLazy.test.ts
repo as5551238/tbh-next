@@ -18,7 +18,7 @@ describe('retryLazy', () => {
     const factory = vi.fn().mockResolvedValue(makeFakeModule('ok'));
     const lazyFn = retryLazy(factory);
     const result = await lazyFn();
-    expect(result.__val).toBe('ok');
+    expect((result as any).__val).toBe('ok');
     expect(factory).toHaveBeenCalledTimes(1);
   });
 
@@ -32,7 +32,7 @@ describe('retryLazy', () => {
     const promise = lazyFn();
     await vi.advanceTimersByTimeAsync(1000);
     const result = await promise;
-    expect(result.__val).toBe('retried');
+    expect((result as any).__val).toBe('retried');
     expect(factory).toHaveBeenCalledTimes(2);
   });
 
@@ -46,7 +46,7 @@ describe('retryLazy', () => {
     const promise = lazyFn();
     await vi.advanceTimersByTimeAsync(1000);
     const result = await promise;
-    expect(result.__val).toBe('fetch-retried');
+    expect((result as any).__val).toBe('fetch-retried');
   });
 
   it('rejects immediately on non-retryable error', async () => {
@@ -79,6 +79,6 @@ describe('retryLazy', () => {
     const promise = lazyFn();
     await vi.advanceTimersByTimeAsync(1000);
     const result = await promise;
-    expect(result.__val).toBe('dyn-ok');
+    expect((result as any).__val).toBe('dyn-ok');
   });
 });

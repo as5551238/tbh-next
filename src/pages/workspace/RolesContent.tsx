@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRoles } from '@/hooks/useMatrix';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { Shield, Plus, Users, Lock, Eye, Loader2, Trash2 } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const ALL_PERMISSIONS = ['系统配置', '成员管理', '目标管理', '审批', '任务管理', '文档协作', '数据分析', '只读访问'];
 
@@ -45,9 +46,7 @@ export default function RolesContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

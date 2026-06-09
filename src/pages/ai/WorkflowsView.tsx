@@ -7,6 +7,7 @@ import { Workflow, Play, StopCircle, Copy, Edit3, Star, Clock, Loader2, Check, T
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
+import { CardSkeleton } from '@/components/Skeleton';
 
 export default function WorkflowsView() {
   const { workflows, setWorkflows, loading } = useWorkflows();
@@ -153,9 +154,7 @@ export default function WorkflowsView() {
 
   if (loading && workflows.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

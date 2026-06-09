@@ -6,6 +6,7 @@ import ItemDetailModal from '@/components/ItemDetailModal';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { Zap, Plus, Lock, Loader2, Calendar, CheckCircle2 } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const STATUS_CFG: Record<string, { label: string; color: string }> = {
   planning: { label: '规划中', color: 'bg-yellow-500/20 text-yellow-400' },
@@ -37,9 +38,7 @@ export default function SprintsContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 

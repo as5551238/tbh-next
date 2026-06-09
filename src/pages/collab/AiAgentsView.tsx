@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Bot, ToggleLeft, ToggleRight, Settings, MessageSquare, BarChart3, RefreshCw, X, Check, Loader2 } from 'lucide-react';
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import type { AgentDetailRow } from '@/lib/dataLayer';
+import { CardSkeleton } from '@/components/Skeleton';
 
 interface AgentItem {
   id: string;
@@ -134,7 +135,7 @@ export default function AiAgentsView() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+          <CardSkeleton />
         ) : (
         agents.map((agent) => (
           <div key={agent.id} className={cn('rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg',

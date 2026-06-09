@@ -7,6 +7,8 @@ import { a2aSend, a2aGetMessages, a2aPipeline } from '@/lib/mcpA2a';
 import { MORNING_AGENT, PROGRESS_AGENT, RISK_AGENT } from '@/lib/agents';
 import { cn } from '@/lib/utils';
 import { Plug, Radio, Play, ArrowRight, Loader2, Zap, RefreshCw, Unplug, Wifi } from 'lucide-react';
+import { hasFeature } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
 
 const MCP_STATUS_STORAGE = 'tbh-mcp-status';
 
@@ -24,6 +26,7 @@ function loadSavedStatuses(): Record<string, 'connected' | 'disconnected' | 'err
 }
 
 export default function MCPA2AView() {
+  const [showPaywall, setShowPaywall] = useState(false);
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const indColor = useIndustryColor();
@@ -307,6 +310,8 @@ export default function MCPA2AView() {
           )}
         </div>
       </div>
-    </div>
+    
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="MCP/A2A协议层需要专业版或企业版" feature="ai_mcp_a2a" />
+</div>
   );
 }

@@ -6,8 +6,11 @@ import { CHECKOUT_PLANS, initiateCheckout, cancelSubscription, getSubscriptionSt
 import { upsertSubscription } from '@/lib/dataLayer';
 import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Loader2, Lock, CheckCircle2, CreditCard } from 'lucide-react';
 import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs } from '@/hooks/useMatrix';
+import { CardSkeleton } from '@/components/Skeleton';
+import PaywallModal from '@/components/PaywallModal';
 
 export default function SubscriptionView() {
+  const [showPaywall, setShowPaywall] = useState(false);
   const { user } = useAuth();
   const { agents } = useAgentDetails();
   const { members } = useMembers();
@@ -53,9 +56,7 @@ export default function SubscriptionView() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="animate-spin text-text-3" size={24} />
-      </div>
+      <CardSkeleton />
     );
   }
 
@@ -285,6 +286,8 @@ function UsageMeter({ icon, label, current, limit, color }: { icon: ReactNode; l
       <div className="h-1.5 rounded-full bg-surface-2">
         <div className={cn('h-full rounded-full transition-all', isDanger && 'bg-danger', isWarn && 'bg-warn', !isWarn && !isDanger && 'bg-primary')} style={{ width: `${pct}%`, backgroundColor: (!isWarn && !isDanger) ? color : undefined }} />
       </div>
-    </div>
+    
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="订阅管理需要专业版或企业版" feature="ai_subscription" />
+</div>
   );
 }

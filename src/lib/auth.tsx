@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { refreshPlanFromServer } from '@/lib/subscription';
 import { useAppStore } from '@/stores/appStore';
 import { useEffect, useState, useCallback } from 'react';
 
@@ -42,13 +43,13 @@ function setDemoAuth(user: AuthUser | null): void {
 
 /**
  * Async version: checks if user is authenticated.
- * The sync version was broken — supabase.auth.getSession() returns a Promise,
+ * The sync version was broken — supabase!.auth.getSession() returns a Promise,
  * so !!Promise is always true. This async version awaits the result.
  */
 export async function isAuthenticatedAsync(): Promise<boolean> {
   try {
     if (isSupabaseConfigured() && supabase) {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase!.auth.getSession();
       return !!session;
     }
     return !!getDemoUser();
@@ -78,7 +79,7 @@ export function isAuthenticated(): boolean {
 export async function getCurrentUserAsync(): Promise<AuthUser | null> {
   try {
     if (isSupabaseConfigured() && supabase) {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase!.auth.getSession();
       if (session?.user) {
         const meta = session.user.user_metadata ?? {};
         return {
@@ -113,7 +114,7 @@ export function getCurrentUser(): AuthUser | null {
 
 export function clearAuth(): void {
   if (isSupabaseConfigured() && supabase) {
-    supabase.auth.signOut();
+    supabase!.auth.signOut();
   }
   setDemoAuth(null);
 }
@@ -143,7 +144,7 @@ export async function supabaseLogin(email: string, password: string): Promise<Au
   try {
     if (!supabase) throw new Error('Supabase not configured');
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
     if (error) throw error;
 
     const meta = data.user?.user_metadata ?? {};
@@ -164,7 +165,7 @@ export async function supabaseSignup(email: string, password: string, name: stri
   try {
     if (!supabase) throw new Error('Supabase not configured');
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase!.auth.signUp({
       email,
       password,
       options: { data: { name, role: 'member' } },
@@ -188,7 +189,7 @@ export async function supabaseSignup(email: string, password: string, name: stri
 export async function supabaseResetPassword(email: string): Promise<void> {
   try {
     if (!supabase) throw new Error('Supabase not configured');
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase!.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/login`,
     });
     if (error) throw error;
@@ -216,7 +217,7 @@ export function useAuth() {
   const initAuth = useCallback(async () => {
     try {
       if (isSupabaseConfigured() && supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase!.auth.getSession();
         if (session?.user) {
           const meta = session.user.user_metadata ?? {};
           syncUser({
@@ -230,7 +231,7 @@ export function useAuth() {
           const demoUser = getDemoUser();
           if (demoUser) syncUser(demoUser);
         }
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
           if (session?.user) {
             const meta = session.user.user_metadata ?? {};
             syncUser({
@@ -239,6 +240,7 @@ export function useAuth() {
               role: meta.role ?? 'member',
               name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
             });
+            refreshPlanFromServer(session.user.id).catch(() => {});
           } else {
             // Demo fallback: don't clear if demo auth exists
             const demoUser = getDemoUser();
@@ -269,9 +271,9 @@ export function useAuth() {
     if (!isSupabaseConfigured() || !supabase) return;
     const interval = setInterval(async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase!.auth.getSession();
         if (!session) {
-          const { data: { session: refreshed }, error } = await supabase.auth.refreshSession();
+          const { data: { session: refreshed }, error } = await supabase!.auth.refreshSession();
           if (error || !refreshed) {
             console.warn('[useAuth] Session refresh failed, logging out');
             clearAuth();

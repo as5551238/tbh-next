@@ -20,6 +20,8 @@ import {
   createBookmark, deleteBookmark,
   type InsightRow, type WorkflowInstanceRow,
   type NoteRow, type SprintRow, type TemplateRow, type BookmarkRow,
+  type GoalRow, type TaskRow, type ProjectRow, type KnowledgeDocRow,
+  type ScheduleEventRow, type DocRow, type ExperienceRow, type PredictionRow,
 } from '@/lib/dataLayer';
 
 export function useGoals() {

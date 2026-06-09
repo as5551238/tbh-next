@@ -15,6 +15,7 @@ import type { ActionItemRow } from '@/lib/dataLayer';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import CommentSection from '@/components/CommentSection';
 import { cn } from '@/lib/utils';
+import { CardSkeleton } from '@/components/Skeleton';
 import {
   Zap, CheckCircle2, AlertTriangle, ArrowRight, Plus,
   Filter, Loader2, ExternalLink, Circle, Clock, ChevronDown,
@@ -229,7 +230,7 @@ export default function ActionItemsContent() {
 
       {/* 行动项列表 */}
       {loading ? (
-        <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-text-3">
           <Zap size={32} className="mb-2 opacity-30" />

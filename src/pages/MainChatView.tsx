@@ -205,6 +205,10 @@ function MainChatView() {
         teamMembers: 0, teamMembersLimit: 0,
         projects: 0, projectsLimit: 0,
         docs: 0, docsLimit: 0,
+        goals: 0,
+        goalsLimit: 0,
+        tasks: 0,
+        tasksLimit: 0,
       };
       const check = isActionAllowed(plan, 'ai_query', usage);
       if (!check.allowed) {

@@ -6,6 +6,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { Calendar, Clock, MapPin, Users, Plus, Lock, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { createScheduleEvent } from '@/lib/dataLayer';
 import { hasFeature } from '@/lib/subscription';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -150,7 +151,7 @@ export default function ScheduleContent() {
         <div className="border-b border-border px-4 py-3"><span className="text-xs font-bold">{monthOffset === 0 ? '今日安排' : `${currentMonth + 1}月日程`}</span></div>
         <div className="p-3 space-y-2">
           {loading ? (
-            <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+            <CardSkeleton />
           ) : todayEvents.map((evt) => (
             <div key={evt.id} onClick={() => openEditModal(evt)} className={cn('rounded-xl border border-border p-3 cursor-pointer hover:border-primary/30 transition-colors',
               evt.type === 'deadline' && 'border-l-2 border-l-danger',

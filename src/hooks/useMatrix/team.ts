@@ -11,15 +11,18 @@ import {
   createContact, updateContact, deleteContact,
   createCollabDoc, updateCollabDoc, deleteCollabDoc,
   updateApproval, createApproval, deleteApproval,
-  createNotification,
+  createNotification, updateNotification, updateNotifications, deleteNotification, deleteAllNotifications,
   createReport, updateReport, deleteReport,
   createRole, updateRole, deleteRole,
   saveOrgInfo,
   createActivity,
   createComment, deleteComment,
   type ActivityRow, type CommentRow,
+  type MemberRow, type NotificationRow, type ReportRow,
+  type ApprovalRow, type AnnouncementRow, type MeetingRow,
+  type CollabDocRow, type SharedFileRow, type ContactRow,
+  type OrgInfoRow, type RoleRow,
 } from '@/lib/dataLayer';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export function useMembers() {
   const [members, setMembers] = useState<MemberRow[]>([]);
@@ -77,38 +80,22 @@ export function useNotifications() {
 
   const markRead = useCallback(async (id: string) => {
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
-    try {
-      if (isSupabaseConfigured() && supabase) {
-        await supabase.from('notifications').update({ read: true }).eq('id', id);
-      }
-    } catch { /* optimistic */ }
+    try { await updateNotification(id, { read: true }); } catch { /* optimistic */ }
   }, []);
 
   const markAllRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    try {
-      if (isSupabaseConfigured() && supabase) {
-        await supabase.from('notifications').update({ read: true }).neq('read', true);
-      }
-    } catch { /* optimistic */ }
+    try { await updateNotifications({ read: true }, { neq: ['read', true] }); } catch { /* optimistic */ }
   }, []);
 
   const removeNotification = useCallback(async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    try {
-      if (isSupabaseConfigured() && supabase) {
-        await supabase.from('notifications').delete().eq('id', id);
-      }
-    } catch { /* optimistic */ }
+    try { await deleteNotification(id); } catch { /* optimistic */ }
   }, []);
 
   const clearAll = useCallback(async () => {
     setNotifications([]);
-    try {
-      if (isSupabaseConfigured() && supabase) {
-        await supabase.from('notifications').delete().neq('id', '__never__');
-      }
-    } catch { /* optimistic */ }
+    try { await deleteAllNotifications(); } catch { /* optimistic */ }
   }, []);
 
   return { notifications, setNotifications, loading, addNotification, markRead, markAllRead, removeNotification, clearAll };

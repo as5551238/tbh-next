@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { FileText, FileSpreadsheet, FileImage, File, Clock, User, Edit3, Eye, Loader2, X, Save, Users } from 'lucide-react';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const TYPE_ICONS: Record<string, FC<{ size?: number; className?: string }>> = {
   doc: FileText,
@@ -143,7 +144,7 @@ export default function CollabDocsView() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {loading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+          <CardSkeleton />
         ) : (
         docs.map((doc) => {
           const Icon = TYPE_ICONS[doc.type] ?? File;

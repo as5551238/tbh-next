@@ -12,7 +12,7 @@
  * install, and contribute to. Pro/Enterprise users can create custom packs.
  */
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 // --- Types ---
 
@@ -172,13 +172,10 @@ export async function fetchKnowledgePacks(industry?: string): Promise<KnowledgeP
     return industry ? KNOWLEDGE_PACKS.filter((p) => p.industry === industry) : KNOWLEDGE_PACKS;
   }
 
-  const query = supabase.from('knowledge_packs').select('*').order('downloads', { ascending: false });
-  if (industry) query.eq('industry', industry);
-
-  const { data, error } = await query;
-  if (error || !data?.length) return industry ? KNOWLEDGE_PACKS.filter((p) => p.industry === industry) : KNOWLEDGE_PACKS;
-
-  return data.map(mapDbToPack);
+  const { fetchKnowledgePacks: dlFetch } = await import('@/lib/dataLayer');
+  const rows = await dlFetch(industry);
+  if (!rows.length) return industry ? KNOWLEDGE_PACKS.filter((p) => p.industry === industry) : KNOWLEDGE_PACKS;
+  return rows.map(mapDbToPack);
 }
 
 function mapDbToPack(row: Record<string, unknown>): KnowledgePack {

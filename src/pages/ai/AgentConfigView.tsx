@@ -5,6 +5,9 @@ import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useMatrix';
 import { setStoredModelId, AI_MODEL_PRESETS } from '@/lib/aiService';
 import { Settings, Bot, Save, RotateCcw, Loader2, Check } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
+import { hasFeature } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
 
 const CONFIG_STORAGE_KEY = 'tbh-agent-configs';
 
@@ -24,6 +27,7 @@ function saveConfigsToStorage(configs: { id: string; model: string; temperature:
 }
 
 export default function AgentConfigView() {
+  const [showPaywall, setShowPaywall] = useState(false);
   const { configs, setConfigs, saveConfig, loading } = useAgentConfigs();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -82,9 +86,7 @@ export default function AgentConfigView() {
 
   if (loading || !selected) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-2" />
-      </div>
+      <CardSkeleton />
     );
   }
 
@@ -180,6 +182,8 @@ export default function AgentConfigView() {
           </div>
         </div>
       </div>
-    </div>
+    
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="AI代理配置需要专业版或企业版" feature="ai_agent_config" />
+</div>
   );
 }

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { BookOpen, BarChart3, Loader2, Lock } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
+import { CardSkeleton } from '@/components/Skeleton';
 
 export default function KnowledgeContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
@@ -85,7 +86,7 @@ export default function KnowledgeContent() {
         )}
       </div>
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+        <CardSkeleton />
       ) : filteredDocs.length === 0 ? (
         <div className="text-center py-8 text-text-3 text-xs">{searchQuery ? '未找到匹配的知识文档' : '暂无知识文档，点击右上角新建'}</div>
       ) : filteredDocs.map((d) => (

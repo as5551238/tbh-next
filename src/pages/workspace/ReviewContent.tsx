@@ -1,3 +1,4 @@
+import { CardSkeleton } from '@/components/Skeleton';
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { hasFeature } from '@/lib/subscription';
@@ -289,8 +290,10 @@ export default function ReviewContent() {
 
   if (goalsLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary-2" />
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+        <CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
       </div>
     );
   }

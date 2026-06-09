@@ -4,10 +4,14 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { fetchKnowledgePacks, KNOWLEDGE_CATEGORIES, type KnowledgePack } from '@/lib/knowledgeOSP';
 import { cn } from '@/lib/utils';
 import { Search, Download, Star, X, Check, BookOpen, Loader2, Tag } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
+import { hasFeature } from '@/lib/subscription';
+import PaywallModal from '@/components/PaywallModal';
 
 const INSTALLED_PACKS_STORAGE = 'tbh-installed-packs';
 
 export default function KnowledgeOSPView() {
+  const [showPaywall, setShowPaywall] = useState(false);
   const industry = useAppStore((s) => s.industry);
   const [packs, setPacks] = useState<KnowledgePack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +87,7 @@ export default function KnowledgeOSPView() {
         {/* Packs list */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+            <CardSkeleton />
           ) : (
             filtered.map((pack) => (
               <button key={pack.id} onClick={() => setSelectedPack(pack)} className={cn('flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-all hover:shadow-lg',
@@ -152,6 +156,8 @@ export default function KnowledgeOSPView() {
           </div>
         </div>
       )}
-    </div>
+    
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="知识OSP需要专业版或企业版" feature="ai_knowledge_osp" />
+</div>
   );
 }

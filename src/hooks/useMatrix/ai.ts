@@ -19,6 +19,7 @@ import {
   createCategory, deleteCategory,
   type TagRow, type CategoryRow, type FeatureFlagRow, type SavedViewRow,
   type AutomationRuleRow, type StatusFlowRuleRow, type ItemLinkRow,
+  type AgentDetailRow, type AgentConfigRow, type RiskRow, type WorkflowRow,
 } from '@/lib/dataLayer';
 import type { ActionItemRow } from '@/lib/dataLayer';
 import type { DeviationAlertRow } from '@/lib/dataLayer';

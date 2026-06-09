@@ -1,3 +1,4 @@
+import type { ApprovalRow } from '@/lib/dataLayer';
 import { useState } from 'react';
 import { useMatrixCell, useApprovals } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
@@ -8,6 +9,7 @@ import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { ApprovalInput } from '@/contracts/dataContracts';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
+import { CardSkeleton } from '@/components/Skeleton';
 
 
 
@@ -105,7 +107,7 @@ export default function ApprovalsView() {
       {/* List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {loading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="animate-spin text-text-3" size={24} /></div>
+          <CardSkeleton />
         ) : (
         filtered.map((item) => (
           <div key={item.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer',

@@ -3,6 +3,7 @@ import { useNotifications } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
 import { Modal, useModal, btnPrimary, btnSecondary } from '@/components/Modal';
 import { Bell, Check, Trash2, Loader2 } from 'lucide-react';
+import { CardSkeleton } from '@/components/Skeleton';
 
 const TYPE_STYLES: Record<string, string> = {
   alert: 'bg-danger/10 text-danger',
@@ -63,7 +64,7 @@ export default function NotificationsContent() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {loading ? (
-          <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-primary-2" /></div>
+          <CardSkeleton />
         ) : filtered.map((notif) => (
           <div key={notif.id} onClick={() => openDetail(notif)} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg cursor-pointer', !notif.read && 'border-l-2 border-l-primary')}>
             <div className="flex items-center gap-2 mb-1">

@@ -76,7 +76,7 @@ export default function IndustryView() {
 
   // Auto-check benchmarks against current KPI values
   const checkedBenchmarks = useMemo(() => {
-    return perspective.benchmarks.map((bm) => {
+    return perspective.benchmarks.map((bm: Record<string, unknown>) => {
       // Auto-detect if any KPI matches this benchmark
       const matchingKpi = cell.kpis.find((kpi) => {
         const bmLower = bm.label.toLowerCase();
@@ -112,7 +112,7 @@ export default function IndustryView() {
   };
 
   const handleToggleBenchmark = (idx: number) => {
-    setPerspectives((prev) => {
+    setPerspectives((prev: Record<string, unknown>) => {
       const current = prev[industry] ?? prev['IT业'];
       const newBenchmarks = [...current.benchmarks];
       newBenchmarks[idx] = { ...newBenchmarks[idx], met: !newBenchmarks[idx].met };
@@ -137,7 +137,7 @@ export default function IndustryView() {
   };
 
   const handleSave = () => {
-    setPerspectives((prev) => {
+    setPerspectives((prev: Record<string, unknown>) => {
       const current = prev[industry] ?? prev['IT业'];
       let next: typeof prev;
       if (editField === 'focus') {
@@ -227,7 +227,7 @@ export default function IndustryView() {
             <button onClick={handleAddTrend} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ 添加</button>
           </div>
           <div className="space-y-2">
-            {perspective.trends.map((trend, i) => (
+            {perspective.trends.map((trend: Record<string, unknown>, i: number) => (
               <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 group">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                   <TrendingUp size={14} className="text-primary-2" />
@@ -248,7 +248,7 @@ export default function IndustryView() {
             <button onClick={handleAddBenchmark} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ 添加</button>
           </div>
           <div className="space-y-1.5">
-            {checkedBenchmarks.map((bm, i) => (
+            {checkedBenchmarks.map((bm: Record<string, unknown>, i: number) => (
               <div key={i} className="flex items-center gap-2 rounded-lg border border-border bg-surface p-2.5 group">
                 <button
                   onClick={() => handleToggleBenchmark(i)}

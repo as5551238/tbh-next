@@ -8,6 +8,7 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { Target, FolderKanban, ListTodo, ChevronRight, ChevronDown, Loader2, AlertTriangle, CheckCircle2, Circle, Edit3, Trash2, Link2, Unlink } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { CardSkeleton } from '@/components/Skeleton';
 
 interface TreeNode {
   id: string;
@@ -138,7 +139,7 @@ export default function PenetrationView() {
   }, [linkTaskId, linkGoalId, editTask, linkModal, success]);
 
   if (goalsLoading) {
-    return <div className="flex flex-1 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary-2" /></div>;
+    return <CardSkeleton />;
   }
 
   const typeIcon = { goal: Target, project: FolderKanban, task: ListTodo };
