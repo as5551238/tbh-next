@@ -67,7 +67,7 @@ export default function SubscriptionView() {
     <div className="flex flex-1 flex-col overflow-y-auto p-6">
       <div className="max-w-2xl mx-auto w-full space-y-6">
         {/* Current plan */}
-        <div className="rounded-xl border border-border p-5" style={{ background: `linear-gradient(135deg, #7b6cf006 0%, #00d4aa03 100%)` }}>
+        <div className="rounded-xl border border-border p-5" style={{ background: `linear-gradient(135deg, var(--brand-accent) 0%, var(--status-success) 100%)` }}>
           <div className="flex items-center gap-3 mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">{planIcon}</div>
             <div>
@@ -90,11 +90,11 @@ export default function SubscriptionView() {
           <div className="rounded-xl border border-border p-5">
             <h3 className="text-sm font-bold text-text mb-4">今日用量</h3>
             <div className="space-y-4">
-              <UsageMeter icon={<Bot size={14} />} label="AI 查询" current={usage.aiQueries} limit={usage.aiQueriesLimit} color="#7b6cf0" />
-              <UsageMeter icon={<Users size={14} />} label="团队成员" current={usage.teamMembers} limit={usage.teamMembersLimit} color="#00d4aa" />
+              <UsageMeter icon={<Bot size={14} />} label="AI 查询" current={usage.aiQueries} limit={usage.aiQueriesLimit} color='var(--brand-accent)' />
+              <UsageMeter icon={<Users size={14} />} label="团队成员" current={usage.teamMembers} limit={usage.teamMembersLimit} color='var(--status-success)' />
               <UsageMeter icon={<Bot size={14} />} label="Agent" current={usage.agents} limit={usage.agentsLimit} color="#ffc44d" />
               <UsageMeter icon={<FolderKanban size={14} />} label="项目" current={usage.projects} limit={usage.projectsLimit} color="#ff5c6a" />
-              <UsageMeter icon={<FileText size={14} />} label="文档" current={usage.docs} limit={usage.docsLimit} color="#7b6cf0" />
+              <UsageMeter icon={<FileText size={14} />} label="文档" current={usage.docs} limit={usage.docsLimit} color='var(--brand-accent)' />
             </div>
           </div>
         )}
@@ -157,7 +157,7 @@ export default function SubscriptionView() {
                     </button>
                   )}
                   {isRequested && (
-                    <div className="mt-2 rounded-full bg-[#00d4aa]/10 px-2 py-0.5 text-[8px] font-semibold text-[#00d4aa]">
+                    <div className="mt-2 rounded-full bg-accent/10 px-2 py-0.5 text-[8px] font-semibold text-accent">
                       已激活试用
                     </div>
                   )}

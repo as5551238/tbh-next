@@ -60,15 +60,15 @@ export default function OnboardingOverlay() {
   const departments = industry ? getDepartments(industry) : [];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0c12]/80 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-[#13161f] p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-bg/80 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl">
         {/* Step indicators */}
         <div className="mb-6 flex items-center justify-center gap-2">
           {STEPS.map((s, i) => (
             <div
               key={s}
               className={`h-2 rounded-full transition-all duration-300 ${
-                i < idx ? 'w-6 bg-[#00d4aa]' : i === idx ? 'w-8 bg-[#7b6cf0]' : 'w-2 bg-white/20'
+                i < idx ? 'w-6 bg-accent' : i === idx ? 'w-8 bg-brand-accent' : 'w-2 bg-white/20'
               }`}
             />
           ))}
@@ -94,7 +94,7 @@ export default function OnboardingOverlay() {
                     onClick={() => setIndustry(ind)}
                     className={`rounded-lg border px-3 py-2.5 text-xs font-medium transition-all ${
                       industry === ind
-                        ? 'border-[#7b6cf0] bg-[#7b6cf0]/20 text-[#7b6cf0]'
+                        ? 'border-brand-accent bg-brand-accent/20 text-brand-accent'
                         : 'border-border bg-surface text-text-2 hover:border-border-2'
                     }`}
                   >
@@ -115,7 +115,7 @@ export default function OnboardingOverlay() {
                     onClick={() => setDept(d)}
                     className={`rounded-lg border px-3 py-2.5 text-xs font-medium transition-all ${
                       dept === d
-                        ? 'border-[#7b6cf0] bg-[#7b6cf0]/20 text-[#7b6cf0]'
+                        ? 'border-brand-accent bg-brand-accent/20 text-brand-accent'
                         : 'border-border bg-surface text-text-2 hover:border-border-2'
                     }`}
                   >
@@ -148,7 +148,7 @@ export default function OnboardingOverlay() {
           )}
 
           {step === 'done' ? (
-            <button onClick={handleFinish} className="rounded-lg bg-[#7b6cf0] px-6 py-2 text-sm font-bold text-white transition-all hover:bg-[#6b5ce0]">
+            <button onClick={handleFinish} className="rounded-lg bg-brand-accent px-6 py-2 text-sm font-bold text-white transition-all hover:bg-brand-accent-hover">
               开始使用
             </button>
           ) : (
@@ -158,7 +158,7 @@ export default function OnboardingOverlay() {
                 (step === 'industry' && !industry) ||
                 (step === 'department' && !dept)
               }
-              className="rounded-lg bg-[#7b6cf0] px-6 py-2 text-sm font-bold text-white transition-all hover:bg-[#6b5ce0] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-lg bg-brand-accent px-6 py-2 text-sm font-bold text-white transition-all hover:bg-brand-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
             >
               下一步
             </button>

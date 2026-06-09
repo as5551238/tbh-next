@@ -134,7 +134,7 @@ function localMembers(): MemberRow[] {
 
 function localKnowledgeDocs(): KnowledgeDocRow[] {
   return [
-    { id: 'kd1', title: 'Q3产品路线图', content: 'Q3产品路线图详细规划...', tags: ['产品', '规划'], member_id: 'm1', related_items: [], color: '#7b6cf0', created_at: '2026-06-03T00:00:00Z', updated_at: '2026-06-03T00:00:00Z' },
+    { id: 'kd1', title: 'Q3产品路线图', content: 'Q3产品路线图详细规划...', tags: ['产品', '规划'], member_id: 'm1', related_items: [], color: 'var(--brand-accent)', created_at: '2026-06-03T00:00:00Z', updated_at: '2026-06-03T00:00:00Z' },
     { id: 'kd2', title: '导出功能优化方案', content: '方案详情...', tags: ['技术', '优化'], member_id: 'm2', related_items: [], color: '#00d4aa', created_at: '2026-06-02T00:00:00Z', updated_at: '2026-06-02T00:00:00Z' },
     { id: 'kd3', title: '客户NPS分析报告', content: '报告内容...', tags: ['运营', '分析'], member_id: 'm3', related_items: [], color: '#ff6b6b', created_at: '2026-06-01T00:00:00Z', updated_at: '2026-06-01T00:00:00Z' },
   ];

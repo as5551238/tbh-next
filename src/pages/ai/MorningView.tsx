@@ -129,19 +129,19 @@ export default function MorningView() {
               {focusPlan.map((item, i) => {
                 const cfg = FOCUS_TAG_CONFIG[item.focusTag];
                 return (
-                  <div key={item.id} className="flex items-center gap-3 rounded-lg bg-[#0d0f16] border border-[#2a2d3a] px-4 py-2.5">
-                    <span className="text-xs font-bold text-[#9ca3b8] w-4">{i + 1}</span>
+                  <div key={item.id} className="flex items-center gap-3 rounded-lg bg-surface-deep border border-border-2 px-4 py-2.5">
+                    <span className="text-xs font-bold text-text-muted w-4">{i + 1}</span>
                     <span className="text-sm">{cfg.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-[#eaecf4] truncate">{item.title}</div>
-                      <div className="text-[10px] text-[#9ca3b8]">{item.reason}</div>
+                      <div className="text-xs font-medium text-text truncate">{item.title}</div>
+                      <div className="text-[10px] text-text-muted">{item.reason}</div>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      item.focusTag === 'urgent' ? 'bg-[#ef4444]/10 text-[#ef4444]' :
-                      item.focusTag === 'important' ? 'bg-[#7b6cf0]/10 text-[#7b6cf0]' :
-                      item.focusTag === 'momentum' ? 'bg-[#00d4aa]/10 text-[#00d4aa]' :
-                      item.focusTag === 'low-hanging' ? 'bg-[#f5a623]/10 text-[#f5a623]' :
-                      'bg-white/5 text-[#9ca3b8]'
+                      item.focusTag === 'urgent' ? 'bg-danger-bright/10 text-danger-bright' :
+                      item.focusTag === 'important' ? 'bg-brand-accent/10 text-brand-accent' :
+                      item.focusTag === 'momentum' ? 'bg-accent/10 text-accent' :
+                      item.focusTag === 'low-hanging' ? 'bg-manuf/10 text-manuf' :
+                      'bg-white/5 text-text-muted'
                     }`}>{cfg.label}</span>
                   </div>
                 );

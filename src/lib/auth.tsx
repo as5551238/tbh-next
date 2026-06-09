@@ -225,6 +225,10 @@ export function useAuth() {
             role: meta.role ?? 'member',
             name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
           });
+        } else {
+          // Demo fallback: if no Supabase session, check demo localStorage
+          const demoUser = getDemoUser();
+          if (demoUser) syncUser(demoUser);
         }
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
           if (session?.user) {
@@ -236,7 +240,9 @@ export function useAuth() {
               name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
             });
           } else {
-            syncUser(null);
+            // Demo fallback: don't clear if demo auth exists
+            const demoUser = getDemoUser();
+            syncUser(demoUser);
           }
         });
         setLoading(false);
@@ -326,7 +332,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0a0c12]">
+      <div className="flex h-screen items-center justify-center bg-bg">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <span className="text-xs text-text-3">加载中...</span>
@@ -335,7 +341,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user && isSupabaseConfigured()) {
+  if (!user && isSupabaseConfigured() && !getDemoUser()) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

@@ -19,12 +19,12 @@ export default function CategoriesContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
   const { categories, loading, addCategory, removeCategory } = useCategories();
   const addModal = useModal();
-  const [form, setForm] = useState({ name: '', type: 'module', icon: '📁', color: '#7b6cf0', sort_order: 0 });
+  const [form, setForm] = useState({ name: '', type: 'module', icon: '📁', color: 'var(--brand-accent)', sort_order: 0 });
 
   const handleAdd = async () => {
     if (!form.name.trim()) return;
     await addCategory({ name: form.name.trim(), type: form.type, icon: form.icon, color: form.color, sort_order: form.sort_order, team_id: '__default__' });
-    setForm({ name: '', type: 'module', icon: '📁', color: '#7b6cf0', sort_order: 0 });
+    setForm({ name: '', type: 'module', icon: '📁', color: 'var(--brand-accent)', sort_order: 0 });
     addModal.closeModal();
   };
 

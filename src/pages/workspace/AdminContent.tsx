@@ -205,7 +205,7 @@ export default function AdminContent() {
       {/* Tab bar */}
       <div className="flex gap-1 rounded-xl border border-border bg-surface p-1">
         {ADMIN_TABS.map((tab) => (
-          <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${activeTab === tab ? 'bg-[#7b6cf0] text-white' : 'text-text-3 hover:text-text hover:bg-white/5'}`}>{tab}</button>
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${activeTab === tab ? 'bg-brand-accent text-white' : 'text-text-3 hover:text-text hover:bg-white/5'}`}>{tab}</button>
         ))}
       </div>
 
@@ -273,7 +273,7 @@ export default function AdminContent() {
                 <div className="text-xs font-medium text-text">{item.label}</div>
                 <div className="text-[10px] text-text-3">{item.desc}</div>
               </div>
-              <button onClick={() => setNotifPrefs((p) => ({ ...p, [item.key]: !p[item.key] }))} className={`relative h-5 w-9 rounded-full transition-colors ${notifPrefs[item.key] ? 'bg-[#7b6cf0]' : 'bg-white/10'}`}>
+              <button onClick={() => setNotifPrefs((p) => ({ ...p, [item.key]: !p[item.key] }))} className={`relative h-5 w-9 rounded-full transition-colors ${notifPrefs[item.key] ? 'bg-brand-accent' : 'bg-white/10'}`}>
                 <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${notifPrefs[item.key] ? 'left-[18px]' : 'left-0.5'}`} />
               </button>
             </div>
@@ -283,7 +283,7 @@ export default function AdminContent() {
               <div className="text-xs font-medium text-text">摘要频率</div>
               <div className="text-[10px] text-text-3">定期推送工作摘要</div>
             </div>
-            <select value={notifPrefs.digest} onChange={(e) => setNotifPrefs((p) => ({ ...p, digest: e.target.value as 'none' | 'daily' | 'weekly' }))} className="h-7 rounded-md border border-border bg-[#0a0c12] px-2 text-xs text-text">
+            <select value={notifPrefs.digest} onChange={(e) => setNotifPrefs((p) => ({ ...p, digest: e.target.value as 'none' | 'daily' | 'weekly' }))} className="h-7 rounded-md border border-border bg-bg px-2 text-xs text-text">
               <option value="none">关闭</option>
               <option value="daily">每日</option>
               <option value="weekly">每周</option>
@@ -297,12 +297,12 @@ export default function AdminContent() {
         <div className="space-y-3">
           <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
             <div className="text-xs font-bold text-text">收件邮箱</div>
-            <input type="email" placeholder="your@email.com" value={emailSettings.address} onChange={(e) => setEmailSettings((s) => ({ ...s, address: e.target.value }))} className="h-8 w-full rounded-md border border-border bg-[#0a0c12] px-3 text-xs text-text" />
+            <input type="email" placeholder="your@email.com" value={emailSettings.address} onChange={(e) => setEmailSettings((s) => ({ ...s, address: e.target.value }))} className="h-8 w-full rounded-md border border-border bg-bg px-3 text-xs text-text" />
             <div className="text-[10px] text-text-3">用于接收通知摘要和告警邮件</div>
           </div>
           <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
             <div className="text-xs font-bold text-text">测试发送</div>
-            <button onClick={async () => { setEmailTestSending(true); await new Promise((r) => setTimeout(r, 1200)); setEmailTestSending(false); }} disabled={emailTestSending || !emailSettings.address} className="rounded-lg bg-[#7b6cf0] px-4 py-1.5 text-xs font-bold text-white disabled:opacity-40">
+            <button onClick={async () => { setEmailTestSending(true); await new Promise((r) => setTimeout(r, 1200)); setEmailTestSending(false); }} disabled={emailTestSending || !emailSettings.address} className="rounded-lg bg-brand-accent px-4 py-1.5 text-xs font-bold text-white disabled:opacity-40">
               {emailTestSending ? '发送中…' : '发送测试邮件'}
             </button>
             <div className="text-[10px] text-text-3">模拟发送一封测试邮件到上方邮箱</div>
@@ -313,7 +313,7 @@ export default function AdminContent() {
       {/* ───── 功能开关 tab ───── */}
       {activeTab === '功能开关' && (
         <div className="space-y-2">
-          <div className="text-[10px] text-text-3 mb-2">当前方案: <span className="text-[#7b6cf0] font-bold">{getCurrentPlan() === 'free' ? '免费版' : getCurrentPlan() === 'pro' ? '专业版' : '企业版'}</span></div>
+          <div className="text-[10px] text-text-3 mb-2">当前方案: <span className="text-brand-accent font-bold">{getCurrentPlan() === 'free' ? '免费版' : getCurrentPlan() === 'pro' ? '专业版' : '企业版'}</span></div>
           {(
             Object.entries(PLAN_LIMITS.free).filter(([, v]) => typeof v === 'boolean') as [string, boolean][]
           ).map(([key, freeVal]) => {
@@ -325,8 +325,8 @@ export default function AdminContent() {
                   {freeVal === false && !enabled && <Lock size={11} className="text-text-3" />}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] ${enabled ? 'text-[#00d4aa]' : 'text-text-3'}`}>{enabled ? '已启用' : '未启用'}</span>
-                  {!enabled && <a href="#/ai/subscription" className="text-[10px] text-[#7b6cf0] hover:underline">升级</a>}
+                  <span className={`text-[10px] ${enabled ? 'text-accent' : 'text-text-3'}`}>{enabled ? '已启用' : '未启用'}</span>
+                  {!enabled && <a href="#/ai/subscription" className="text-[10px] text-brand-accent hover:underline">升级</a>}
                 </div>
               </div>
             );

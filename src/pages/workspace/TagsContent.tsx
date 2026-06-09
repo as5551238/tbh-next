@@ -22,12 +22,12 @@ export default function TagsContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
   const { tags, loading, addTag, removeTag } = useTags();
   const addModal = useModal();
-  const [form, setForm] = useState({ name: '', color: '#7b6cf0', target_type: 'task' });
+  const [form, setForm] = useState({ name: '', color: 'var(--brand-accent)', target_type: 'task' });
 
   const handleAdd = async () => {
     if (!form.name.trim()) return;
     await addTag({ name: form.name.trim(), color: form.color, target_type: form.target_type, usage_count: 0, team_id: '__default__' });
-    setForm({ name: '', color: '#7b6cf0', target_type: 'task' });
+    setForm({ name: '', color: 'var(--brand-accent)', target_type: 'task' });
     addModal.closeModal();
   };
 

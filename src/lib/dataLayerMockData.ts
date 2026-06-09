@@ -304,7 +304,7 @@ export function localOrgInfo(): OrgInfoRow {
     plan: '专业版',
     created: '2025-03-15',
     departments: [
-      { name: '产品部', head: '赵PM', members: 5, goals: 4, color: '#7b6cf0' },
+      { name: '产品部', head: '赵PM', members: 5, goals: 4, color: 'var(--brand-accent)' },
       { name: '研发部', head: '张工', members: 12, goals: 6, color: '#00d4aa' },
       { name: '设计部', head: '刘设计', members: 3, goals: 2, color: '#ffc44d' },
       { name: '运营部', head: '待定', members: 4, goals: 3, color: '#ff5c6a' },
@@ -317,7 +317,7 @@ export function localRoles(): RoleRow[] {
   return [
     { id: 'r1', name: '管理员', key: 'admin', members: 1, permissions: ['全部权限', '系统配置', '成员管理', '数据导出', 'API访问'], color: '#ff5c6a' },
     { id: 'r2', name: '经理', key: 'manager', members: 1, permissions: ['团队管理', '目标管理', '审批', '报表', '成员查看'], color: '#ffc44d' },
-    { id: 'r3', name: '成员', key: 'member', members: 3, permissions: ['任务管理', '文档协作', '知识库', '个人数据'], color: '#7b6cf0' },
+    { id: 'r3', name: '成员', key: 'member', members: 3, permissions: ['任务管理', '文档协作', '知识库', '个人数据'], color: 'var(--brand-accent)' },
     { id: 'r4', name: 'AI同事', key: 'agent', members: 1, permissions: ['数据分析', '报表生成', '文档阅读', '通知发送'], color: '#00d4aa' },
     { id: 'r5', name: '访客', key: 'viewer', members: 0, permissions: ['只读访问', '公开文档查看'], color: '#8892a4' },
   ];
@@ -364,7 +364,7 @@ export function localActivities(): ActivityRow[] {
 
 export function localNotes(): NoteRow[] {
   return [
-    { id: 'n1', title: 'Q3路线图要点', content: '1. 用户增长20%\n2. 导出功能优化\n3. PRD标准化推进\n4. NPS提升至45+', tags: ['Q3', '路线图'], color: '#7b6cf0', pinned: true, member_id: null, team_id: '__default__', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 'n1', title: 'Q3路线图要点', content: '1. 用户增长20%\n2. 导出功能优化\n3. PRD标准化推进\n4. NPS提升至45+', tags: ['Q3', '路线图'], color: 'var(--brand-accent)', pinned: true, member_id: null, team_id: '__default__', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
     { id: 'n2', title: '晨会待确认事项', content: '- 研发资源是否充足\n- 设计稿交付时间\n- QA回归测试覆盖率', tags: ['会议', '待确认'], color: '#00d4aa', pinned: true, member_id: null, team_id: '__default__', created_at: new Date(Date.now() - 3600000).toISOString(), updated_at: new Date(Date.now() - 3600000).toISOString() },
     { id: 'n3', title: '竞品观察笔记', content: '竞品XX发布AI辅助决策模块，交互设计值得参考，特别是智能推荐列表的实现方式', tags: ['竞品', 'AI'], color: '#ffc44d', pinned: false, member_id: null, team_id: '__default__', created_at: new Date(Date.now() - 86400000).toISOString(), updated_at: new Date(Date.now() - 86400000).toISOString() },
     { id: 'n4', title: '技术债务清单', content: '1. 旧版API兼容层清理\n2. 单元测试覆盖率提升\n3. 日志规范化', tags: ['技术', '债务'], color: '#ff5c6a', pinned: false, member_id: null, team_id: '__default__', created_at: new Date(Date.now() - 172800000).toISOString(), updated_at: new Date(Date.now() - 172800000).toISOString() },
@@ -412,7 +412,7 @@ export function localTags(): TagRow[] {
   return [
     { id: 'tag1', name: '高优先级', color: '#ef4444', target_type: 'task', usage_count: 23, team_id: '__default__', created_at: '2026-01-15T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
     { id: 'tag2', name: '技术债', color: '#f59e0b', target_type: 'task', usage_count: 15, team_id: '__default__', created_at: '2026-02-01T00:00:00Z', updated_at: '2026-05-18T00:00:00Z' },
-    { id: 'tag3', name: 'Q3核心', color: '#7b6cf0', target_type: 'goal', usage_count: 8, team_id: '__default__', created_at: '2026-04-01T00:00:00Z', updated_at: '2026-05-22T00:00:00Z' },
+    { id: 'tag3', name: 'Q3核心', color: 'var(--brand-accent)', target_type: 'goal', usage_count: 8, team_id: '__default__', created_at: '2026-04-01T00:00:00Z', updated_at: '2026-05-22T00:00:00Z' },
     { id: 'tag4', name: '客户需求', color: '#00d4aa', target_type: 'task', usage_count: 31, team_id: '__default__', created_at: '2026-01-20T00:00:00Z', updated_at: '2026-05-21T00:00:00Z' },
     { id: 'tag5', name: '内部优化', color: '#6366f1', target_type: 'project', usage_count: 12, team_id: '__default__', created_at: '2026-03-10T00:00:00Z', updated_at: '2026-05-15T00:00:00Z' },
     { id: 'tag6', name: '安全相关', color: '#dc2626', target_type: 'risk', usage_count: 6, team_id: '__default__', created_at: '2026-03-01T00:00:00Z', updated_at: '2026-04-28T00:00:00Z' },
@@ -421,7 +421,7 @@ export function localTags(): TagRow[] {
 
 export function localCategories(): CategoryRow[] {
   return [
-    { id: 'cat1', name: '产品', type: 'module', icon: '📦', color: '#7b6cf0', sort_order: 1, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
+    { id: 'cat1', name: '产品', type: 'module', icon: '📦', color: 'var(--brand-accent)', sort_order: 1, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
     { id: 'cat2', name: '技术', type: 'module', icon: '⚙️', color: '#00d4aa', sort_order: 2, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
     { id: 'cat3', name: '运营', type: 'module', icon: '📊', color: '#f59e0b', sort_order: 3, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },
     { id: 'cat4', name: '设计', type: 'module', icon: '🎨', color: '#ec4899', sort_order: 4, team_id: '__default__', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-05-20T00:00:00Z' },

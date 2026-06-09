@@ -67,7 +67,7 @@ export function useAsyncIndustries() {
 
 export function useIndustryColor(): string {
   const industry = useAppStore((s) => s.industry);
-  return IND_COLORS[industry] ?? '#7b6cf0';
+  return IND_COLORS[industry] ?? 'var(--brand-accent)';
 }
 
 export function useDepartments(): string[] {

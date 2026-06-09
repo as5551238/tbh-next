@@ -107,9 +107,9 @@ export default function TermsOfService() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#eaecf4] mb-2">服务条款</h1>
-        <p className="text-sm text-[#9ca3b8]">最后更新：{LAST_UPDATED}</p>
-        <p className="text-sm text-[#9ca3b8] mt-2">
+        <h1 className="text-2xl font-bold text-text mb-2">服务条款</h1>
+        <p className="text-sm text-text-muted">最后更新：{LAST_UPDATED}</p>
+        <p className="text-sm text-text-muted mt-2">
           使用 TBH Next 即表示您同意以下条款。请仔细阅读。
         </p>
       </div>
@@ -118,20 +118,20 @@ export default function TermsOfService() {
         {sections.map((section, i) => (
           <div
             key={i}
-            className="border border-[#2a2d3a] rounded-lg overflow-hidden"
+            className="border border-border-2 rounded-lg overflow-hidden"
           >
             <button
-              className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-[#13161f] transition-colors"
+              className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-surface transition-colors"
               onClick={() => setExpanded(expanded === i ? null : i)}
             >
-              <span className="text-[#eaecf4] font-medium">{section.title}</span>
-              <span className="text-[#9ca3b8] text-lg">
+              <span className="text-text font-medium">{section.title}</span>
+              <span className="text-text-muted text-lg">
                 {expanded === i ? '−' : '+'}
               </span>
             </button>
             {expanded === i && (
-              <div className="px-4 py-3 bg-[#0d0f16] border-t border-[#2a2d3a]">
-                <pre className="text-sm text-[#9ca3b8] whitespace-pre-wrap font-sans leading-relaxed">
+              <div className="px-4 py-3 bg-surface-deep border-t border-border-2">
+                <pre className="text-sm text-text-muted whitespace-pre-wrap font-sans leading-relaxed">
                   {section.content}
                 </pre>
               </div>
@@ -140,12 +140,12 @@ export default function TermsOfService() {
         ))}
       </div>
 
-      <div className="mt-8 p-4 bg-[#13161f] rounded-lg border border-[#2a2d3a]">
-        <h3 className="text-sm font-bold text-[#eaecf4] mb-2">联系方式</h3>
-        <p className="text-sm text-[#9ca3b8]">
+      <div className="mt-8 p-4 bg-surface rounded-lg border border-border-2">
+        <h3 className="text-sm font-bold text-text mb-2">联系方式</h3>
+        <p className="text-sm text-text-muted">
           客户支持：support@tbh-next.com
         </p>
-        <p className="text-sm text-[#9ca3b8] mt-1">
+        <p className="text-sm text-text-muted mt-1">
           法律事务：legal@tbh-next.com
         </p>
       </div>

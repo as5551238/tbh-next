@@ -11,7 +11,7 @@ export default function KnowledgeContent() {
   const { docs, loading, addDoc, editDoc, removeDoc } = useKnowledgeDocs();
   const modal = useModal();
   const editModal = useModal();
-  const [form, setForm] = useState({ title: '', content: '', tags: '', color: '#7b6cf0' });
+  const [form, setForm] = useState({ title: '', content: '', tags: '', color: 'var(--brand-accent)' });
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -33,7 +33,7 @@ export default function KnowledgeContent() {
   ];
 
   const handleOpen = useCallback(() => {
-    setForm({ title: '', content: '', tags: '', color: '#7b6cf0' });
+    setForm({ title: '', content: '', tags: '', color: 'var(--brand-accent)' });
     modal.openModal();
   }, [modal.openModal]);
 

@@ -110,9 +110,9 @@ export default function PrivacyPolicy() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#eaecf4] mb-2">隐私政策</h1>
-        <p className="text-sm text-[#9ca3b8]">最后更新：{LAST_UPDATED}</p>
-        <p className="text-sm text-[#9ca3b8] mt-2">
+        <h1 className="text-2xl font-bold text-text mb-2">隐私政策</h1>
+        <p className="text-sm text-text-muted">最后更新：{LAST_UPDATED}</p>
+        <p className="text-sm text-text-muted mt-2">
           TBH Next 致力于保护您的隐私。本政策说明我们如何收集、使用和保护您的个人信息。
         </p>
       </div>
@@ -121,20 +121,20 @@ export default function PrivacyPolicy() {
         {sections.map((section, i) => (
           <div
             key={i}
-            className="border border-[#2a2d3a] rounded-lg overflow-hidden"
+            className="border border-border-2 rounded-lg overflow-hidden"
           >
             <button
-              className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-[#13161f] transition-colors"
+              className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-surface transition-colors"
               onClick={() => setExpanded(expanded === i ? null : i)}
             >
-              <span className="text-[#eaecf4] font-medium">{section.title}</span>
-              <span className="text-[#9ca3b8] text-lg">
+              <span className="text-text font-medium">{section.title}</span>
+              <span className="text-text-muted text-lg">
                 {expanded === i ? '−' : '+'}
               </span>
             </button>
             {expanded === i && (
-              <div className="px-4 py-3 bg-[#0d0f16] border-t border-[#2a2d3a]">
-                <pre className="text-sm text-[#9ca3b8] whitespace-pre-wrap font-sans leading-relaxed">
+              <div className="px-4 py-3 bg-surface-deep border-t border-border-2">
+                <pre className="text-sm text-text-muted whitespace-pre-wrap font-sans leading-relaxed">
                   {section.content}
                 </pre>
               </div>
@@ -143,12 +143,12 @@ export default function PrivacyPolicy() {
         ))}
       </div>
 
-      <div className="mt-8 p-4 bg-[#13161f] rounded-lg border border-[#2a2d3a]">
-        <h3 className="text-sm font-bold text-[#eaecf4] mb-2">联系方式</h3>
-        <p className="text-sm text-[#9ca3b8]">
+      <div className="mt-8 p-4 bg-surface rounded-lg border border-border-2">
+        <h3 className="text-sm font-bold text-text mb-2">联系方式</h3>
+        <p className="text-sm text-text-muted">
           如有隐私相关问题，请联系：privacy@tbh-next.com
         </p>
-        <p className="text-sm text-[#9ca3b8] mt-1">
+        <p className="text-sm text-text-muted mt-1">
           数据保护官(DPO)：可在设置中提交请求
         </p>
       </div>

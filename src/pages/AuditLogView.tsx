@@ -4,9 +4,9 @@ import type { AuditLogRow } from '@/lib/dataLayer';
 
 type AuditEntry = AuditLogRow;
 const ACTION_COLORS: Record<string, string> = {
-  INSERT: 'text-[#00d4aa]',
-  UPDATE: 'text-[#f5a623]',
-  DELETE: 'text-[#ef4444]',
+  INSERT: 'text-accent',
+  UPDATE: 'text-manuf',
+  DELETE: 'text-danger-bright',
 };
 
 const TABLE_LABELS: Record<string, string> = {
@@ -87,70 +87,70 @@ export default function AuditLogView() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-[#eaecf4]">审计日志</h1>
-          <p className="text-sm text-[#9ca3b8] mt-1">
+          <h1 className="text-xl font-bold text-text">审计日志</h1>
+          <p className="text-sm text-text-muted mt-1">
             记录所有数据变更操作，确保合规与可追溯性
           </p>
         </div>
-        <button onClick={exportLogs} className="px-3 py-1.5 bg-[#7b6cf0] text-white text-sm rounded-lg hover:bg-[#6b5ce0] transition-colors" disabled={logs.length === 0}>
+        <button onClick={exportLogs} className="px-3 py-1.5 bg-brand-accent text-white text-sm rounded-lg hover:bg-brand-accent-hover transition-colors" disabled={logs.length === 0}>
           导出 CSV
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex gap-3 mb-4">
-        <select value={filter.table} onChange={(e) => setFilter({ ...filter, table: e.target.value })} className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm">
+        <select value={filter.table} onChange={(e) => setFilter({ ...filter, table: e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm">
           <option value="">全部表</option>
           {Object.entries(TABLE_LABELS).map(([key, label]) => (
             <option key={key} value={key}>{label}</option>
           ))}
         </select>
 
-        <select value={filter.action} onChange={(e) => setFilter({ ...filter, action: e.target.value })} className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm">
+        <select value={filter.action} onChange={(e) => setFilter({ ...filter, action: e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm">
           <option value="">全部操作</option>
           <option value="INSERT">创建</option>
           <option value="UPDATE">更新</option>
           <option value="DELETE">删除</option>
         </select>
 
-        <input type="text" placeholder="搜索..." value={filter.search} onChange={(e) => setFilter({ ...filter, search: e.target.value })} className="bg-[#13161f] text-[#eaecf4] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm flex-1 max-w-xs" />
+        <input type="text" placeholder="搜索..." value={filter.search} onChange={(e) => setFilter({ ...filter, search: e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm flex-1 max-w-xs" />
       </div>
 
       {/* Log table */}
       {loading ? (
-        <div className="text-center py-12 text-[#9ca3b8]">加载中...</div>
+        <div className="text-center py-12 text-text-muted">加载中...</div>
       ) : filteredLogs.length === 0 ? (
-        <div className="text-center py-12 text-[#9ca3b8]">
+        <div className="text-center py-12 text-text-muted">
           {logs.length === 0 ? '暂无审计日志（需管理员权限）' : '无匹配记录'}
         </div>
       ) : (
-        <div className="border border-[#2a2d3a] rounded-lg overflow-hidden">
+        <div className="border border-border-2 rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#13161f]">
-                <th className="px-4 py-2.5 text-left text-[#9ca3b8] font-medium">时间</th>
-                <th className="px-4 py-2.5 text-left text-[#9ca3b8] font-medium">操作</th>
-                <th className="px-4 py-2.5 text-left text-[#9ca3b8] font-medium">对象</th>
-                <th className="px-4 py-2.5 text-left text-[#9ca3b8] font-medium">记录ID</th>
-                <th className="px-4 py-2.5 text-left text-[#9ca3b8] font-medium">操作人</th>
+              <tr className="bg-surface">
+                <th className="px-4 py-2.5 text-left text-text-muted font-medium">时间</th>
+                <th className="px-4 py-2.5 text-left text-text-muted font-medium">操作</th>
+                <th className="px-4 py-2.5 text-left text-text-muted font-medium">对象</th>
+                <th className="px-4 py-2.5 text-left text-text-muted font-medium">记录ID</th>
+                <th className="px-4 py-2.5 text-left text-text-muted font-medium">操作人</th>
               </tr>
             </thead>
             <tbody>
               {filteredLogs.map((log) => (
-                <tr key={log.id} className="border-t border-[#1e2030] hover:bg-[#0d0f16]">
-                  <td className="px-4 py-2 text-[#9ca3b8]">
+                <tr key={log.id} className="border-t border-[#1e2030] hover:bg-surface-deep">
+                  <td className="px-4 py-2 text-text-muted">
                     {new Date(log.created_at).toLocaleString('zh-CN')}
                   </td>
-                  <td className={`px-4 py-2 font-medium ${ACTION_COLORS[log.action] || 'text-[#eaecf4]'}`}>
+                  <td className={`px-4 py-2 font-medium ${ACTION_COLORS[log.action] || 'text-text'}`}>
                     {log.action === 'INSERT' ? '创建' : log.action === 'UPDATE' ? '更新' : '删除'}
                   </td>
-                  <td className="px-4 py-2 text-[#eaecf4]">
+                  <td className="px-4 py-2 text-text">
                     {TABLE_LABELS[log.table_name] || log.table_name}
                   </td>
-                  <td className="px-4 py-2 text-[#9ca3b8] font-mono text-xs">
+                  <td className="px-4 py-2 text-text-muted font-mono text-xs">
                     {log.record_id?.slice(0, 8)}...
                   </td>
-                  <td className="px-4 py-2 text-[#9ca3b8] font-mono text-xs">
+                  <td className="px-4 py-2 text-text-muted font-mono text-xs">
                     {log.performed_by?.slice(0, 8) || '-'}...
                   </td>
                 </tr>
@@ -160,7 +160,7 @@ export default function AuditLogView() {
 
           {hasMore && (
             <div className="p-3 text-center border-t border-[#1e2030]">
-              <button onClick={loadMore} className="text-[#7b6cf0] hover:underline text-sm">
+              <button onClick={loadMore} className="text-brand-accent hover:underline text-sm">
                 加载更多
               </button>
             </div>

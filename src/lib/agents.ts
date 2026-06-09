@@ -63,7 +63,7 @@ export const PROGRESS_AGENT: AgentDef = {
   name: '进度追踪',
   icon: '📊',
   description: 'KPI分析、目标进度、趋势预测',
-  color: '#7b6cf0',
+  color: 'var(--brand-accent)',
   capabilities: [
     'KPI达标率分析',
     '目标进度追踪',
@@ -93,7 +93,7 @@ export const RISK_AGENT: AgentDef = {
   name: '风险监控',
   icon: '🛡️',
   description: '风险识别、预警推送、应对方案',
-  color: '#ef4444',
+  color: 'var(--status-danger-bright)',
   capabilities: [
     '风险等级评估',
     '预警推送与升级',

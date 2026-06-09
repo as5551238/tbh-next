@@ -7,10 +7,10 @@ interface Props {
 }
 
 const NODES = [
-  { key: 'goals', emoji: '🎯', label: '目标', color: '#7b6cf0' },
-  { key: 'tasks', emoji: '✅', label: '任务', color: '#00d4aa' },
+  { key: 'goals', emoji: '🎯', label: '目标', color: 'var(--brand-accent)' },
+  { key: 'tasks', emoji: '✅', label: '任务', color: 'var(--status-success)' },
   { key: 'actionItems', emoji: '⚡', label: '行动', color: '#4facfe' },
-  { key: 'reviews', emoji: '🔄', label: '复盘', color: '#f5a623' },
+  { key: 'reviews', emoji: '🔄', label: '复盘', color: 'var(--status-warning)' },
 ] as const;
 
 export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, reviews = 0, completionRate = 0 }: Props) {
@@ -33,7 +33,7 @@ export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, rev
       <svg viewBox="0 0 400 400" className="mx-auto w-full max-w-sm">
         <defs>
           <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#7b6cf0" opacity="0.6" />
+            <polygon points="0 0, 8 3, 0 6" fill="var(--brand-accent)" opacity="0.6" />
           </marker>
         </defs>
 
@@ -47,7 +47,7 @@ export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, rev
               key={`arc-${i}`}
               d={`M${pos.x},${pos.y} Q${mx},${my} ${next.x},${next.y}`}
               fill="none"
-              stroke="#7b6cf0"
+              stroke="var(--brand-accent)"
               strokeWidth="1.5"
               strokeDasharray="6 3"
               markerEnd="url(#arrowhead)"
@@ -65,7 +65,7 @@ export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, rev
           cy={cy}
           r="40"
           fill="none"
-          stroke="#7b6cf0"
+          stroke="var(--brand-accent)"
           strokeWidth="6"
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -73,7 +73,7 @@ export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, rev
           transform={`rotate(-90 ${cx} ${cy})`}
           className="transition-all duration-700"
         />
-        <text x={cx} y={cy - 6} textAnchor="middle" fill="#7b6cf0" fontSize="18" fontWeight="bold">{pct}%</text>
+        <text x={cx} y={cy - 6} textAnchor="middle" fill="var(--brand-accent)" fontSize="18" fontWeight="bold">{pct}%</text>
         <text x={cx} y={cy + 12} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="9">完成率</text>
 
         {/* Nodes */}

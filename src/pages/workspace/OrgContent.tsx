@@ -19,7 +19,7 @@ export default function OrgContent() {
   const editDeptModal = useModal();
   const personModal = useModal();
   const [orgForm, setOrgForm] = useState({ name: '', industry: '', size: '' });
-  const [deptForm, setDeptForm] = useState({ name: '', head: '', color: '#7b6cf0' });
+  const [deptForm, setDeptForm] = useState({ name: '', head: '', color: 'var(--brand-accent)' });
   const [editingDept, setEditingDept] = useState<string | null>(null);
   const [personForm, setPersonForm] = useState({ id: '', name: '', department: '', role: 'member', email: '', phone: '' });
   const { toasts, success, error: toastError } = useToast();
@@ -58,7 +58,7 @@ export default function OrgContent() {
       toastError('创建部门失败，请重试');
     }
     addDeptModal.closeModal();
-    setDeptForm({ name: '', head: '', color: '#7b6cf0' });
+    setDeptForm({ name: '', head: '', color: 'var(--brand-accent)' });
   }
 
   function openEditDept(d: typeof departments[0]) {
@@ -88,7 +88,7 @@ export default function OrgContent() {
     }
     editDeptModal.closeModal();
     setEditingDept(null);
-    setDeptForm({ name: '', head: '', color: '#7b6cf0' });
+    setDeptForm({ name: '', head: '', color: 'var(--brand-accent)' });
   }
 
   function openPersonSettings(m: typeof members[0]) {

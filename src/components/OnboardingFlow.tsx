@@ -146,15 +146,15 @@ export default function OnboardingFlow() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0c12]/85 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-2xl border border-[#2a2d3a] bg-[#13161f] p-6 shadow-2xl shadow-[#7b6cf0]/10">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-bg/85 backdrop-blur-md">
+      <div className="w-full max-w-md rounded-2xl border border-border-2 bg-surface p-6 shadow-2xl shadow-brand-accent/10">
         {/* Step indicators */}
         <div className="mb-6 flex items-center justify-center gap-2">
           {STEPS.map((s) => (
             <div
               key={s}
               className={`h-2 rounded-full transition-all duration-300 ${
-                s < step ? 'w-6 bg-[#00d4aa]' : s === step ? 'w-8 bg-[#7b6cf0]' : 'w-2 bg-white/20'
+                s < step ? 'w-6 bg-accent' : s === step ? 'w-8 bg-brand-accent' : 'w-2 bg-white/20'
               }`}
             />
           ))}
@@ -165,15 +165,15 @@ export default function OnboardingFlow() {
           {step === 1 && (
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 text-4xl">🚀</div>
-              <h2 className="mb-2 text-xl font-bold text-[#eaecf4]">{t('onboarding.welcome')}</h2>
-              <p className="mb-5 text-sm text-[#9ca3b8]">{t('onboarding.welcomeDesc')}</p>
+              <h2 className="mb-2 text-xl font-bold text-text">{t('onboarding.welcome')}</h2>
+              <p className="mb-5 text-sm text-text-muted">{t('onboarding.welcomeDesc')}</p>
               <div className="w-full space-y-3">
                 {INTERFACE_INFO.map((info) => (
-                  <div key={info.name} className="flex items-start gap-3 rounded-xl border border-[#2a2d3a] bg-[#0d0f16] p-3 text-left">
+                  <div key={info.name} className="flex items-start gap-3 rounded-xl border border-border-2 bg-surface-deep p-3 text-left">
                     <span className="text-lg shrink-0">{info.icon}</span>
                     <div>
-                      <div className="text-sm font-semibold text-[#eaecf4]">{info.name}</div>
-                      <div className="text-xs text-[#9ca3b8]">{info.desc}</div>
+                      <div className="text-sm font-semibold text-text">{info.name}</div>
+                      <div className="text-xs text-text-muted">{info.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -185,8 +185,8 @@ export default function OnboardingFlow() {
           {step === 2 && (
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 text-4xl">🎯</div>
-              <h2 className="mb-2 text-xl font-bold text-[#eaecf4]">{t('onboarding.createFirstGoal')}</h2>
-              <p className="mb-5 text-sm text-[#9ca3b8]">{t('onboarding.goalHint')}</p>
+              <h2 className="mb-2 text-xl font-bold text-text">{t('onboarding.createFirstGoal')}</h2>
+              <p className="mb-5 text-sm text-text-muted">{t('onboarding.goalHint')}</p>
               <div className="w-full space-y-3">
                 <input
                   type="text"
@@ -194,15 +194,15 @@ export default function OnboardingFlow() {
                   value={goalTitle}
                   onChange={(e) => setGoalTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleCreateGoal(); }}
-                  className="w-full rounded-lg border border-[#2a2d3a] bg-[#0d0f16] px-4 py-2.5 text-sm text-[#eaecf4] placeholder-[#4a4d5a] outline-none focus:border-[#7b6cf0] transition-colors"
+                  className="w-full rounded-lg border border-border-2 bg-surface-deep px-4 py-2.5 text-sm text-text placeholder-[#4a4d5a] outline-none focus:border-brand-accent transition-colors"
                 />
                 <input
                   type="date"
                   value={goalDue}
                   onChange={(e) => setGoalDue(e.target.value)}
-                  className="w-full rounded-lg border border-[#2a2d3a] bg-[#0d0f16] px-4 py-2.5 text-sm text-[#eaecf4] outline-none focus:border-[#7b6cf0] transition-colors"
+                  className="w-full rounded-lg border border-border-2 bg-surface-deep px-4 py-2.5 text-sm text-text outline-none focus:border-brand-accent transition-colors"
                 />
-                {error && <div className="text-xs text-[#ef4444]">{error}</div>}
+                {error && <div className="text-xs text-danger-bright">{error}</div>}
               </div>
             </div>
           )}
@@ -211,8 +211,8 @@ export default function OnboardingFlow() {
           {step === 3 && (
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 text-4xl">✅</div>
-              <h2 className="mb-2 text-xl font-bold text-[#eaecf4]">{t('onboarding.addFirstTask')}</h2>
-              <p className="mb-5 text-sm text-[#9ca3b8]">{t('onboarding.taskHint')}</p>
+              <h2 className="mb-2 text-xl font-bold text-text">{t('onboarding.addFirstTask')}</h2>
+              <p className="mb-5 text-sm text-text-muted">{t('onboarding.taskHint')}</p>
               <div className="w-full space-y-3">
                 <input
                   type="text"
@@ -220,12 +220,12 @@ export default function OnboardingFlow() {
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTask(); }}
-                  className="w-full rounded-lg border border-[#2a2d3a] bg-[#0d0f16] px-4 py-2.5 text-sm text-[#eaecf4] placeholder-[#4a4d5a] outline-none focus:border-[#7b6cf0] transition-colors"
+                  className="w-full rounded-lg border border-border-2 bg-surface-deep px-4 py-2.5 text-sm text-text placeholder-[#4a4d5a] outline-none focus:border-brand-accent transition-colors"
                 />
-                <div className="rounded-lg border border-[#00d4aa]/20 bg-[#00d4aa]/5 px-4 py-2 text-xs text-[#00d4aa]">
+                <div className="rounded-lg border border-accent/20 bg-accent/5 px-4 py-2 text-xs text-accent">
                   {t('onboarding.linkedGoal', { title: goalTitle })}
                 </div>
-                {error && <div className="text-xs text-[#ef4444]">{error}</div>}
+                {error && <div className="text-xs text-danger-bright">{error}</div>}
               </div>
             </div>
           )}
@@ -234,27 +234,27 @@ export default function OnboardingFlow() {
           {step === 4 && (
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 text-4xl">🎉</div>
-              <h2 className="mb-2 text-xl font-bold text-[#eaecf4]">{t('onboarding.almostDone')}</h2>
-              <p className="mb-5 text-sm text-[#9ca3b8]">{t('onboarding.sampleDataDesc')}</p>
-              <div className="w-full space-y-2 rounded-xl border border-[#2a2d3a] bg-[#0d0f16] p-4 text-left">
-                <div className="text-sm font-semibold text-[#eaecf4]">🎯 {SAMPLE_GOAL_TITLE}</div>
+              <h2 className="mb-2 text-xl font-bold text-text">{t('onboarding.almostDone')}</h2>
+              <p className="mb-5 text-sm text-text-muted">{t('onboarding.sampleDataDesc')}</p>
+              <div className="w-full space-y-2 rounded-xl border border-border-2 bg-surface-deep p-4 text-left">
+                <div className="text-sm font-semibold text-text">🎯 {SAMPLE_GOAL_TITLE}</div>
                 {SAMPLE_TASKS.map((title) => (
-                  <div key={title} className="text-xs text-[#9ca3b8] pl-6">✓ {title}</div>
+                  <div key={title} className="text-xs text-text-muted pl-6">✓ {title}</div>
                 ))}
               </div>
-              {error && <div className="mt-2 text-xs text-[#ef4444]">{error}</div>}
+              {error && <div className="mt-2 text-xs text-danger-bright">{error}</div>}
             </div>
           )}
         </div>
 
         {/* Actions */}
         <div className="mt-6 flex items-center justify-between">
-          <button onClick={handleSkip} className="text-xs text-[#9ca3b8] hover:text-[#eaecf4] transition-colors">
+          <button onClick={handleSkip} className="text-xs text-text-muted hover:text-text transition-colors">
             {t('onboarding.skip')}
           </button>
 
           {step === 1 && (
-            <button onClick={() => setStep(2)} className="rounded-lg bg-[#7b6cf0] px-6 py-2 text-sm font-bold text-white transition-all hover:bg-[#6b5ce0]">
+            <button onClick={() => setStep(2)} className="rounded-lg bg-brand-accent px-6 py-2 text-sm font-bold text-white transition-all hover:bg-brand-accent-hover">
               {t('onboarding.startSetup')}
             </button>
           )}
@@ -263,7 +263,7 @@ export default function OnboardingFlow() {
             <button
               onClick={handleCreateGoal}
               disabled={!goalTitle.trim() || submitting}
-              className="rounded-lg bg-[#7b6cf0] px-6 py-2 text-sm font-bold text-white transition-all hover:bg-[#6b5ce0] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-lg bg-brand-accent px-6 py-2 text-sm font-bold text-white transition-all hover:bg-brand-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {submitting ? t('onboarding.creating') : t('onboarding.createGoal')}
             </button>
@@ -273,7 +273,7 @@ export default function OnboardingFlow() {
             <button
               onClick={handleCreateTask}
               disabled={!taskTitle.trim() || submitting}
-              className="rounded-lg bg-[#7b6cf0] px-6 py-2 text-sm font-bold text-white transition-all hover:bg-[#6b5ce0] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-lg bg-brand-accent px-6 py-2 text-sm font-bold text-white transition-all hover:bg-brand-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {submitting ? t('onboarding.creating') : t('onboarding.finishSetup')}
             </button>
@@ -283,14 +283,14 @@ export default function OnboardingFlow() {
             <div className="flex gap-2">
               <button
                 onClick={handleFinishEmpty}
-                className="rounded-lg border border-[#2a2d3a] px-4 py-2 text-xs text-[#9ca3b8] hover:text-[#eaecf4] transition-all hover:border-[#4a4d5a]"
+                className="rounded-lg border border-border-2 px-4 py-2 text-xs text-text-muted hover:text-text transition-all hover:border-[#4a4d5a]"
               >
                 {t('onboarding.skipSampleData')}
               </button>
               <button
                 onClick={handleCreateSampleData}
                 disabled={creatingSample}
-                className="rounded-lg bg-[#00d4aa] px-6 py-2 text-sm font-bold text-[#0a0c12] transition-all hover:bg-[#00c49a] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-lg bg-accent px-6 py-2 text-sm font-bold text-bg transition-all hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {creatingSample ? t('onboarding.creating') : t('onboarding.createSampleData')}
               </button>
@@ -299,7 +299,7 @@ export default function OnboardingFlow() {
         </div>
 
         {/* Step label */}
-        <div className="mt-3 text-center text-[10px] text-[#9ca3b8]">
+        <div className="mt-3 text-center text-[10px] text-text-muted">
           {t('onboarding.stepLabel', { step })}
         </div>
       </div>

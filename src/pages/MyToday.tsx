@@ -24,9 +24,9 @@ interface GoalSummary {
 }
 
 const PRIORITY_STYLES: Record<string, string> = {
-  high: 'bg-[#ef4444]/20 text-[#ef4444]',
-  medium: 'bg-[#f5a623]/20 text-[#f5a623]',
-  low: 'bg-[#00d4aa]/20 text-[#00d4aa]',
+  high: 'bg-danger-bright/20 text-danger-bright',
+  medium: 'bg-manuf/20 text-manuf',
+  low: 'bg-accent/20 text-accent',
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -36,10 +36,10 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  on_track: 'text-[#00d4aa]',
-  at_risk: 'text-[#f5a623]',
-  ahead: 'text-[#7b6cf0]',
-  off_track: 'text-[#ef4444]',
+  on_track: 'text-accent',
+  at_risk: 'text-manuf',
+  ahead: 'text-brand-accent',
+  off_track: 'text-danger-bright',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -63,9 +63,9 @@ function getGreeting(): string {
 }
 
 function getProgressColor(progress: number): string {
-  if (progress >= 80) return '#00d4aa';
-  if (progress >= 50) return '#f5a623';
-  return '#ef4444';
+  if (progress >= 80) return 'var(--status-success)';
+  if (progress >= 50) return 'var(--status-warning)';
+  return 'var(--status-danger-bright)';
 }
 
 /* ------------------------------------------------------------------ */
@@ -150,10 +150,10 @@ export default function MyToday() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#eaecf4]">
+          <h1 className="text-2xl font-bold text-text">
             {getGreeting()}
           </h1>
-          <p className="text-[#9ca3b8] mt-1">
+          <p className="text-text-muted mt-1">
             {now.toLocaleDateString('zh-CN', {
               year: 'numeric',
               month: 'long',
@@ -165,8 +165,8 @@ export default function MyToday() {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-bold text-[#7b6cf0]">{pendingTasks.length}</div>
-          <div className="text-xs text-[#9ca3b8]">{t('myToday.pendingTasks')}</div>
+          <div className="text-3xl font-bold text-brand-accent">{pendingTasks.length}</div>
+          <div className="text-xs text-text-muted">{t('myToday.pendingTasks')}</div>
         </div>
       </div>
 
@@ -174,51 +174,51 @@ export default function MyToday() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <button
           onClick={() => goToModule('workspace', 'tasks')}
-          className="bg-[#13161f] border border-[#2a2d3a] rounded-xl p-4 text-left hover:border-[#7b6cf0] transition-colors"
+          className="bg-surface border border-border-2 rounded-xl p-4 text-left hover:border-brand-accent transition-colors"
         >
-          <div className="text-2xl font-bold text-[#7b6cf0]">{pendingTasks.length}</div>
-          <div className="text-xs text-[#9ca3b8] mt-1">{t('myToday.todayPending')}</div>
+          <div className="text-2xl font-bold text-brand-accent">{pendingTasks.length}</div>
+          <div className="text-xs text-text-muted mt-1">{t('myToday.todayPending')}</div>
         </button>
 
         <button
           onClick={() => goToModule('workspace', 'goals')}
-          className="bg-[#13161f] border border-[#2a2d3a] rounded-xl p-4 text-left hover:border-[#00d4aa] transition-colors"
+          className="bg-surface border border-border-2 rounded-xl p-4 text-left hover:border-accent transition-colors"
         >
-          <div className="text-2xl font-bold text-[#00d4aa]">{completionRate}%</div>
-          <div className="text-xs text-[#9ca3b8] mt-1">{t('myToday.completionRate')}</div>
+          <div className="text-2xl font-bold text-accent">{completionRate}%</div>
+          <div className="text-xs text-text-muted mt-1">{t('myToday.completionRate')}</div>
         </button>
 
         <button
           onClick={() => goToModule('workspace', 'goals')}
-          className="bg-[#13161f] border border-[#2a2d3a] rounded-xl p-4 text-left hover:border-[#f5a623] transition-colors"
+          className="bg-surface border border-border-2 rounded-xl p-4 text-left hover:border-manuf transition-colors"
         >
-          <div className="text-2xl font-bold text-[#f5a623]">
+          <div className="text-2xl font-bold text-manuf">
             {goals.filter((g) => g.status === 'at_risk' || g.status === 'off_track').length}
           </div>
-          <div className="text-xs text-[#9ca3b8] mt-1">{t('myToday.riskGoals')}</div>
+          <div className="text-xs text-text-muted mt-1">{t('myToday.riskGoals')}</div>
         </button>
 
         <button
           onClick={() => goToModule('ai', 'main')}
-          className="bg-[#13161f] border border-[#2a2d3a] rounded-xl p-4 text-left hover:border-[#7b6cf0] transition-colors"
+          className="bg-surface border border-border-2 rounded-xl p-4 text-left hover:border-brand-accent transition-colors"
         >
           <div className="text-2xl font-bold">🧠</div>
-          <div className="text-xs text-[#9ca3b8] mt-1">{t('myToday.aiAssistant')}</div>
+          <div className="text-xs text-text-muted mt-1">{t('myToday.aiAssistant')}</div>
         </button>
       </div>
 
       {/* Priority Focus Section */}
       {focusPlan.length > 0 && (
-        <div className="rounded-xl border border-[#2a2d3a] bg-[#13161f] p-5">
+        <div className="rounded-xl border border-border-2 bg-surface p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="text-lg">🎯</span>
-              <h2 className="text-lg font-semibold text-[#eaecf4]">{t('myToday.todayFocus')}</h2>
-              <span className="rounded-full px-2 py-0.5 text-[9px] font-bold bg-[#7b6cf0]/10 text-[#7b6cf0]">{t('myToday.aiSorted')}</span>
+              <h2 className="text-lg font-semibold text-text">{t('myToday.todayFocus')}</h2>
+              <span className="rounded-full px-2 py-0.5 text-[9px] font-bold bg-brand-accent/10 text-brand-accent">{t('myToday.aiSorted')}</span>
             </div>
             <button
               onClick={() => goToModule('workspace', 'overview')}
-              className="text-sm text-[#7b6cf0] hover:underline"
+              className="text-sm text-brand-accent hover:underline"
             >
               全部 →
             </button>
@@ -232,31 +232,31 @@ export default function MyToday() {
                 <div
                   key={item.id}
                   className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
-                    isOverdue ? 'bg-[#ef4444]/5 border-[#ef4444]/20' :
-                    isAtRisk ? 'bg-[#f5a623]/5 border-[#f5a623]/20' :
-                    'bg-[#0d0f16] border-[#2a2d3a]'
+                    isOverdue ? 'bg-danger-bright/5 border-danger-bright/20' :
+                    isAtRisk ? 'bg-manuf/5 border-manuf/20' :
+                    'bg-surface-deep border-border-2'
                   }`}
                 >
-                  <span className="text-xs font-bold text-[#9ca3b8] w-4">{i + 1}</span>
+                  <span className="text-xs font-bold text-text-muted w-4">{i + 1}</span>
                   <span className="text-sm">{cfg.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-[#eaecf4] truncate">{item.title}</div>
-                    <div className="flex items-center gap-2 text-[10px] text-[#9ca3b8]">
+                    <div className="text-sm text-text truncate">{item.title}</div>
+                    <div className="flex items-center gap-2 text-[10px] text-text-muted">
                       <span>{getItemTypeLabel(item.type)}</span>
                       <span>·</span>
                       <span>{item.reason}</span>
-                      {isOverdue && <span className="text-[#ef4444] font-bold">{t('myToday.overdue')}</span>}
+                      {isOverdue && <span className="text-danger-bright font-bold">{t('myToday.overdue')}</span>}
                     </div>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                    item.focusTag === 'urgent' ? 'bg-[#ef4444]/10 text-[#ef4444]' :
-                    item.focusTag === 'important' ? 'bg-[#7b6cf0]/10 text-[#7b6cf0]' :
-                    item.focusTag === 'momentum' ? 'bg-[#00d4aa]/10 text-[#00d4aa]' :
-                    item.focusTag === 'low-hanging' ? 'bg-[#f5a623]/10 text-[#f5a623]' :
-                    'bg-white/5 text-[#9ca3b8]'
+                    item.focusTag === 'urgent' ? 'bg-danger-bright/10 text-danger-bright' :
+                    item.focusTag === 'important' ? 'bg-brand-accent/10 text-brand-accent' :
+                    item.focusTag === 'momentum' ? 'bg-accent/10 text-accent' :
+                    item.focusTag === 'low-hanging' ? 'bg-manuf/10 text-manuf' :
+                    'bg-white/5 text-text-muted'
                   }`}>{cfg.label}</span>
-                  {isOverdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ef4444]/10 text-[#ef4444] font-bold shrink-0">{t('myToday.overdue')}</span>}
-                  {isAtRisk && !isOverdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#f5a623]/10 text-[#f5a623] font-bold shrink-0">{t('myToday.risk')}</span>}
+                  {isOverdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger-bright/10 text-danger-bright font-bold shrink-0">{t('myToday.overdue')}</span>}
+                  {isAtRisk && !isOverdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-manuf/10 text-manuf font-bold shrink-0">{t('myToday.risk')}</span>}
                 </div>
               );
             })}
@@ -269,22 +269,22 @@ export default function MyToday() {
         {/* Tasks section */}
         <div className="md:col-span-2 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[#eaecf4]">{t('myToday.todayTasks')}</h2>
+            <h2 className="text-lg font-semibold text-text">{t('myToday.todayTasks')}</h2>
             <button
               onClick={() => goToModule('workspace', 'tasks')}
-              className="text-sm text-[#7b6cf0] hover:underline"
+              className="text-sm text-brand-accent hover:underline"
             >
               查看全部 →
             </button>
           </div>
 
           {pendingTasks.length === 0 && completedTasks.length === 0 ? (
-            <div className="text-center py-12 rounded-xl border border-[#2a2d3a] border-dashed bg-[#0d0f16]">
+            <div className="text-center py-12 rounded-xl border border-border-2 border-dashed bg-surface-deep">
               <div className="text-4xl mb-3">📋</div>
-              <div className="text-sm text-[#9ca3b8] mb-4">{t('myToday.noTasks')}</div>
+              <div className="text-sm text-text-muted mb-4">{t('myToday.noTasks')}</div>
               <button
                 onClick={() => goToModule('workspace', 'tasks')}
-                className="rounded-lg bg-[#7b6cf0] px-4 py-2 text-xs font-semibold text-white hover:bg-[#7b6cf0]/80 transition-colors"
+                className="rounded-lg bg-brand-accent px-4 py-2 text-xs font-semibold text-white hover:bg-brand-accent/80 transition-colors"
               >
                 创建第一个任务
               </button>
@@ -295,19 +295,19 @@ export default function MyToday() {
               <button
                 key={task.id}
                 onClick={() => goToModule('workspace', 'tasks')}
-                className="w-full flex items-center gap-3 bg-[#13161f] border border-[#2a2d3a] rounded-lg p-3 text-left hover:border-[#7b6cf0]/50 transition-colors"
+                className="w-full flex items-center gap-3 bg-surface border border-border-2 rounded-lg p-3 text-left hover:border-brand-accent/50 transition-colors"
               >
                 <div
                   className={`w-2 h-2 rounded-full shrink-0 ${
                     task.priority === 'high'
-                      ? 'bg-[#ef4444]'
+                      ? 'bg-danger-bright'
                       : task.priority === 'medium'
-                      ? 'bg-[#f5a623]'
-                      : 'bg-[#00d4aa]'
+                      ? 'bg-manuf'
+                      : 'bg-accent'
                   }`}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-[#eaecf4] truncate">{task.title}</div>
+                  <div className="text-sm text-text truncate">{task.title}</div>
                 </div>
                 <span
                   className={`text-xs px-2 py-0.5 rounded-full ${PRIORITY_STYLES[task.priority]}`}
@@ -315,7 +315,7 @@ export default function MyToday() {
                   {PRIORITY_LABELS[task.priority]}
                 </span>
                 {task.due_date && (
-                  <span className="text-xs text-[#9ca3b8] shrink-0">{task.due_date}</span>
+                  <span className="text-xs text-text-muted shrink-0">{task.due_date}</span>
                 )}
               </button>
             ))}
@@ -323,13 +323,13 @@ export default function MyToday() {
             {completedTasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center gap-3 bg-[#0d0f16] rounded-lg p-3 opacity-60"
+                className="flex items-center gap-3 bg-surface-deep rounded-lg p-3 opacity-60"
               >
-                <div className="w-2 h-2 rounded-full bg-[#00d4aa] shrink-0" />
-                <span className="text-sm text-[#9ca3b8] line-through flex-1 truncate">
+                <div className="w-2 h-2 rounded-full bg-accent shrink-0" />
+                <span className="text-sm text-text-muted line-through flex-1 truncate">
                   {task.title}
                 </span>
-                <span className="text-xs text-[#00d4aa]">✓</span>
+                <span className="text-xs text-accent">✓</span>
               </div>
             ))}
             </div>
@@ -341,10 +341,10 @@ export default function MyToday() {
           {/* Goals */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-[#eaecf4]">{t('myToday.goalProgress')}</h2>
+              <h2 className="text-lg font-semibold text-text">{t('myToday.goalProgress')}</h2>
               <button
                 onClick={() => goToModule('workspace', 'goals')}
-                className="text-sm text-[#7b6cf0] hover:underline"
+                className="text-sm text-brand-accent hover:underline"
               >
                 全部 →
               </button>
@@ -352,12 +352,12 @@ export default function MyToday() {
 
             <div className="space-y-3">
               {goals.length === 0 ? (
-                <div className="text-center py-8 rounded-xl border border-[#2a2d3a] border-dashed bg-[#0d0f16]">
+                <div className="text-center py-8 rounded-xl border border-border-2 border-dashed bg-surface-deep">
                   <div className="text-3xl mb-2">🎯</div>
-                  <div className="text-xs text-[#9ca3b8] mb-3">{t('myToday.setFirstGoal')}</div>
+                  <div className="text-xs text-text-muted mb-3">{t('myToday.setFirstGoal')}</div>
                   <button
                     onClick={() => goToModule('workspace', 'goals')}
-                    className="rounded-lg bg-[#00d4aa] px-3 py-1.5 text-[10px] font-semibold text-[#0a0c12] hover:bg-[#00d4aa]/80 transition-colors"
+                    className="rounded-lg bg-accent px-3 py-1.5 text-[10px] font-semibold text-surface-deep hover:bg-accent/80 transition-colors"
                   >
                     创建目标
                   </button>
@@ -366,10 +366,10 @@ export default function MyToday() {
                 <button
                   key={goal.id}
                   onClick={() => goToModule('workspace', 'goals')}
-                  className="w-full bg-[#13161f] border border-[#2a2d3a] rounded-lg p-3 text-left hover:border-[#7b6cf0]/50 transition-colors"
+                  className="w-full bg-surface border border-border-2 rounded-lg p-3 text-left hover:border-brand-accent/50 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-[#eaecf4] truncate flex-1">{goal.title}</span>
+                    <span className="text-sm text-text truncate flex-1">{goal.title}</span>
                     <span className={`text-xs ml-2 ${STATUS_STYLES[goal.status]}`}>
                       {STATUS_LABELS[goal.status]}
                     </span>
@@ -384,7 +384,7 @@ export default function MyToday() {
                         }}
                       />
                     </div>
-                    <span className="text-xs text-[#9ca3b8] w-8 text-right">{goal.progress}%</span>
+                    <span className="text-xs text-text-muted w-8 text-right">{goal.progress}%</span>
                   </div>
                 </button>
               ))}
@@ -394,10 +394,10 @@ export default function MyToday() {
           {/* AI Insights */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-[#eaecf4]">{t('myToday.todayInsights')}</h2>
+              <h2 className="text-lg font-semibold text-text">{t('myToday.todayInsights')}</h2>
               <button
                 onClick={() => goToModule('ai', 'morning')}
-                className="text-sm text-[#7b6cf0] hover:underline"
+                className="text-sm text-brand-accent hover:underline"
               >
                 早安简报 →
               </button>
@@ -405,20 +405,20 @@ export default function MyToday() {
 
             <div className="space-y-2">
               {insights.length === 0 ? (
-                <div className="bg-[#13161f] border border-[#2a2d3a] rounded-lg p-3">
+                <div className="bg-surface border border-border-2 rounded-lg p-3">
                   <div className="flex items-start gap-2">
-                    <span className="text-[#7b6cf0] text-sm mt-0.5">💡</span>
-                    <p className="text-sm text-[#9ca3b8] leading-relaxed">{t('myToday.createGoal')}和任务后，AI 将为你提供智能洞察和建议</p>
+                    <span className="text-brand-accent text-sm mt-0.5">💡</span>
+                    <p className="text-sm text-text-muted leading-relaxed">{t('myToday.createGoal')}和任务后，AI 将为你提供智能洞察和建议</p>
                   </div>
                 </div>
               ) : insights.map((insight, i) => (
                 <div
                   key={i}
-                  className="bg-[#13161f] border border-[#2a2d3a] rounded-lg p-3"
+                  className="bg-surface border border-border-2 rounded-lg p-3"
                 >
                   <div className="flex items-start gap-2">
-                    <span className="text-[#7b6cf0] text-sm mt-0.5">💡</span>
-                    <p className="text-sm text-[#9ca3b8] leading-relaxed">{insight}</p>
+                    <span className="text-brand-accent text-sm mt-0.5">💡</span>
+                    <p className="text-sm text-text-muted leading-relaxed">{insight}</p>
                   </div>
                 </div>
               ))}
