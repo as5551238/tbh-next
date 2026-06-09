@@ -3,7 +3,7 @@ import { useScheduleEvents } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Calendar, Clock, MapPin, Users, Plus, Lock, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Plus, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createScheduleEvent } from '@/lib/dataLayer';
 import { hasFeature } from '@/lib/subscription';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -118,15 +118,15 @@ export default function ScheduleContent() {
 
   return (
     <div className="flex h-full">
-      <div className="flex flex-1 flex-col min-w-0 overflow-y-auto p-4 space-y-4">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="flex flex-1 flex-col min-w-0 overflow-y-auto p-3 md:p-4 space-y-4">
+        <div className="flex flex-wrap items-center gap-2 mb-2">
           <Calendar size={18} className="text-primary-2" />
           <span className="text-sm font-bold">日程</span>
           <button onClick={() => { if (!isPro) return; resetForm(); createModal.openModal(); }} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">{isPro ? "+ 新建日程" : <><Lock size={10} className="inline mr-1" />Pro</>}</button>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
+          <div className="flex flex-wrap items-center gap-3 mb-3">
             <ChevronLeft size={14} className="text-text-3 cursor-pointer hover:text-text" onClick={() => setMonthOffset((o) => o - 1)} />
             <span className="text-xs font-bold">{currentYear}年{currentMonth + 1}月</span>
             <ChevronRight size={14} className="text-text-3 cursor-pointer hover:text-text" onClick={() => setMonthOffset((o) => o + 1)} />
@@ -157,7 +157,7 @@ export default function ScheduleContent() {
               evt.type === 'deadline' && 'border-l-2 border-l-danger',
               evt.type === 'meeting' && 'border-l-2 border-l-primary'
             )}>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <Clock size={10} className="text-text-3" />
                 <span className="text-[10px] font-semibold text-text-2">{evt.time}</span>
                 <span className={cn('ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-bold',
@@ -167,7 +167,7 @@ export default function ScheduleContent() {
                 </span>
               </div>
               <div className="text-xs font-semibold text-text">{evt.title}</div>
-              {evt.location && <div className="text-[10px] text-text-3 mt-0.5 flex items-center gap-1"><MapPin size={9} />{evt.location}</div>}
+              {evt.location && <div className="text-[10px] text-text-3 mt-0.5 flex flex-wrap items-center gap-1"><MapPin size={9} />{evt.location}</div>}
             </div>
           ))}
         </div>

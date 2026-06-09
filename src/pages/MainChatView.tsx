@@ -328,7 +328,7 @@ function MainChatView() {
       {/* Left: Chat area */}
       <div className="flex flex-1 flex-col border-r border-border min-w-0">
         {/* Header */}
-        <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
             <Bot size={14} className="text-primary-2" />
           </div>
@@ -358,7 +358,7 @@ function MainChatView() {
                {msg.actions && msg.actions.length > 0 && (
                  <div className="flex flex-col justify-end gap-1">
                    {msg.actions.map((act) => (
-                     <button key={act.label} onClick={() => navTo(act.iface, act.module)} className="flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] text-primary-2 transition-all hover:bg-primary/20">
+                     <button key={act.label} onClick={() => navTo(act.iface, act.module)} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] text-primary-2 transition-all hover:bg-primary/20">
                        {act.label}<ArrowRight size={10} />
                      </button>
                    ))}
@@ -367,10 +367,10 @@ function MainChatView() {
              </div>
            ))}
           {isTyping && messages[messages.length - 1]?.streaming !== true && (
-            <div className="flex gap-2.5">
+            <div className="flex flex-wrap gap-2.5">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-2"><Bot size={14} /></div>
               <div className="rounded-xl bg-primary/10 px-3 py-2.5 text-xs text-primary-2">
-                <span className="inline-flex gap-1"><span className="animate-bounce">·</span><span className="animate-bounce" style={{ animationDelay: '0.15s' }}>·</span><span className="animate-bounce" style={{ animationDelay: '0.3s' }}>·</span></span>
+                <span className="inline-flex flex-wrap gap-1"><span className="animate-bounce">·</span><span className="animate-bounce" style={{ animationDelay: '0.15s' }}>·</span><span className="animate-bounce" style={{ animationDelay: '0.3s' }}>·</span></span>
               </div>
             </div>
           )}
@@ -380,22 +380,22 @@ function MainChatView() {
          {(overdueTasks.length > 0 || atRiskGoals.length > 0 || openActionItems.length > 0 || deviationAlerts.length > 0) && (
            <div className="flex flex-wrap gap-1.5 px-4 py-1.5 border-t border-border bg-danger/5">
              {overdueTasks.length > 0 && (
-               <button onClick={() => navTo('workspace', 'tasks')} className="flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[10px] text-danger hover:bg-danger/20 transition-colors" disabled={isTyping}>
+               <button onClick={() => navTo('workspace', 'tasks')} className="flex flex-wrap items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[10px] text-danger hover:bg-danger/20 transition-colors" disabled={isTyping}>
                  <AlertTriangle size={10} />{overdueTasks.length}个逾期任务
                </button>
              )}
              {atRiskGoals.length > 0 && (
-               <button onClick={() => navTo('workspace', 'goals')} className="flex items-center gap-1 rounded-full bg-warn/10 px-2 py-0.5 text-[10px] text-warn hover:bg-warn/20 transition-colors" disabled={isTyping}>
+               <button onClick={() => navTo('workspace', 'goals')} className="flex flex-wrap items-center gap-1 rounded-full bg-warn/10 px-2 py-0.5 text-[10px] text-warn hover:bg-warn/20 transition-colors" disabled={isTyping}>
                  <ShieldAlert size={10} />{atRiskGoals.length}个风险目标
                </button>
              )}
              {deviationAlerts.length > 0 && (
-               <button onClick={() => navTo('ai', 'risk')} className="flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[10px] text-danger hover:bg-danger/20 transition-colors" disabled={isTyping}>
+               <button onClick={() => navTo('ai', 'risk')} className="flex flex-wrap items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[10px] text-danger hover:bg-danger/20 transition-colors" disabled={isTyping}>
                  <AlertTriangle size={10} />{deviationAlerts.length}个偏差告警
                </button>
              )}
              {openActionItems.length > 0 && (
-               <button onClick={() => navTo('workspace', 'actionItems')} className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary-2 hover:bg-primary/20 transition-colors" disabled={isTyping}>
+               <button onClick={() => navTo('workspace', 'actionItems')} className="flex flex-wrap items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary-2 hover:bg-primary/20 transition-colors" disabled={isTyping}>
                  <CheckCircle2 size={10} />{openActionItems.length}个待办行动项
                </button>
              )}
@@ -438,7 +438,7 @@ function MainChatView() {
                <button onClick={() => navTo('ai', 'subscription')} className="rounded-md bg-danger/20 px-2 py-0.5 text-[9px] font-semibold text-danger hover:bg-danger/30">升级方案</button>
              </div>
            )}
-          <div className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
             <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()} placeholder="问我任何关于你工作的事..." aria-label="AI聊天输入框" className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3" disabled={isTyping} />
             <button onClick={handleSend} className="rounded-lg bg-primary p-1.5 text-white transition-opacity hover:opacity-80 disabled:opacity-50" disabled={isTyping || !chatInput.trim()}>
               <Send size={14} />
@@ -450,7 +450,7 @@ function MainChatView() {
       {/* Right: Context panel */}
       <div className="flex w-[380px] shrink-0 flex-col overflow-y-auto">
         {/* Agent switcher */}
-        <div className="border-b border-border p-4">
+        <div className="border-b border-border p-3 md:p-4">
           <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-3">AI 同事</div>
           <div className="space-y-2">
             {ALL_AGENTS.map((agent) => (
@@ -469,7 +469,7 @@ function MainChatView() {
         </div>
 
         {/* KPI summary */}
-        <div className="border-b border-border p-4">
+        <div className="border-b border-border p-3 md:p-4">
           <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-3">实时指标</div>
           <div className="space-y-2">
             {cell.kpis.map((kpi) => { const TI = TREND_ICON[kpi.trend]; return (
@@ -482,7 +482,7 @@ function MainChatView() {
         </div>
 
         {/* Workflow */}
-        <div className="border-b border-border p-4">
+        <div className="border-b border-border p-3 md:p-4">
           <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-3">工作流</div>
           <div className="flex flex-wrap gap-1.5">
             {cell.workflow.map((step, i) => (
@@ -494,7 +494,7 @@ function MainChatView() {
         </div>
 
         {/* Top 3 alerts */}
-        <div className="p-4">
+        <div className="p-3 md:p-4">
           <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-3">重点预警</div>
           <div className="space-y-1.5">
             {cell.top3.map((item, i) => (

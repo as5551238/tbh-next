@@ -5,7 +5,7 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
-import { Zap, Plus, Lock, Loader2, Calendar, CheckCircle2 } from 'lucide-react';
+import { Zap, Plus, Lock, Calendar, CheckCircle2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 
 const STATUS_CFG: Record<string, { label: string; color: string }> = {
@@ -43,14 +43,14 @@ export default function SprintsContent() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Zap size={18} className="text-primary-2" />
         <span className="text-sm font-bold">冲刺管理</span>
         <span className="text-[10px] text-text-3">{sprints.length} 个冲刺</span>
         <div className="flex-1" />
-        <button onClick={() => { if (!isPro) return; addModal.openModal(); }} className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
+        <button onClick={() => { if (!isPro) return; addModal.openModal(); }} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
           <Plus size={12} />
           新建冲刺
         </button>
@@ -68,15 +68,15 @@ export default function SprintsContent() {
             const pct = sprint.total_tasks > 0 ? Math.round((sprint.completed_tasks / sprint.total_tasks) * 100) : 0;
             return (
               <div key={sprint.id} className="group rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedSprint(sprint); editModal.openModal(); }}>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className="text-xs font-semibold text-text">{sprint.name}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-semibold', cfg.color)}>{cfg.label}</span>
                   <div className="flex-1" />
                   <button onClick={(e) => { e.stopPropagation(); removeSprint(sprint.id); }} className="opacity-0 group-hover:opacity-100 text-[10px] text-text-3 hover:text-danger transition-opacity">x</button>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-text-3 mb-2">
-                  <span className="flex items-center gap-1"><Calendar size={10} />{sprint.start_date.slice(0, 10)} ~ {sprint.end_date.slice(0, 10)}</span>
-                  <span className="flex items-center gap-1"><CheckCircle2 size={10} />{sprint.completed_tasks}/{sprint.total_tasks} 任务</span>
+                <div className="flex flex-wrap items-center gap-3 text-[10px] text-text-3 mb-2">
+                  <span className="flex flex-wrap items-center gap-1"><Calendar size={10} />{sprint.start_date.slice(0, 10)} ~ {sprint.end_date.slice(0, 10)}</span>
+                  <span className="flex flex-wrap items-center gap-1"><CheckCircle2 size={10} />{sprint.completed_tasks}/{sprint.total_tasks} 任务</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
                   <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
@@ -90,7 +90,7 @@ export default function SprintsContent() {
 
       <Modal open={addModal.open} onClose={addModal.closeModal} title="新建冲刺"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleAdd} disabled={!newItem.name.trim()}>创建</button>
           </div>

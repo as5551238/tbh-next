@@ -146,7 +146,7 @@ export default function MyToday() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -174,7 +174,7 @@ export default function MyToday() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <button
           onClick={() => goToModule('workspace', 'tasks')}
-          className="bg-surface border border-border-2 rounded-xl p-4 text-left hover:border-brand-accent transition-colors"
+          className="bg-surface border border-border-2 rounded-xl p-3 md:p-4 text-left hover:border-brand-accent transition-colors"
         >
           <div className="text-2xl font-bold text-brand-accent">{pendingTasks.length}</div>
           <div className="text-xs text-text-muted mt-1">{t('myToday.todayPending')}</div>
@@ -182,7 +182,7 @@ export default function MyToday() {
 
         <button
           onClick={() => goToModule('workspace', 'goals')}
-          className="bg-surface border border-border-2 rounded-xl p-4 text-left hover:border-accent transition-colors"
+          className="bg-surface border border-border-2 rounded-xl p-3 md:p-4 text-left hover:border-accent transition-colors"
         >
           <div className="text-2xl font-bold text-accent">{completionRate}%</div>
           <div className="text-xs text-text-muted mt-1">{t('myToday.completionRate')}</div>
@@ -190,7 +190,7 @@ export default function MyToday() {
 
         <button
           onClick={() => goToModule('workspace', 'goals')}
-          className="bg-surface border border-border-2 rounded-xl p-4 text-left hover:border-manuf transition-colors"
+          className="bg-surface border border-border-2 rounded-xl p-3 md:p-4 text-left hover:border-manuf transition-colors"
         >
           <div className="text-2xl font-bold text-manuf">
             {goals.filter((g) => g.status === 'at_risk' || g.status === 'off_track').length}
@@ -200,7 +200,7 @@ export default function MyToday() {
 
         <button
           onClick={() => goToModule('ai', 'main')}
-          className="bg-surface border border-border-2 rounded-xl p-4 text-left hover:border-brand-accent transition-colors"
+          className="bg-surface border border-border-2 rounded-xl p-3 md:p-4 text-left hover:border-brand-accent transition-colors"
         >
           <div className="text-2xl font-bold">🧠</div>
           <div className="text-xs text-text-muted mt-1">{t('myToday.aiAssistant')}</div>
@@ -211,7 +211,7 @@ export default function MyToday() {
       {focusPlan.length > 0 && (
         <div className="rounded-xl border border-border-2 bg-surface p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-lg">🎯</span>
               <h2 className="text-lg font-semibold text-text">{t('myToday.todayFocus')}</h2>
               <span className="rounded-full px-2 py-0.5 text-[9px] font-bold bg-brand-accent/10 text-brand-accent">{t('myToday.aiSorted')}</span>
@@ -241,7 +241,7 @@ export default function MyToday() {
                   <span className="text-sm">{cfg.icon}</span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-text truncate">{item.title}</div>
-                    <div className="flex items-center gap-2 text-[10px] text-text-muted">
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] text-text-muted">
                       <span>{getItemTypeLabel(item.type)}</span>
                       <span>·</span>
                       <span>{item.reason}</span>
@@ -295,7 +295,7 @@ export default function MyToday() {
               <button
                 key={task.id}
                 onClick={() => goToModule('workspace', 'tasks')}
-                className="w-full flex items-center gap-3 bg-surface border border-border-2 rounded-lg p-3 text-left hover:border-brand-accent/50 transition-colors"
+                className="w-full flex flex-wrap items-center gap-3 bg-surface border border-border-2 rounded-lg p-3 text-left hover:border-brand-accent/50 transition-colors"
               >
                 <div
                   className={`w-2 h-2 rounded-full shrink-0 ${
@@ -323,7 +323,7 @@ export default function MyToday() {
             {completedTasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center gap-3 bg-surface-deep rounded-lg p-3 opacity-60"
+                className="flex flex-wrap items-center gap-3 bg-surface-deep rounded-lg p-3 opacity-60"
               >
                 <div className="w-2 h-2 rounded-full bg-accent shrink-0" />
                 <span className="text-sm text-text-muted line-through flex-1 truncate">
@@ -374,7 +374,7 @@ export default function MyToday() {
                       {STATUS_LABELS[goal.status]}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <div className="flex-1 h-1.5 bg-[#1e2030] rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
@@ -406,7 +406,7 @@ export default function MyToday() {
             <div className="space-y-2">
               {insights.length === 0 ? (
                 <div className="bg-surface border border-border-2 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
+                  <div className="flex flex-wrap items-start gap-2">
                     <span className="text-brand-accent text-sm mt-0.5">💡</span>
                     <p className="text-sm text-text-muted leading-relaxed">{t('myToday.createGoal')}和任务后，AI 将为你提供智能洞察和建议</p>
                   </div>
@@ -416,7 +416,7 @@ export default function MyToday() {
                   key={i}
                   className="bg-surface border border-border-2 rounded-lg p-3"
                 >
-                  <div className="flex items-start gap-2">
+                  <div className="flex flex-wrap items-start gap-2">
                     <span className="text-brand-accent text-sm mt-0.5">💡</span>
                     <p className="text-sm text-text-muted leading-relaxed">{insight}</p>
                   </div>

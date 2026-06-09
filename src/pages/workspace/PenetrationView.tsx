@@ -6,7 +6,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useGoals, useTasks, useProjects } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
-import { Target, FolderKanban, ListTodo, ChevronRight, ChevronDown, Loader2, AlertTriangle, CheckCircle2, Circle, Edit3, Trash2, Link2, Unlink } from 'lucide-react';
+import { Target, FolderKanban, ListTodo, ChevronRight, ChevronDown, AlertTriangle, CheckCircle2, Circle, Edit3, Trash2, Link2, Unlink } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { CardSkeleton } from '@/components/Skeleton';
 
@@ -168,7 +168,7 @@ export default function PenetrationView() {
             depth === 2 && 'ml-8 mb-0.5',
           )}
         >
-          <div className="flex items-center gap-2 flex-shrink-0 cursor-pointer" onClick={() => hasChildren && toggleExpand(node.id)}>
+          <div className="flex flex-wrap items-center gap-2 flex-shrink-0 cursor-pointer" onClick={() => hasChildren && toggleExpand(node.id)}>
             {hasChildren ? (
               isExpanded ? <ChevronDown size={12} className="text-text-3" /> : <ChevronRight size={12} className="text-text-3" />
             ) : (
@@ -189,7 +189,7 @@ export default function PenetrationView() {
           {hasChildren && <span className="text-[8px] text-text-3 shrink-0">{node.children.length}</span>}
           {/* Action buttons — visible on hover */}
           {!isVirtualNode && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div className="flex flex-wrap items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <button onClick={(e) => { e.stopPropagation(); handleEditOpen(node); }} className="rounded p-0.5 hover:bg-surface-2/80" title="编辑">
                 <Edit3 size={10} className="text-text-3" />
               </button>
@@ -211,9 +211,9 @@ export default function PenetrationView() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Target size={18} className="text-primary-2" />
         <span className="text-sm font-bold">三级穿透视图</span>
         <span className="text-[10px] text-text-3 ml-1">Goal → Project → Task</span>
@@ -247,9 +247,9 @@ export default function PenetrationView() {
       {/* Edit Modal */}
       <Modal open={editModal.open} onClose={editModal.closeModal} title={`编辑${editNode?.type === 'goal' ? '目标' : editNode?.type === 'task' ? '任务' : '项目'}`}
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {editNode && !editNode.id.startsWith('__') && (
-              <button className="flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={handleDelete}>
+              <button className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={handleDelete}>
                 <Trash2 size={10} />删除
               </button>
             )}
@@ -277,7 +277,7 @@ export default function PenetrationView() {
       {/* Link Task to Goal Modal */}
       <Modal open={linkModal.open} onClose={linkModal.closeModal} title="关联目标"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={linkModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleLinkSave}>关联</button>
           </div>

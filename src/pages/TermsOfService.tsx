@@ -105,7 +105,7 @@ export default function TermsOfService() {
   ];
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-text mb-2">服务条款</h1>
         <p className="text-sm text-text-muted">最后更新：{LAST_UPDATED}</p>
@@ -140,7 +140,7 @@ export default function TermsOfService() {
         ))}
       </div>
 
-      <div className="mt-8 p-4 bg-surface rounded-lg border border-border-2">
+      <div className="mt-8 p-3 md:p-4 bg-surface rounded-lg border border-border-2">
         <h3 className="text-sm font-bold text-text mb-2">联系方式</h3>
         <p className="text-sm text-text-muted">
           客户支持：support@tbh-next.com

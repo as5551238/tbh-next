@@ -3,7 +3,7 @@ import { useOrgInfo, useMembers } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { getDepartments, getAllIndustries, getIndustryColor } from '@/matrix/data';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Building2, Globe, Users, Calendar, Settings, Loader2, Plus, Pencil, UserCog, Trash2 } from 'lucide-react';
+import { Building2, Globe, Users, Calendar, Settings, Plus, Pencil, UserCog, Trash2 } from 'lucide-react';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { generateMatrixCellAI, saveCustomCell, getColorForIndustry } from '@/lib/matrixGenerator';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -106,16 +106,16 @@ export default function OrgContent() {
   const selectCls = inputCls.replace('text-text', 'text-text bg-surface-2');
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Building2 size={18} className="text-primary-2" />
         <span className="text-sm font-bold">组织设置</span>
       </div>
 
       {/* Org Info Card */}
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-xl font-bold text-primary-2">
             {orgInfo!.name[0]}
           </div>
@@ -123,7 +123,7 @@ export default function OrgContent() {
             <div className="text-base font-bold text-text">{orgInfo!.name}</div>
             <div className="text-[11px] text-text-3">{orgInfo!.industry} · {orgInfo!.size} · {orgInfo!.plan}</div>
           </div>
-          <button onClick={openEditOrg} className="ml-auto flex items-center gap-1 rounded-lg bg-surface-2 px-3 py-1 text-[11px] text-text-2 hover:bg-surface-2/80">
+          <button onClick={openEditOrg} className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-surface-2 px-3 py-1 text-[11px] text-text-2 hover:bg-surface-2/80">
             <Pencil size={11} />
             编辑
           </button>
@@ -148,13 +148,13 @@ export default function OrgContent() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-bold text-text-3 uppercase tracking-wider">部门架构</span>
-          <button onClick={addDeptModal.openModal} className="flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20">
+          <button onClick={addDeptModal.openModal} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20">
             <Plus size={11} /> 新建部门
           </button>
         </div>
         <div className="space-y-2">
           {departments.map((d) => (
-            <div key={d.name} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => openEditDept(d)}>
+            <div key={d.name} className="group flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => openEditDept(d)}>
               <div className="h-9 w-9 flex items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: d.color + '15' }}>
                 <Users size={15} style={{ color: d.color }} />
               </div>
@@ -181,7 +181,7 @@ export default function OrgContent() {
           { label: '创建时间', value: orgInfo!.created, icon: <Calendar size={13} /> },
           { label: '订阅方案', value: `${orgInfo!.plan} (年付)`, icon: <Settings size={13} /> },
         ].map((s) => (
-          <div key={s.label} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5">
+          <div key={s.label} className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5">
             <span className="text-text-3">{s.icon}</span>
             <span className="text-xs text-text-2">{s.label}</span>
             <span className="ml-auto text-xs font-medium text-text">{s.value}</span>
@@ -196,7 +196,7 @@ export default function OrgContent() {
         </div>
         <div className="space-y-1.5">
           {members.map((m) => (
-            <div key={m.id} onClick={() => openPersonSettings(m)} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
+            <div key={m.id} onClick={() => openPersonSettings(m)} className="group flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary-2">{m.name.charAt(0)}</div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-semibold text-text">{m.name}</div>
@@ -241,7 +241,7 @@ export default function OrgContent() {
 
       {/* Edit Department Modal */}
       <Modal open={editDeptModal.open} onClose={editDeptModal.closeModal} title={`编辑部门: ${editingDept ?? ''}`}
-        footer={<><button onClick={handleDeleteDept} className="flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto"><Trash2 size={10} />删除部门</button><div className="flex-1" /><button onClick={editDeptModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleEditDept} className={btnPrimary}>保存</button></>}>
+        footer={<><button onClick={handleDeleteDept} className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto"><Trash2 size={10} />删除部门</button><div className="flex-1" /><button onClick={editDeptModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleEditDept} className={btnPrimary}>保存</button></>}>
         <ModalField label="部门名称">
           <input type="text" value={deptForm.name} onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })} className={inputCls} />
         </ModalField>

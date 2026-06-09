@@ -15,7 +15,7 @@ export default function ModulePageStub({ title, icon, description }: ModulePageP
         <div className="text-4xl mb-3">{icon}</div>
         <h2 className="text-lg font-bold text-text mb-2">{title}</h2>
         <p className="text-sm text-text-3 mb-4">{description}</p>
-        <div className="rounded-xl border border-border bg-surface p-4 text-left">
+        <div className="rounded-xl border border-border bg-surface p-3 md:p-4 text-left">
           <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">当前行业关联</div>
           <div className="flex flex-wrap gap-1.5">
             {cell.kpis.slice(0, 3).map((kpi) => (

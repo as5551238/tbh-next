@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMatrixCell, useIndustryColor, useAgentDetails } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { Bot, ToggleLeft, ToggleRight, Settings, MessageSquare, BarChart3, RefreshCw, X, Check, Loader2 } from 'lucide-react';
+import { Bot, ToggleLeft, ToggleRight, Settings, MessageSquare, BarChart3, RefreshCw, X, Check } from 'lucide-react';
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import type { AgentDetailRow } from '@/lib/dataLayer';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -114,7 +114,7 @@ export default function AiAgentsView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">AI 同事管理</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
         <span className="text-[10px] text-text-3">{agents.filter((a) => a.enabled).length}/{agents.length} 启用</span>
@@ -127,8 +127,8 @@ export default function AiAgentsView() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 md:p-4">
           <p className="text-xs text-text-2 leading-relaxed">
             AI同事是与你同在一个团队的智能助手，它们会持续监控数据、提供分析、参与协作。你可以根据需要启用或禁用特定的AI同事。
           </p>
@@ -141,12 +141,12 @@ export default function AiAgentsView() {
           <div key={agent.id} className={cn('rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg',
             !agent.enabled && 'opacity-50'
           )}>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
                 <Bot size={20} className="text-primary-2" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex flex-wrap items-center gap-2 mb-0.5">
                   <span className="text-sm font-semibold text-text">{agent.name}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold',
                     agent.status === '重启中' ? 'bg-warning/10 text-warning' :
@@ -166,20 +166,20 @@ export default function AiAgentsView() {
               </button>
             </div>
             {agent.enabled && (
-              <div className="flex items-center gap-2 mt-3 ml-13">
-                <button onClick={() => handleAgentAction(agent.id, 'chat')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
+              <div className="flex flex-wrap items-center gap-2 mt-3 ml-13">
+                <button onClick={() => handleAgentAction(agent.id, 'chat')} className="flex flex-wrap items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <MessageSquare size={10} />对话
                 </button>
-                <button onClick={() => handleAgentAction(agent.id, 'stats')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
+                <button onClick={() => handleAgentAction(agent.id, 'stats')} className="flex flex-wrap items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <BarChart3 size={10} />统计
                 </button>
-                <button onClick={() => handleAgentAction(agent.id, 'config')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
+                <button onClick={() => handleAgentAction(agent.id, 'config')} className="flex flex-wrap items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <Settings size={10} />配置
                 </button>
-                <button onClick={() => handleAgentAction(agent.id, 'restart')} className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
+                <button onClick={() => handleAgentAction(agent.id, 'restart')} className="flex flex-wrap items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1 text-[9px] text-text-3 hover:text-text hover:bg-primary/10 transition-colors">
                   <RefreshCw size={10} />重启
                 </button>
-                <button onClick={() => { removeAgent(agent.id); setAgents((prev) => prev.filter((a) => a.id !== agent.id)); }} className="flex items-center gap-1 rounded-lg bg-danger/10 px-2.5 py-1 text-[9px] text-danger hover:bg-danger/20 transition-colors">
+                <button onClick={() => { removeAgent(agent.id); setAgents((prev) => prev.filter((a) => a.id !== agent.id)); }} className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-2.5 py-1 text-[9px] text-danger hover:bg-danger/20 transition-colors">
                   删除
                 </button>
               </div>
@@ -207,7 +207,7 @@ export default function AiAgentsView() {
                 <input className={inputCls} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} placeholder="输入AI同事描述" />
               </div>
             </div>
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
               <button onClick={addModal.closeModal} className={btnSecondary}>取消</button>
               <button onClick={handleAddAgent} className={btnPrimary}>添加</button>
             </div>

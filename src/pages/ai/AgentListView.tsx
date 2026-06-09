@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAgentDetails, useIndustryColor } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Loader2, Plus, Check } from 'lucide-react';
+import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Plus, Check } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
@@ -68,7 +68,7 @@ export default function AgentListView() {
           <Check size={12} className="mr-1.5 inline" />{toast}
         </div>
       )}
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">Agent 列表</span>
         <span className="text-[10px] text-text-3">{runningCount} 运行中 · {agents.length} 总计</span>
         <button onClick={registerModal.openModal} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 注册Agent</button>
@@ -89,12 +89,12 @@ export default function AgentListView() {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
         {agents.map((agent) => (
           <div key={agent.id} className={cn('rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg',
             !agent.enabled && 'opacity-50'
           )}>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="relative shrink-0">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                   <Bot size={20} className="text-primary-2" />
@@ -102,7 +102,7 @@ export default function AgentListView() {
                 <div className={cn('absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface', STATUS_DOT[agent.status])} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold text-text">{agent.name}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold',
                     agent.status === 'running' ? 'bg-success/10 text-success' : agent.status === 'idle' ? 'bg-warn/10 text-warn' : 'bg-danger/10 text-danger'
@@ -119,7 +119,7 @@ export default function AgentListView() {
               {agent.capabilities.map((cap) => (
                 <span key={cap} className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] text-text-3">{cap}</span>
               ))}
-              <div className="ml-auto flex items-center gap-3 text-[10px] text-text-3">
+              <div className="ml-auto flex flex-wrap items-center gap-3 text-[10px] text-text-3">
                 <span>{agent.tasks_completed} 任务</span>
                 <span>{agent.uptime} 可用</span>
               </div>

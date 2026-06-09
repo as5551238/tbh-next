@@ -2,7 +2,7 @@ import { useState, useRef, type FC, type ChangeEvent } from 'react';
 import { useSharedFiles } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { FileText, FileSpreadsheet, Image, FileArchive, Download, Upload, Search, Grid, List, Clock, HardDrive, Loader2, X, Check, Trash2 } from 'lucide-react';
+import { FileText, FileSpreadsheet, Image, FileArchive, Download, Upload, Search, Grid, List, Clock, HardDrive, X, Check, Trash2 } from 'lucide-react';
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
@@ -90,12 +90,12 @@ export default function FilesView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">文件共享</span>
         <span className="text-[10px] text-text-3">{files.length} 个文件</span>
 
-        <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
             <Search size={12} className="text-text-3" />
             <input
               type="text"
@@ -110,7 +110,7 @@ export default function FilesView() {
             <button onClick={() => setViewMode('list')} className={cn('p-1.5', viewMode === 'list' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><List size={14} /></button>
             <button onClick={() => setViewMode('grid')} className={cn('p-1.5', viewMode === 'grid' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><Grid size={14} /></button>
           </div>
-          <button onClick={uploadModal.openModal} className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">
+          <button onClick={uploadModal.openModal} className="flex flex-wrap items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">
             <Upload size={12} />上传
           </button>
         </div>
@@ -122,7 +122,7 @@ export default function FilesView() {
         const usedGB = Math.round(files.reduce((sum, f) => { const n = parseFloat(f.size); return sum + (isNaN(n) ? 0 : n > 100 ? n / 1024 : n / 1024); }, 0) * 10) / 10;
         const pct = Math.min(100, Math.round((usedGB / totalGB) * 100));
         return (
-          <div className="mx-4 mt-3 flex items-center gap-3 rounded-xl bg-surface-2 px-4 py-2.5">
+          <div className="mx-4 mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-surface-2 px-4 py-2.5">
             <HardDrive size={14} className="text-text-3" />
             <span className="text-[10px] text-text-3">已使用 {usedGB} GB / {totalGB} GB</span>
             <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
@@ -132,9 +132,9 @@ export default function FilesView() {
         );
       })()}
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-[10px] text-text-3 mb-3">
+        <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-text-3 mb-3">
           <span className="text-primary-2 cursor-pointer">全部文件</span>
         </div>
 
@@ -151,7 +151,7 @@ export default function FilesView() {
               return (
                 <div key={file.id} className="group grid grid-cols-[1fr_80px_100px_60px_60px] gap-2 items-center rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-2 cursor-pointer"
   onClick={() => { setSelected(file); detailModal.openModal(); }}>
-                   <div className="flex items-center gap-2.5 min-w-0">
+                   <div className="flex flex-wrap items-center gap-2.5 min-w-0">
                     <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg shrink-0', FILE_COLORS[file.type])}>
                       <Icon size={14} />
                     </div>
@@ -160,7 +160,7 @@ export default function FilesView() {
                   <span className="text-[10px] text-text-3">{file.size}</span>
                   <span className="text-[10px] text-text-3">{file.uploaded_by}</span>
                   <span className="text-[10px] text-text-3">{file.uploaded_at}</span>
-                  <span className="flex items-center gap-1 text-[10px] text-text-3"><Download size={9} />{file.downloads}</span>
+                  <span className="flex flex-wrap items-center gap-1 text-[10px] text-text-3"><Download size={9} />{file.downloads}</span>
                 </div>
               );
             })}
@@ -190,19 +190,19 @@ export default function FilesView() {
       {/* Upload Modal */}
       {uploadModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={uploadModal.closeModal}>
-          <div className="w-80 rounded-xl border border-border bg-surface-2 p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-80 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold">上传文件</span>
               <button onClick={uploadModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
             </div>
             <div className="mb-3">
-              <button onClick={() => fileInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-6 text-xs text-text-3 hover:border-primary/40 hover:text-primary-2 transition-colors">
+              <button onClick={() => fileInputRef.current?.click()} className="flex flex-wrap w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-6 text-xs text-text-3 hover:border-primary/40 hover:text-primary-2 transition-colors">
                 <Upload size={16} />{pendingFile ? pendingFile.name : '点击选择文件'}
               </button>
               {pendingFile && <div className="mt-1.5 text-[10px] text-text-3">{formatSize(pendingFile.size)}</div>}
             </div>
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={handleUpload} disabled={!pendingFile} className={`${btnPrimary} disabled:opacity-40`}>
                 <Check size={12} className="inline mr-1" />确认上传
               </button>

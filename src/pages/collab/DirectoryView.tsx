@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useIndustryColor, useContacts } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Phone, Mail, MessageSquare, Search, User, Loader2, X, Plus } from 'lucide-react';
+import { Phone, Mail, MessageSquare, Search, User, X, Plus } from 'lucide-react';
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
@@ -69,11 +69,11 @@ export default function DirectoryView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">通讯录</span>
         <span className="text-[10px] text-text-3">{contacts.length} 人</span>
         <button onClick={createModal.openModal} className="ml-2 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 添加</button>
-        <div className="ml-auto flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
+        <div className="ml-auto flex flex-wrap items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
           <Search size={12} className="text-text-3" />
           <input
             type="text"
@@ -87,7 +87,7 @@ export default function DirectoryView() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
         {loading ? (
           <CardSkeleton />
         ) : (
@@ -98,7 +98,7 @@ export default function DirectoryView() {
             {humanContacts.map((contact) => (
               <div key={contact.id} className="group rounded-xl border border-border bg-surface p-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer"
                 onClick={() => { setSelected(contact); detailModal.openModal(); }}>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="relative shrink-0">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 text-xs font-bold text-text-2">
                       {contact.name.charAt(0)}
@@ -110,16 +110,16 @@ export default function DirectoryView() {
                     <div className="text-[10px] text-text-3">{contact.role}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold bg-surface-2 text-text-3">{contact.department}</span>
                   <span className={cn('ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-semibold',
                     contact.status === 'online' ? 'bg-success/10 text-success' : 'text-text-3'
                   )}>{STATUS_LABELS[contact.status]}</span>
                 </div>
-                <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={(e) => { e.stopPropagation(); navigateTo('ai', 'main'); }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><MessageSquare size={9} />消息</button>
-                  <button onClick={(e) => { e.stopPropagation(); if (contact.phone) window.location.href = 'tel:' + contact.phone; }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Phone size={9} />电话</button>
-                  <button onClick={(e) => { e.stopPropagation(); if (contact.email) window.location.href = 'mailto:' + contact.email; }} className="flex items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Mail size={9} />邮件</button>
+                <div className="flex flex-wrap gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={(e) => { e.stopPropagation(); navigateTo('ai', 'main'); }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><MessageSquare size={9} />消息</button>
+                  <button onClick={(e) => { e.stopPropagation(); if (contact.phone) window.location.href = 'tel:' + contact.phone; }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Phone size={9} />电话</button>
+                  <button onClick={(e) => { e.stopPropagation(); if (contact.email) window.location.href = 'mailto:' + contact.email; }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Mail size={9} />邮件</button>
                 </div>
               </div>
             ))}
@@ -128,13 +128,13 @@ export default function DirectoryView() {
 
         {/* AI Contacts */}
         <div>
-          <div className="text-[9px] font-bold uppercase tracking-wider text-text-3 mb-2 flex items-center gap-1.5">
+          <div className="text-[9px] font-bold uppercase tracking-wider text-text-3 mb-2 flex flex-wrap items-center gap-1.5">
             <span style={{ color: indColor }}>AI</span> 同事
           </div>
           <div className="grid grid-cols-2 gap-2">
             {aiContacts.map((contact) => (
               <div key={contact.id} className="rounded-xl border border-primary/20 bg-primary/5 p-3 transition-all hover:border-primary/30 hover:shadow-lg">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary-2">
                     AI
                   </div>
@@ -159,7 +159,7 @@ export default function DirectoryView() {
       {/* Create Contact Modal */}
       {createModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={createModal.closeModal}>
-          <div className="w-96 rounded-xl border border-border bg-surface-2 p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-96 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold">添加联系人</span>
               <button onClick={createModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
@@ -190,7 +190,7 @@ export default function DirectoryView() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex flex-wrap items-center gap-2 mt-4">
               <button onClick={handleCreate} disabled={!form.name.trim()} className={`${btnPrimary} disabled:opacity-40`}>添加</button>
               <button onClick={createModal.closeModal} className={btnSecondary}>取消</button>
             </div>

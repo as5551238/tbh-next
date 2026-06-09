@@ -6,6 +6,7 @@ export type {
   InsightRow, WorkflowInstanceRow, ChannelRow, ApiKeyRow,
   AuditLogRow, SubscriptionRow, UsageEventRow,
   NotificationRow, KnowledgePackRow, MarketplaceAgentRow,
+  AgentConfigRow, InstalledAgentRow, RunningWorkflowRow, McpStatusRow, InstalledPackRow,
 } from './types';
 
 export type {
@@ -45,7 +46,6 @@ export {
   fetchSharedFiles,
   fetchContacts,
   fetchAgentDetails,
-  fetchAgentConfigs,
   saveAgentConfig,
   fetchRisks,
   fetchWorkflows,
@@ -109,4 +109,9 @@ export {
   updateNotification, updateNotifications, deleteNotification, deleteAllNotifications,
   fetchKnowledgePacks, createKnowledgePack,
   fetchMarketplaceAgents, createMarketplaceAgent,
+  fetchAgentConfigs, upsertAgentConfig,
+  fetchInstalledAgents, insertInstalledAgent, deleteInstalledAgent, replaceInstalledAgents,
+  fetchRunningWorkflows, insertRunningWorkflow, deleteRunningWorkflow, replaceRunningWorkflows,
+  fetchMcpStatuses, upsertMcpStatus, replaceMcpStatuses,
+  fetchInstalledPacks, insertInstalledPack, deleteInstalledPack, replaceInstalledPacks,
 } from './extended';

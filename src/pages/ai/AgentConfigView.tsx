@@ -4,10 +4,12 @@ import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useMatrix';
 import { setStoredModelId, AI_MODEL_PRESETS } from '@/lib/aiService';
-import { Settings, Bot, Save, RotateCcw, Loader2, Check } from 'lucide-react';
+import { Settings, Bot, Save, RotateCcw, Check } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
+import { usePersistedState } from '@/hooks/usePersistedState';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const CONFIG_STORAGE_KEY = 'tbh-agent-configs';
 
@@ -18,11 +20,29 @@ function loadSavedConfigs(): Record<string, unknown> {
   } catch { return {}; }
 }
 
-function saveConfigsToStorage(configs: { id: string; model: string; temperature: number; max_tokens: number; system_prompt: string; schedule: string }[]) {
+async function saveConfigsToStorage(configs: { id: string; model: string; temperature: number; max_tokens: number; system_prompt: string; schedule: string }[]) {
   try {
     const map: Record<string, unknown> = {};
     configs.forEach((c) => { map[c.id] = { model: c.model, temperature: c.temperature, max_tokens: c.max_tokens, system_prompt: c.system_prompt, schedule: c.schedule }; });
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(map));
+    // Persist to Supabase
+    if (isSupabaseConfigured() && supabase) {
+      for (const [name, cfg] of Object.entries(map)) {
+        const c = cfg as Record<string, unknown>;
+        await supabase.from('agent_configs').upsert({
+          name,
+          model: c.model ?? '',
+          temperature: c.temperature ?? 0.5,
+          max_tokens: c.max_tokens ?? 2000,
+          system_prompt: c.system_prompt ?? '',
+          schedule: c.schedule ?? '',
+          enabled: true,
+          sort_order: 0,
+          team_id: '__default__',
+          member_id: 'demo',
+        }, { onConflict: 'name' });
+      }
+    }
   } catch { /* quota exceeded - silent */ }
 }
 
@@ -120,20 +140,20 @@ export default function AgentConfigView() {
 
       {/* Config Form */}
       <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <Settings size={16} className="text-primary-2" />
           <span className="text-sm font-bold">{selected.name} 配置</span>
-          <div className="ml-auto flex gap-2">
-            <button onClick={handleReset} className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] text-text-3 hover:text-text">
+          <div className="ml-auto flex flex-wrap gap-2">
+            <button onClick={handleReset} className="flex flex-wrap items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] text-text-3 hover:text-text">
               <RotateCcw size={10} />重置
             </button>
-            <button onClick={handleSave} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-white hover:opacity-80">
+            <button onClick={handleSave} className="flex flex-wrap items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-white hover:opacity-80">
               <Save size={10} />{saved ? '已保存' : '保存'}
             </button>
           </div>
         </div>
 
-        <div className="p-4 space-y-4 max-w-2xl">
+        <div className="p-3 md:p-4 space-y-4 max-w-2xl">
           {/* Model */}
           <div>
             <label htmlFor="agent-model" className="block text-[10px] font-bold text-text-3 mb-1.5">模型</label>

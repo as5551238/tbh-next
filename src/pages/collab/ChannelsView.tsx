@@ -219,7 +219,7 @@ export default function ChannelsView() {
               )}
             </button>
           ))}
-          <button onClick={createChModal.openModal} className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-text-3 hover:text-primary-2 transition-colors">
+          <button onClick={createChModal.openModal} className="flex flex-wrap w-full items-center gap-2 px-3 py-1.5 text-xs text-text-3 hover:text-primary-2 transition-colors">
             <Plus size={13} className="shrink-0" />
             <span>新建频道</span>
           </button>
@@ -227,20 +227,20 @@ export default function ChannelsView() {
             AI 同事 ({cell.agents.length})
           </div>
           {cell.agents.map((agent) => (
-            <div key={agent.name} className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-2">
+            <div key={agent.name} className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs text-text-2">
               <Bot size={13} className="shrink-0 text-primary-2" />
               <span className="truncate">{agent.name}</span>
               <span className="ml-auto text-[8px] text-text-3">{agent.status}</span>
             </div>
           ))}
           {onlineUsers.map((ou, i) => (
-            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-2">
+            <div key={i} className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs text-text-2">
               <User size={13} className="shrink-0 text-text-3" />
               <span className="truncate">{ou.user}</span>
               <Circle size={6} className="ml-auto fill-success text-success" />
             </div>
           ))}
-          <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-2">
+          <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs text-text-2">
             <User size={13} className="shrink-0 text-text-3" />
             <span>{user?.name ?? '我'}</span>
             <Circle size={6} className="ml-auto fill-success text-success" />
@@ -250,7 +250,7 @@ export default function ChannelsView() {
 
       {/* Message Area */}
       <div className="flex flex-1 flex-col min-w-0">
-        <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
           <Hash size={15} className="text-text-3" />
           <span className="text-sm font-bold">{activeCh}</span>
           <span className="text-[10px] text-text-3 ml-2"><Users size={11} className="inline mr-1" />{1 + onlineUsers.length} 人 · {cell.agents.length} AI</span>
@@ -280,17 +280,17 @@ export default function ChannelsView() {
             </div>
           ))}
           {isTyping && (
-            <div className="flex gap-2.5">
+            <div className="flex flex-wrap gap-2.5">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-2"><Bot size={14} /></div>
               <div className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-primary-2">
-                <span className="inline-flex gap-1"><span className="animate-bounce">·</span><span className="animate-bounce" style={{ animationDelay: '0.15s' }}>·</span><span className="animate-bounce" style={{ animationDelay: '0.3s' }}>·</span></span>
+                <span className="inline-flex flex-wrap gap-1"><span className="animate-bounce">·</span><span className="animate-bounce" style={{ animationDelay: '0.15s' }}>·</span><span className="animate-bounce" style={{ animationDelay: '0.3s' }}>·</span></span>
               </div>
             </div>
           )}
         </div>
 
         <div className="border-t border-border px-4 py-3">
-          <div className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
             <input
               type="text"
               value={msgInput}
@@ -311,7 +311,7 @@ export default function ChannelsView() {
       {/* Create Channel Modal */}
       {createChModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={createChModal.closeModal}>
-          <div className="w-80 rounded-xl border border-border bg-surface-2 p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-80 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold">新建频道</span>
               <button onClick={createChModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
@@ -320,7 +320,7 @@ export default function ChannelsView() {
               <label className="text-[10px] text-text-3 mb-1 block">频道名称 *</label>
               <input value={newChName} onChange={(e) => setNewChName(e.target.value)} placeholder="输入频道名称" className={inputCls + ' w-full'} onKeyDown={(e) => e.key === 'Enter' && handleCreateChannel()} />
             </div>
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex flex-wrap items-center gap-2 mt-4">
               <button onClick={handleCreateChannel} disabled={!newChName.trim()} className={`${btnPrimary} disabled:opacity-40`}>创建</button>
               <button onClick={createChModal.closeModal} className={btnSecondary}>取消</button>
             </div>

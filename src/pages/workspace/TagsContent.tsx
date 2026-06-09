@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useTags } from '@/hooks/useMatrix';
 import type { TagRow } from '@/lib/dataLayer';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Tag, Plus, Lock, Loader2, X } from 'lucide-react';
+import { Tag, Plus, Lock, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -33,12 +33,12 @@ export default function TagsContent() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <Tag size={18} className="text-primary-2" />
         <span className="text-sm font-bold">标签管理</span>
         <span className="ml-auto text-[10px] text-text-3">{tags.length} 个标签</span>
-        <button className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; addModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; addModal.openModal(); }}>
           <Plus size={12} />新建标签
         </button>
       </div>
@@ -55,7 +55,7 @@ export default function TagsContent() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {tags.map((t) => (
             <div key={t.id} className="group relative rounded-xl border border-border bg-surface p-3 transition-all hover:border-border-2 hover:shadow-lg">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
                 <span className="text-xs font-semibold text-text truncate">{t.name}</span>
               </div>
@@ -76,13 +76,13 @@ export default function TagsContent() {
       )}
 
       <Modal open={addModal.open} onClose={addModal.closeModal} title="新建标签"
-        footer={<div className="flex gap-2"><button className={btnSecondary} onClick={addModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAdd} disabled={!form.name.trim()}>创建</button></div>}
+        footer={<div className="flex flex-wrap gap-2"><button className={btnSecondary} onClick={addModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAdd} disabled={!form.name.trim()}>创建</button></div>}
       >
         <ModalField label="标签名称">
           <input className={inputCls} placeholder="输入标签名称" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
         </ModalField>
         <ModalField label="颜色">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input type="color" value={form.color} onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))} className="h-8 w-8 rounded border-0 cursor-pointer" />
             <span className="text-xs text-text-3">{form.color}</span>
           </div>

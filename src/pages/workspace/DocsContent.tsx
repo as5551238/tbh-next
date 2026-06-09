@@ -5,7 +5,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { hasFeature } from '@/lib/subscription';
-import { FileText, Plus, Lock, Clock, Users, MoreHorizontal, Loader2 } from 'lucide-react';
+import { FileText, Plus, Lock, Clock, Users, MoreHorizontal } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 
 const statusMap: Record<string, { label: string; cls: string }> = {
@@ -52,18 +52,18 @@ export default function DocsContent() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <FileText size={18} className="text-primary-2" />
         <span className="text-sm font-bold">文档协作</span>
-        <button onClick={() => { if (!isPro) return; createModal.openModal(); }} className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white transition-all hover:bg-primary-2">
+        <button onClick={() => { if (!isPro) return; createModal.openModal(); }} className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white transition-all hover:bg-primary-2">
           <Plus size={12} />
           新建文档
         </button>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {filters.map((f) => (
           <button key={f} onClick={() => setStatusFilter(f)}
             className={`rounded-lg px-3 py-1 text-[11px] font-medium transition-all ${statusFilter === f ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2'}`}>
@@ -76,13 +76,13 @@ export default function DocsContent() {
         {docs.map((d) => {
           const st = statusMap[d.status];
           return (
-            <div key={d.id} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedDoc(d); editModal.openModal(); }}>
+            <div key={d.id} className="group flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedDoc(d); editModal.openModal(); }}>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                 <FileText size={15} className="text-primary-2" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-semibold text-text truncate">{d.title}</div>
-                <div className="flex items-center gap-2 text-[10px] text-text-3 mt-0.5">
+                <div className="flex flex-wrap items-center gap-2 text-[10px] text-text-3 mt-0.5">
                   <span>{d.type}</span>
                   <span>·</span>
                   <Clock size={9} />

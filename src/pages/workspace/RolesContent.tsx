@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRoles } from '@/hooks/useMatrix';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Shield, Plus, Users, Lock, Eye, Loader2, Trash2 } from 'lucide-react';
+import { Shield, Plus, Users, Lock, Eye, Trash2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 
 const ALL_PERMISSIONS = ['系统配置', '成员管理', '目标管理', '审批', '任务管理', '文档协作', '数据分析', '只读访问'];
@@ -51,12 +51,12 @@ export default function RolesContent() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Shield size={18} className="text-primary-2" />
         <span className="text-sm font-bold">角色权限</span>
-        <button onClick={openCreate} className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">
+        <button onClick={openCreate} className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">
           <Plus size={12} />
           新建角色
         </button>
@@ -106,13 +106,13 @@ export default function RolesContent() {
       {/* Role Cards */}
       <div className="space-y-3">
         {roles.map((r) => (
-          <div key={r.key} onClick={() => openEdit(r)} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
+          <div key={r.key} onClick={() => openEdit(r)} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="h-3 w-3 rounded-full" style={{ backgroundColor: r.color }} />
                 <span className="text-sm font-semibold text-text">{r.name}</span>
               </div>
-              <div className="flex items-center gap-1 text-text-3">
+              <div className="flex flex-wrap items-center gap-1 text-text-3">
                 <Users size={12} />
                 <span className="text-[10px]">{r.members} 人</span>
                 <button onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }} className="ml-2 rounded p-1 text-text-3 hover:text-danger hover:bg-danger/10 transition-colors"><Trash2 size={12} /></button>
@@ -120,7 +120,7 @@ export default function RolesContent() {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {r.permissions.map((p) => (
-                <span key={p} className="rounded-full px-2 py-0.5 text-[9px] bg-surface-2 text-text-2 flex items-center gap-1">
+                <span key={p} className="rounded-full px-2 py-0.5 text-[9px] bg-surface-2 text-text-2 flex flex-wrap items-center gap-1">
                   {p === '只读访问' ? <Eye size={9} /> : <Lock size={9} />}
                   {p}
                 </span>
@@ -155,7 +155,7 @@ export default function RolesContent() {
           <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">权限配置</div>
           <div className="grid grid-cols-2 gap-2">
             {ALL_PERMISSIONS.map((perm) => (
-              <label key={perm} className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 cursor-pointer hover:border-border-2 transition-colors" onClick={(e) => e.stopPropagation()}>
+              <label key={perm} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 cursor-pointer hover:border-border-2 transition-colors" onClick={(e) => e.stopPropagation()}>
                 <input type="checkbox" checked={formPerms.includes(perm)} onChange={() => togglePerm(perm)} className="accent-primary-2 h-3 w-3" />
                 <span className="text-[11px] text-text-2">{perm}</span>
               </label>

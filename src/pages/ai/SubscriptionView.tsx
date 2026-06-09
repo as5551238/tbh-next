@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { PLAN_LIMITS, PLAN_PRICES, fetchSubscription, fetchUsageToday, type SubscriptionInfo, type UsageSummary, getCurrentPlan, setCurrentPlan } from '@/lib/subscription';
 import { CHECKOUT_PLANS, initiateCheckout, cancelSubscription, getSubscriptionStatus } from '@/lib/payment';
 import { upsertSubscription } from '@/lib/dataLayer';
-import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Loader2, Lock, CheckCircle2, CreditCard } from 'lucide-react';
+import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Lock, CheckCircle2, CreditCard } from 'lucide-react';
 import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs } from '@/hooks/useMatrix';
 import { CardSkeleton } from '@/components/Skeleton';
 import PaywallModal from '@/components/PaywallModal';
@@ -65,11 +65,11 @@ export default function SubscriptionView() {
   const planIcon = sub.plan === 'pro' ? <Crown size={20} className="text-primary-2" /> : sub.plan === 'enterprise' ? <Building2 size={20} className="text-accent" /> : <Zap size={20} className="text-warn" />;
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto p-6">
+    <div className="flex flex-1 flex-col overflow-y-auto p-4 md:p-6">
       <div className="max-w-2xl mx-auto w-full space-y-6">
         {/* Current plan */}
         <div className="rounded-xl border border-border p-5" style={{ background: `linear-gradient(135deg, var(--brand-accent) 0%, var(--status-success) 100%)` }}>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">{planIcon}</div>
             <div>
               <h2 className="text-lg font-extrabold text-text">{price.label}</h2>
@@ -120,7 +120,7 @@ export default function SubscriptionView() {
                   <div className="text-lg font-extrabold text-text">${pPrice.monthly}</div>
                   <div className="text-[9px] text-text-3">/用户/月</div>
                   {isCurrent && (
-                    <div className="mt-2 flex items-center justify-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">
                       <CheckCircle2 size={10} /> 当前方案
                     </div>
                   )}
@@ -163,7 +163,7 @@ export default function SubscriptionView() {
                     </div>
                   )}
                   {isUpgrade && !isCurrent && !isRequested && !isSwitching && p !== 'free' && (
-                    <div className="mt-1 flex items-center justify-center gap-0.5 text-[8px] text-text-3">
+                    <div className="mt-1 flex flex-wrap items-center justify-center gap-0.5 text-[8px] text-text-3">
                       <Lock size={8} /> 需升级
                     </div>
                   )}
@@ -178,7 +178,7 @@ export default function SubscriptionView() {
 
         {/* Payment checkout */}
         <div className="rounded-xl border border-border p-5">
-          <h3 className="text-sm font-bold text-text mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-text mb-4 flex flex-wrap items-center gap-2">
             <CreditCard size={14} className="text-primary-2" /> 选择方案并支付
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -202,7 +202,7 @@ export default function SubscriptionView() {
                   </div>
                   <ul className="space-y-1 mb-3">
                     {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-1 text-[10px] text-text-2">
+                      <li key={f} className="flex flex-wrap items-center gap-1 text-[10px] text-text-2">
                         <CheckCircle2 size={8} className="text-success shrink-0" />{f}
                       </li>
                     ))}
@@ -278,7 +278,7 @@ function UsageMeter({ icon, label, current, limit, color }: { icon: ReactNode; l
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5 text-xs text-text-2">{icon}<span>{label}</span></div>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs text-text-2">{icon}<span>{label}</span></div>
         <span className={cn('text-xs font-semibold', isDanger && 'text-danger', isWarn && 'text-warn', !isWarn && !isDanger && 'text-text')}>
           {current}{isUnlimited ? '' : ` / ${limit}`}
         </span>

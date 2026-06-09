@@ -104,9 +104,6 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   contacts: new Set([
     'id', 'name', 'role', 'department', 'email', 'phone', 'avatar', 'team_id', 'created_at', 'updated_at',
   ]),
-  agent_configs: new Set([
-    'id', 'name', 'model', 'api_key', 'base_url', 'system_prompt', 'temperature', 'max_tokens', 'enabled', 'team_id', 'created_at', 'updated_at',
-  ]),
   docs: new Set([
     'id', 'title', 'type', 'status', 'author', 'editors', 'team_id', 'created_at', 'updated_at',
   ]),
@@ -181,6 +178,23 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   api_keys: new Set([
     'id', 'team_id', 'user_id', 'provider', 'encrypted_key', 'created_at',
   ]),
+  agent_configs: new Set([
+    'id', 'name', 'model', 'temperature', 'max_tokens', 'system_prompt',
+    'schedule', 'enabled', 'sort_order', 'team_id', 'member_id',
+    'created_at', 'updated_at',
+  ]),
+  installed_agents: new Set([
+    'id', 'agent_id', 'team_id', 'member_id', 'installed_at',
+  ]),
+  running_workflows: new Set([
+    'id', 'user_id', 'workflow_id', 'started_at',
+  ]),
+  mcp_status: new Set([
+    'id', 'user_id', 'server_id', 'status', 'updated_at',
+  ]),
+  installed_packs: new Set([
+    'id', 'user_id', 'pack_id', 'installed_at',
+  ]),
   knowledge_packs: new Set([
     'id', 'industry', 'title', 'description', 'category', 'content',
     'tags', 'author', 'version', 'downloads', 'rating',
@@ -204,9 +218,10 @@ function filterColumns(table: string, data: Record<string, unknown>): Record<str
   const allowed = TABLE_COLUMNS[table];
   if (!allowed) return data;
   const filtered: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(data)) {
-    if (!allowed.has(k)) continue;
-    filtered[k] = (v === '' && FK_COLUMNS.has(k)) ? null : v;
+  for (const key of Object.keys(data)) {
+    if (allowed.includes(key)) {
+      filtered[key] = data[key];
+    }
   }
   return filtered;
 }

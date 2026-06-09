@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { CardSkeleton } from '@/components/Skeleton';
 import {
   Zap, CheckCircle2, AlertTriangle, ArrowRight, Plus,
-  Filter, Loader2, ExternalLink, Circle, Clock, ChevronDown,
+  Filter, ExternalLink, Circle, Clock, ChevronDown,
   MessageSquare,
 } from 'lucide-react';
 
@@ -127,7 +127,7 @@ export default function ActionItemsContent() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       {/* 顶部统计 */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {[
@@ -146,13 +146,13 @@ export default function ActionItemsContent() {
       </div>
 
       {/* 标题栏+操作 */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Zap size={18} className="text-primary-2" />
         <span className="text-sm font-bold">行动项</span>
         <span className="text-[10px] text-text-3">{filteredItems.length} 项</span>
         <div className="flex-1" />
         <button
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-text-3 hover:bg-surface-2"
+          className="flex flex-wrap items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-text-3 hover:bg-surface-2"
           onClick={() => setShowFilters(!showFilters)}
         >
           <Filter size={12} />
@@ -160,7 +160,7 @@ export default function ActionItemsContent() {
           <ChevronDown size={12} className={cn('transition-transform', showFilters && 'rotate-180')} />
         </button>
         <button
-          className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20"
+          className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20"
           onClick={addModal.openModal}
         >
           <Plus size={12} />
@@ -170,7 +170,7 @@ export default function ActionItemsContent() {
 
       {/* 筛选条 */}
       {showFilters && (
-        <div className="flex items-center gap-3 rounded-xl bg-surface-2 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-surface-2 px-3 py-2">
           <span className="text-[11px] text-text-3">状态:</span>
           <select className={cn(inputCls, 'text-[11px] py-1')} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="all">全部</option>
@@ -193,13 +193,13 @@ export default function ActionItemsContent() {
       {/* 偏差告警（未解决） */}
       {stats.unresolvedAlerts > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <AlertTriangle size={14} className="text-danger" />
             <span className="text-xs font-bold text-danger">偏差告警</span>
             <span className="rounded-full bg-danger/20 px-1.5 py-0.5 text-[10px] font-bold text-danger">{stats.unresolvedAlerts}</span>
           </div>
           {alerts.filter((a) => !a.is_resolved).slice(0, 3).map((alert) => (
-            <div key={alert.id} className="flex items-center gap-3 rounded-xl border border-danger/30 bg-danger/5 px-3 py-2">
+            <div key={alert.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-danger/30 bg-danger/5 px-3 py-2">
               <AlertTriangle size={14} className={cn('shrink-0', alert.severity === 'critical' ? 'text-danger' : 'text-warn')} />
               <div className="min-w-0 flex-1">
                 <div className="text-xs text-text truncate">{alert.message}</div>
@@ -286,7 +286,7 @@ export default function ActionItemsContent() {
                       </span>
                     )}
                     {item.due_date && (
-                      <span className="text-[10px] text-text-3 flex items-center gap-0.5">
+                      <span className="text-[10px] text-text-3 flex flex-wrap items-center gap-0.5">
                         <Clock size={10} />
                         {item.due_date.slice(0, 10)}
                       </span>
@@ -300,7 +300,7 @@ export default function ActionItemsContent() {
                 </div>
 
                 {/* 操作按钮 */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                   <button
                     className="rounded-lg px-1.5 py-1 text-[10px] text-text-3 hover:bg-surface-2 hover:text-primary-2"
                     onClick={() => { setDetailItem(item); detailModal.openModal(); }}
@@ -310,7 +310,7 @@ export default function ActionItemsContent() {
                   </button>
                   {item.status !== 'completed' && !item.closed_loop && (
                     <button
-                      className="flex items-center gap-0.5 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20"
+                      className="flex flex-wrap items-center gap-0.5 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20"
                       onClick={() => {
                         setConvertItem(item);
                         setConvertDueDate(item.due_date?.slice(0, 10) ?? '');
@@ -323,7 +323,7 @@ export default function ActionItemsContent() {
                     </button>
                   )}
                   {item.closed_loop && (
-                    <button className="flex items-center gap-0.5 rounded-lg bg-success/10 px-2 py-1 text-[10px] font-semibold text-success" title="已闭环">
+                    <button className="flex flex-wrap items-center gap-0.5 rounded-lg bg-success/10 px-2 py-1 text-[10px] font-semibold text-success" title="已闭环">
                       <ExternalLink size={10} />
                       已闭环
                     </button>
@@ -345,7 +345,7 @@ export default function ActionItemsContent() {
       {/* 新建行动项弹窗 */}
       <Modal open={addModal.open} onClose={addModal.closeModal} title="新建行动项"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleAdd} disabled={!newItem.title.trim()}>创建</button>
           </div>
@@ -379,7 +379,7 @@ export default function ActionItemsContent() {
       {/* 转任务弹窗 */}
       <Modal open={convertModal.open} onClose={convertModal.closeModal} title="行动项转任务"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={convertModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleConvert}>确认转换</button>
           </div>
@@ -401,7 +401,7 @@ export default function ActionItemsContent() {
       {/* 行动项详情/评论弹窗 */}
       <Modal open={detailModal.open} onClose={detailModal.closeModal} title="行动项详情"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10" onClick={() => { if (detailItem) { removeActionItem(detailItem.id); detailModal.closeModal(); setDetailItem(null); } }}>删除</button>
             <button className={btnSecondary} onClick={detailModal.closeModal}>关闭</button>
           </div>

@@ -302,8 +302,8 @@ export default function ReviewContent() {
   if (phase === 'alerts') {
     const apm = autoProgressMap();
     return (
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="flex items-center gap-2">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
           <RotateCcw size={18} className="text-primary-2" />
           <span className="text-sm font-bold">MLOO 隐性复盘</span>
           <span className="ml-auto text-[10px] text-text-3">偏差自动检测 + AI复盘</span>
@@ -311,7 +311,7 @@ export default function ReviewContent() {
 
         {/* Auto Progress Section */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <Sparkles size={13} className="text-accent" />
             <span className="text-xs font-bold text-text-3 uppercase tracking-wider">自动进度推算</span>
           </div>
@@ -321,7 +321,7 @@ export default function ReviewContent() {
               if (!g) return null;
               const diff = autoProg - g.progress;
               return (
-                <div key={goalId} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2">
+                <div key={goalId} className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2">
                   <span className="text-xs text-text-2 flex-1 truncate">{g.title}</span>
                   <span className="text-[10px] text-text-3">手动 {g.progress}%</span>
                   <ArrowRight size={10} className="text-text-3" />
@@ -357,7 +357,7 @@ export default function ReviewContent() {
               {alerts.map((a) => (
                 <div key={a.id} onClick={() => { if (!rvRequire('customWorkflows', '深度复盘模式需要专业版或企业版')) return; startReview(a); }}
                   className={`rounded-xl border p-3 cursor-pointer transition-all hover:shadow-lg ${sevCls[a.severity]}`}>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <AlertTriangle size={13} className={sevIcon[a.severity]} />
                     <span className="text-xs font-semibold text-text flex-1">{a.targetTitle}</span>
                     {a.isOverdue && <span className="rounded-full bg-danger/20 px-1.5 py-0.5 text-[8px] font-bold text-danger">逾期</span>}
@@ -380,7 +380,7 @@ export default function ReviewContent() {
                     </button>
                   </div>
                   <div className="text-[10px] text-text-3 ml-5">{a.message}</div>
-                  <div className="flex items-center gap-2 mt-2 ml-5">
+                  <div className="flex flex-wrap items-center gap-2 mt-2 ml-5">
                     <span className="text-[9px] text-text-3">推荐：</span>
                     <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] font-medium text-primary-2">
                       {REVIEW_MODELS.find((m) => m.id === a.recommendedModel)?.name}
@@ -395,7 +395,7 @@ export default function ReviewContent() {
 
         {/* Manual Review Entry */}
         <div className="border-t border-border pt-3">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <FileText size={13} className="text-text-3" />
             <span className="text-xs font-bold text-text-3 uppercase tracking-wider">手动发起复盘</span>
           </div>
@@ -403,7 +403,7 @@ export default function ReviewContent() {
             {REVIEW_MODELS.map((m) => (
               <button key={m.id} onClick={() => { if (!rvRequire('customWorkflows', '深度复盘模式需要专业版或企业版')) return; setSelectedAlert(null); setSelectedModel(m); setPhase('pick'); }}
                 className="rounded-lg border border-border bg-surface px-3 py-2 text-left transition-all hover:border-primary/50 hover:shadow-md">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-base">{m.icon}</span>
                   <div>
                     <div className="text-[11px] font-semibold text-text">{m.name}</div>
@@ -436,8 +436,8 @@ export default function ReviewContent() {
     const target = selectedAlert?.targetTitle ?? '手动复盘';
 
     return (
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="flex items-center gap-2">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => setPhase('alerts')} className="text-text-3 hover:text-text">&larr; 返回</button>
           <span className="text-sm font-bold">选择复盘框架</span>
         </div>
@@ -445,8 +445,8 @@ export default function ReviewContent() {
         <div className="space-y-2">
           {recs.map((r) => (
             <button key={r.model.id} onClick={() => pickModel(r.model)}
-              className="w-full rounded-xl border border-border bg-surface p-4 text-left transition-all hover:border-primary/50 hover:shadow-lg">
-              <div className="flex items-center gap-3">
+              className="w-full rounded-xl border border-border bg-surface p-3 md:p-4 text-left transition-all hover:border-primary/50 hover:shadow-lg">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="text-2xl">{r.model.icon}</span>
                 <div className="flex-1">
                   <div className="text-sm font-bold text-text">{r.model.name}</div>
@@ -475,14 +475,14 @@ export default function ReviewContent() {
     const allFilled = selectedModel.steps.filter((s) => s.required).every((s) => session.inputs[s.id]?.trim());
 
     return (
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="flex items-center gap-2">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => setPhase('pick')} className="text-text-3 hover:text-text">&larr; 返回</button>
           <span className="text-sm font-bold">{selectedModel.icon} {selectedModel.name}</span>
         </div>
 
         {/* Progress bar */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex-1 h-1.5 rounded-full bg-surface-2 overflow-hidden">
             <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${((session.currentStep + 1) / totalSteps) * 100}%` }} />
           </div>
@@ -495,7 +495,7 @@ export default function ReviewContent() {
         </div>
 
         {/* Current Step */}
-        <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
           <div className="text-sm font-bold text-text mb-2">{step.title}</div>
           <div className="text-xs text-text-2 mb-3">{step.prompt}</div>
           <textarea
@@ -508,7 +508,7 @@ export default function ReviewContent() {
         </div>
 
         {/* Step Navigator */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {session.currentStep > 0 && (
             <button onClick={prevStep} className={btnSecondary}>上一步</button>
           )}
@@ -550,20 +550,20 @@ export default function ReviewContent() {
   // --- Phase: Draft ---
   if (phase === 'draft' && session) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="flex items-center gap-2">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => setPhase('guide')} className="text-text-3 hover:text-text">&larr; 返回编辑</button>
           <span className="text-sm font-bold">复盘报告</span>
           <span className="rounded-full bg-success/10 px-2 py-0.5 text-[9px] font-bold text-success">草稿已生成</span>
         </div>
 
         {/* Draft Content */}
-        <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
           <div className="prose prose-sm prose-invert max-w-none">
             {session.draft.split('\n').map((line, i) => {
               if (line.startsWith('# ')) return <h2 key={i} className="text-base font-bold text-text mt-3 mb-1">{line.slice(2)}</h2>;
               if (line.startsWith('## ')) return <h3 key={i} className="text-sm font-bold text-text mt-2 mb-1">{line.slice(3)}</h3>;
-              if (line.startsWith('- [ ] ')) return <div key={i} className="flex items-center gap-2 text-xs text-primary-2"><Lightbulb size={11} />{line.slice(6)}</div>;
+              if (line.startsWith('- [ ] ')) return <div key={i} className="flex flex-wrap items-center gap-2 text-xs text-primary-2"><Lightbulb size={11} />{line.slice(6)}</div>;
               if (line.startsWith('- ')) return <div key={i} className="text-xs text-text-2 ml-3">• {line.slice(2)}</div>;
               if (line.trim() === '') return <div key={i} className="h-2" />;
               return <div key={i} className="text-xs text-text-2 leading-relaxed">{line}</div>;
@@ -572,7 +572,7 @@ export default function ReviewContent() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => {
               // Persist action items before completing
@@ -599,12 +599,12 @@ export default function ReviewContent() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      <div className="flex items-center gap-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
         <CheckCircle2 size={24} className="text-success" />
         <span className="text-sm font-bold text-success">复盘已完成</span>
       </div>
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
         <div className="text-xs text-text-2 mb-2">复盘对象：<span className="font-semibold text-text">{selectedAlert?.targetTitle ?? session?.targetTitle ?? '手动复盘'}</span></div>
         <div className="text-xs text-text-2 mb-2">使用框架：<span className="font-semibold text-text">{selectedModel?.name ?? 'GRAI'}</span></div>
       </div>
@@ -612,13 +612,13 @@ export default function ReviewContent() {
       {/* Action Items from this review */}
       {actionItems.filter((ai) => ai.source_id === session?.id).length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <ListChecks size={13} className="text-accent" />
             <span className="text-xs font-bold text-text-3 uppercase tracking-wider">生成的行动项</span>
           </div>
           <div className="space-y-1.5">
             {actionItems.filter((ai) => ai.source_id === session?.id).map((ai) => (
-              <div key={ai.id} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+              <div key={ai.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
                 <input
                   type="checkbox"
                   checked={ai.status === 'completed'}
@@ -642,7 +642,7 @@ export default function ReviewContent() {
                 {ai.goal_id && <span className="text-[8px] text-text-3">→ 目标</span>}
                 {ai.status !== 'completed' && !ai.closed_loop && ai.goal_id && (
                   <button
-                    className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[8px] font-semibold text-primary-2 hover:bg-primary/10"
+                    className="flex flex-wrap items-center gap-0.5 rounded px-1.5 py-0.5 text-[8px] font-semibold text-primary-2 hover:bg-primary/10"
                     onClick={async () => {
                       await createTask({
                         title: ai.title,
@@ -692,12 +692,12 @@ export default function ReviewContent() {
         });
         const GRADE_COLOR: Record<string, string> = { S: 'text-success', A: 'text-primary-2', B: 'text-warn', C: 'text-orange-400', D: 'text-danger' };
         return (
-          <div className="rounded-xl border border-border bg-surface p-4">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
               <Lightbulb size={14} className="text-accent" />
               <span className="text-xs font-bold">绩效评分</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className={cn('text-3xl font-extrabold', GRADE_COLOR[score.grade])}>{score.grade}</div>
               <div className="flex-1 grid grid-cols-2 gap-2 text-[10px]">
                 <div><span className="text-text-3">达成率</span> <span className="font-semibold text-text">{score.achievementRate}%</span></div>

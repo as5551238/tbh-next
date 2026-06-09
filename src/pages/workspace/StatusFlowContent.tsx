@@ -5,7 +5,7 @@ import { hasFeature } from '@/lib/subscription';
 import { useState, useMemo } from 'react';
 import { useStatusFlowRules } from '@/hooks/useMatrix';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { GitBranch, Plus, Lock, Loader2, ArrowRight, X, CheckCircle2 } from 'lucide-react';
+import { GitBranch, Plus, Lock, ArrowRight, X, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CardSkeleton } from '@/components/Skeleton';
 
@@ -39,12 +39,12 @@ export default function StatusFlowContent() {
   }, [rules]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <GitBranch size={18} className="text-primary-2" />
         <span className="text-sm font-bold">状态流转规则</span>
         <span className="ml-auto text-[10px] text-text-3">{rules.length} 条规则</span>
-        <button className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; addModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; addModal.openModal(); }}>
           <Plus size={12} />新建规则
         </button>
       </div>
@@ -54,7 +54,7 @@ export default function StatusFlowContent() {
       ) : (
         Object.entries(grouped).map(([entityType, items]) => (
           <div key={entityType}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="text-xs font-bold text-text uppercase tracking-wider">
                 {ENTITY_OPTIONS.find((o) => o.value === entityType)?.label || entityType}
               </span>
@@ -62,15 +62,15 @@ export default function StatusFlowContent() {
             </div>
             <div className="space-y-1.5">
               {items.map((r) => (
-                <div key={r.id} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 transition-all hover:border-border-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div key={r.id} className="group flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 transition-all hover:border-border-2">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
                     <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold text-text">{r.from_status}</span>
                     <ArrowRight size={12} className="text-text-3 shrink-0" />
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary-2">{r.to_status}</span>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex flex-wrap items-center gap-3 shrink-0">
                     {r.auto_transition && (
-                      <span className="flex items-center gap-0.5 text-[9px] font-semibold text-success">
+                      <span className="flex flex-wrap items-center gap-0.5 text-[9px] font-semibold text-success">
                         <CheckCircle2 size={9} />自动
                       </span>
                     )}
@@ -89,7 +89,7 @@ export default function StatusFlowContent() {
       )}
 
       <Modal open={addModal.open} onClose={addModal.closeModal} title="新建流转规则"
-        footer={<div className="flex gap-2"><button className={btnSecondary} onClick={addModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAdd} disabled={!form.from_status.trim() || !form.to_status.trim()}>创建</button></div>}
+        footer={<div className="flex flex-wrap gap-2"><button className={btnSecondary} onClick={addModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAdd} disabled={!form.from_status.trim() || !form.to_status.trim()}>创建</button></div>}
       >
         <ModalField label="实体类型">
           <select className={inputCls} value={form.entity_type} onChange={(e) => setForm((p) => ({ ...p, entity_type: e.target.value }))}>

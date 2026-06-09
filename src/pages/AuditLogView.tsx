@@ -84,7 +84,7 @@ export default function AuditLogView() {
   );
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-text">审计日志</h1>
@@ -98,7 +98,7 @@ export default function AuditLogView() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex flex-wrap gap-3 mb-4">
         <select value={filter.table} onChange={(e) => setFilter({ ...filter, table: e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm">
           <option value="">全部表</option>
           {Object.entries(TABLE_LABELS).map(([key, label]) => (

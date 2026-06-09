@@ -165,22 +165,22 @@ export default function IndustryView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <Factory size={16} className="text-primary-2" />
         <span className="text-sm font-bold">行业视图</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry}</span>
         <span className="text-[10px] text-text-3">{dept}</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={navigateToKpi}>
+        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={navigateToKpi}>
           <BarChart3 size={12} />KPI详情
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
         {/* Focus - Editable */}
-        <div className="rounded-xl border border-border p-4 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}08 0%, ${indColor}03 100%)` }}>
+        <div className="rounded-xl border border-border p-3 md:p-4 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}08 0%, ${indColor}03 100%)` }}>
           <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-10" style={{ backgroundColor: indColor }} />
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <Target size={14} style={{ color: indColor }} />
               <span className="text-xs font-bold">核心关注</span>
               <button onClick={handleEditFocus} className="ml-auto rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80">
@@ -193,9 +193,9 @@ export default function IndustryView() {
 
         {/* KPIs with navigation */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">当前KPI</span>
-            <button onClick={navigateToKpi} className="flex items-center gap-1 text-[10px] text-primary-2 hover:underline">
+            <button onClick={navigateToKpi} className="flex flex-wrap items-center gap-1 text-[10px] text-primary-2 hover:underline">
               查看详情 <ChevronRight size={10} />
             </button>
           </div>
@@ -222,13 +222,13 @@ export default function IndustryView() {
 
         {/* Trends - Editable + Addable */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">行业趋势</span>
             <button onClick={handleAddTrend} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ 添加</button>
           </div>
           <div className="space-y-2">
             {perspective.trends.map((trend: Record<string, unknown>, i: number) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 group">
+              <div key={i} className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-3 group">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                   <TrendingUp size={14} className="text-primary-2" />
                 </div>
@@ -243,13 +243,13 @@ export default function IndustryView() {
 
         {/* Benchmarks - Checkable + Editable */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">行业基准</span>
             <button onClick={handleAddBenchmark} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ 添加</button>
           </div>
           <div className="space-y-1.5">
             {checkedBenchmarks.map((bm: Record<string, unknown>, i: number) => (
-              <div key={i} className="flex items-center gap-2 rounded-lg border border-border bg-surface p-2.5 group">
+              <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-2.5 group">
                 <button
                   onClick={() => handleToggleBenchmark(i)}
                   className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
@@ -268,8 +268,8 @@ export default function IndustryView() {
         </div>
 
         {/* AI Insight */}
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary-2 mb-2">
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 md:p-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-primary-2 mb-2">
             <Sparkles size={14} />AI 行业洞察
           </div>
           <p className="text-[11px] text-text-2 leading-relaxed">
@@ -282,7 +282,7 @@ export default function IndustryView() {
       {/* Edit Modal */}
       <Modal open={editModal.open} onClose={editModal.closeModal} title={editField === 'focus' ? '编辑核心关注' : editField === 'trend' ? '编辑趋势' : '编辑基准'}
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={editModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleSave} disabled={!editValue.trim()}>保存</button>
           </div>

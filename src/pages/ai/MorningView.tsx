@@ -120,7 +120,7 @@ export default function MorningView() {
         {/* 今日聚焦 - Priority Engine */}
         {focusPlan.length > 0 && (
           <div className="rounded-xl border border-border p-5 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}08 0%, ${indColor}02 100%)` }}>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10"><Target size={12} className="text-primary-2" /></div>
               <span className="text-xs font-bold text-text">{t('morningView.todayFocus')}</span>
               <span className="rounded-full px-2 py-0.5 text-[8px] font-bold bg-primary/10 text-primary-2">{t('morningView.aiSorted')}</span>
@@ -129,7 +129,7 @@ export default function MorningView() {
               {focusPlan.map((item, i) => {
                 const cfg = FOCUS_TAG_CONFIG[item.focusTag];
                 return (
-                  <div key={item.id} className="flex items-center gap-3 rounded-lg bg-surface-deep border border-border-2 px-4 py-2.5">
+                  <div key={item.id} className="flex flex-wrap items-center gap-3 rounded-lg bg-surface-deep border border-border-2 px-4 py-2.5">
                     <span className="text-xs font-bold text-text-muted w-4">{i + 1}</span>
                     <span className="text-sm">{cfg.icon}</span>
                     <div className="flex-1 min-w-0">
@@ -152,7 +152,7 @@ export default function MorningView() {
 
         {/* AI Briefing */}
         <div className="rounded-xl border border-border p-5 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}06 0%, ${indColor}02 100%)` }}>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10"><Bot size={12} className="text-primary-2" /></div>
             <span className="text-xs font-bold text-text">{t('morningView.aiBriefing')}</span>
             <span className={cn(
@@ -174,7 +174,7 @@ export default function MorningView() {
             </button>
           </div>
           {briefingLoading && !briefing ? (
-            <div className="flex items-center gap-2 text-sm text-text-3">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-text-3">
               <Sparkles size={14} className="animate-pulse text-primary-2" />
               <span>{t('morningView.generating')}</span>
             </div>
@@ -187,10 +187,10 @@ export default function MorningView() {
         </div>
 
         {/* Key metrics */}
-        <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
           <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">{t('morningView.industrySnapshot')}</div>
           <p className="text-sm text-text-2 mb-4">{cell.ribbon}</p>
-          <div className="flex items-center gap-2 text-xs text-primary-2">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-primary-2">
             <Bot size={14} />
             <span>{t('morningView.nextStep', { step: cell.nextStep })}</span>
           </div>

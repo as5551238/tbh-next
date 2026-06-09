@@ -2,7 +2,7 @@ import { hasFeature } from '@/lib/subscription'; // gate: Pro feature check
 import { useState, useCallback, useMemo } from 'react';
 import { useKnowledgeDocs } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { BookOpen, BarChart3, Loader2, Lock } from 'lucide-react';
+import { BookOpen, BarChart3, Lock } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -67,13 +67,13 @@ export default function KnowledgeContent() {
   }, [editDoc]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-2">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <BookOpen size={18} className="text-primary-2" />
         <span className="text-sm font-bold">知识库</span>
         <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={() => { if (!isPro) return; handleOpen(); }}>{isPro ? "+ 新建" : <><Lock size={10} className="inline mr-1" />Pro</>}</button>
       </div>
-      <div className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 mb-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 mb-3">
         <BarChart3 size={14} className="text-text-3" />
         <input
           className="bg-transparent text-xs text-text outline-none flex-1 placeholder-text-3"
@@ -90,7 +90,7 @@ export default function KnowledgeContent() {
       ) : filteredDocs.length === 0 ? (
         <div className="text-center py-8 text-text-3 text-xs">{searchQuery ? '未找到匹配的知识文档' : '暂无知识文档，点击右上角新建'}</div>
       ) : filteredDocs.map((d) => (
-        <div key={d.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleDocClick(d)}>
+        <div key={d.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleDocClick(d)}>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0"><BookOpen size={14} className="text-primary-2" /></div>
           <div className="min-w-0 flex-1">
             <div className="text-xs font-semibold text-text truncate">{d.title}</div>
@@ -101,7 +101,7 @@ export default function KnowledgeContent() {
 
       <Modal open={modal.open} onClose={modal.closeModal} title="新建知识文档"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={modal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleSave} disabled={!form.title.trim()}>创建</button>
           </div>

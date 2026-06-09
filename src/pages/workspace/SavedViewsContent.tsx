@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useSavedViews } from '@/hooks/useMatrix';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { Eye, Plus, Lock, Loader2, Star, X } from 'lucide-react';
+import { Eye, Plus, Lock, Star, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -31,12 +31,12 @@ export default function SavedViewsContent() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <Eye size={18} className="text-primary-2" />
         <span className="text-sm font-bold">保存的视图</span>
         <span className="ml-auto text-[10px] text-text-3">{views.length} 个视图</span>
-        <button className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; addModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; addModal.openModal(); }}>
           <Plus size={12} />保存当前视图
         </button>
       </div>
@@ -52,7 +52,7 @@ export default function SavedViewsContent() {
       ) : (
         <div className="space-y-2">
           {views.map((v) => (
-            <div key={v.id} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg">
+            <div key={v.id} className="group flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg">
               {v.is_default && <Star size={14} className="text-warn shrink-0" fill="currentColor" />}
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-semibold text-text">{v.name}</div>
@@ -75,7 +75,7 @@ export default function SavedViewsContent() {
       )}
 
       <Modal open={addModal.open} onClose={addModal.closeModal} title="保存视图"
-        footer={<div className="flex gap-2"><button className={btnSecondary} onClick={addModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAdd} disabled={!form.name.trim()}>保存</button></div>}
+        footer={<div className="flex flex-wrap gap-2"><button className={btnSecondary} onClick={addModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAdd} disabled={!form.name.trim()}>保存</button></div>}
       >
         <ModalField label="视图名称">
           <input className={inputCls} placeholder="输入视图名称" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />

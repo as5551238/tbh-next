@@ -56,18 +56,18 @@ export default function KpiDashView() {
   if (!advancedAllowed) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <BarChart3 size={16} className="text-primary-2" />
           <span className="text-sm font-bold">KPI 仪表盘</span>
           <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] text-text-3">基础版</span>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
           {/* Show basic health score only */}
-          <div className="rounded-xl border border-border bg-surface p-4 text-center">
+          <div className="rounded-xl border border-border bg-surface p-3 md:p-4 text-center">
             <div className="text-3xl font-extrabold text-text">{healthScore}</div>
             <div className="text-[9px] text-text-3 mt-0.5">健康分</div>
           </div>
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 md:p-6 text-center">
             <Lock size={24} className="mx-auto mb-2 text-primary-2" />
             <div className="text-sm font-semibold text-text mb-1">高级KPI分析</div>
             <p className="text-xs text-text-3 mb-3">解锁目标趋势预测、偏差预警、自定义KPI看板等高级功能</p>
@@ -95,7 +95,7 @@ export default function KpiDashView() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <BarChart3 size={16} className="text-primary-2" />
         <span className="text-sm font-bold">KPI 仪表盘</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
@@ -103,7 +103,7 @@ export default function KpiDashView() {
 
       {/* Health Score */}
       <div className="mx-4 mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="col-span-1 rounded-xl border border-border bg-surface p-4 flex flex-col items-center justify-center">
+        <div className="col-span-1 rounded-xl border border-border bg-surface p-3 md:p-4 flex flex-col items-center justify-center">
           <div className="text-3xl font-extrabold text-text">{healthScore}</div>
           <div className="text-[9px] text-text-3 mt-0.5">健康分</div>
           <div className="mt-2 h-2 w-full rounded-full bg-surface-2 overflow-hidden">
@@ -127,7 +127,7 @@ export default function KpiDashView() {
       </div>
 
       {/* KPI Cards */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
         {cell.kpis.map((kpi) => {
           const displayTarget = localTargets[kpi.name] ?? kpi.target;
           const TrendIcon = TREND_ICON[kpi.trend];
@@ -139,10 +139,10 @@ export default function KpiDashView() {
 
           return (
             <div key={kpi.name} className="rounded-xl border border-border bg-surface">
-              <div className="p-4 cursor-pointer" onClick={() => toggleExpand(kpi.name)}>
+              <div className="p-3 md:p-4 cursor-pointer" onClick={() => toggleExpand(kpi.name)}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-text">{kpi.name}</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <TrendIcon size={16} className={kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger'} />
                     <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold',
                       kpi.status === 'good' ? 'bg-success/10 text-success' : kpi.status === 'warn' ? 'bg-warn/10 text-warn' : 'bg-danger/10 text-danger'
@@ -152,7 +152,7 @@ export default function KpiDashView() {
                     {isExpanded ? <ChevronUp size={12} className="text-text-3" /> : <ChevronDown size={12} className="text-text-3" />}
                   </div>
                 </div>
-                <div className="flex items-end gap-4 mb-3">
+                <div className="flex flex-wrap items-end gap-4 mb-3">
                   <div className={cn('text-3xl font-extrabold', kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger')}>
                     {kpi.value}
                   </div>
@@ -195,16 +195,16 @@ export default function KpiDashView() {
                       <div className="text-[9px] text-text-3">完成率</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Target size={12} className="text-text-3" />
                     {editingTarget === kpi.name ? (
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 flex-1">
                         <input className="rounded-lg border border-primary/50 bg-surface-2 px-2 py-1 text-sm text-text outline-none w-24" value={targetValue} onChange={(e) => setTargetValue(e.target.value)} autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveTarget(); if (e.key === 'Escape') setEditingTarget(null); }} />
                         <button onClick={saveTarget} className="rounded-lg bg-success/10 p-1"><Check size={12} className="text-success" /></button>
                         <button onClick={() => setEditingTarget(null)} className="rounded-lg bg-danger/10 p-1"><X size={12} className="text-danger" /></button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 flex-1">
                         <span className="text-xs text-text-2">目标: {displayTarget}</span>
                         <button onClick={(e) => { e.stopPropagation(); handleEditTarget(kpi.name, String(displayTarget)); }} className="rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80">
                           <Edit3 size={10} className="text-text-3" />

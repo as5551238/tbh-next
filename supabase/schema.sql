@@ -1461,3 +1461,83 @@ CREATE POLICY "Users can read own keys" ON api_keys FOR SELECT USING (auth.uid()
 CREATE POLICY "Users can insert own keys" ON api_keys FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own keys" ON api_keys FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own keys" ON api_keys FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================
+-- 63. Agent Configs (replaces localStorage tbh-agent-configs)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS agent_configs (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  agent_id TEXT NOT NULL,
+  config JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, agent_id)
+);
+ALTER TABLE agent_configs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can read own agent configs" ON agent_configs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own agent configs" ON agent_configs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own agent configs" ON agent_configs FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own agent configs" ON agent_configs FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================
+-- 64. Installed Agents (replaces localStorage tbh-installed-agents)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS installed_agents (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  agent_id TEXT NOT NULL,
+  installed_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, agent_id)
+);
+ALTER TABLE installed_agents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can read own installed agents" ON installed_agents FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own installed agents" ON installed_agents FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own installed agents" ON installed_agents FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================
+-- 65. Running Workflows (replaces localStorage tbh-running-workflows)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS running_workflows (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  workflow_id TEXT NOT NULL,
+  started_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, workflow_id)
+);
+ALTER TABLE running_workflows ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can read own running workflows" ON running_workflows FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own running workflows" ON running_workflows FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own running workflows" ON running_workflows FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================
+-- 66. MCP Status (replaces localStorage tbh-mcp-status)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS mcp_status (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  server_id TEXT NOT NULL,
+  status JSONB NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, server_id)
+);
+ALTER TABLE mcp_status ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can read own mcp status" ON mcp_status FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own mcp status" ON mcp_status FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own mcp status" ON mcp_status FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own mcp status" ON mcp_status FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================
+-- 67. Installed Packs (replaces localStorage tbh-installed-packs)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS installed_packs (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  pack_id TEXT NOT NULL,
+  installed_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, pack_id)
+);
+ALTER TABLE installed_packs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can read own installed packs" ON installed_packs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own installed packs" ON installed_packs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own installed packs" ON installed_packs FOR DELETE USING (auth.uid() = user_id);

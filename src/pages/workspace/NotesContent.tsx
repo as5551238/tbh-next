@@ -4,7 +4,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
-import { StickyNote, Plus, Lock, Search, Pin, Loader2 } from 'lucide-react';
+import { StickyNote, Plus, Lock, Search, Pin } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 
 const NOTE_COLORS = ['#7b6cf0', '#00d4aa', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899'];
@@ -55,7 +55,7 @@ export default function NotesContent() {
     <div key={note.id} className="group flex rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedNote(note); editModal.openModal(); }}>
       <div className="w-1.5 shrink-0" style={{ backgroundColor: note.color }} />
       <div className="flex-1 px-3 py-3 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {note.pinned && <Pin size={10} className="text-accent shrink-0" />}
           <span className="text-xs font-semibold text-text truncate">{note.title}</span>
         </div>
@@ -74,14 +74,14 @@ export default function NotesContent() {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <StickyNote size={18} className="text-primary-2" />
         <span className="text-sm font-bold">笔记</span>
         <span className="text-[10px] text-text-3">{notes.length} 条</span>
         <div className="flex-1" />
-        <button onClick={() => { if (!isPro) return; addModal.openModal(); }} className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
+        <button onClick={() => { if (!isPro) return; addModal.openModal(); }} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
           <Plus size={12} />
           新建笔记
         </button>
@@ -94,7 +94,7 @@ export default function NotesContent() {
 
       {pinned.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Pin size={12} className="text-accent" />
             <span className="text-[11px] font-semibold text-accent">置顶</span>
           </div>
@@ -115,7 +115,7 @@ export default function NotesContent() {
 
       <Modal open={addModal.open} onClose={addModal.closeModal} title="新建笔记"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleAdd} disabled={!newItem.title.trim()}>创建</button>
           </div>
@@ -130,7 +130,7 @@ export default function NotesContent() {
           <input className={inputCls} placeholder="标签1, 标签2" value={newItem.tags} onChange={(e) => setNewItem((p) => ({ ...p, tags: e.target.value }))} />
         </ModalField>
         <ModalField label="颜色">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {NOTE_COLORS.map((c) => (
               <button key={c} type="button" onClick={() => setNewItem((p) => ({ ...p, color: c }))} className={cn('h-6 w-6 rounded-full border-2 transition-all', newItem.color === c ? 'border-white scale-110' : 'border-transparent')}>
                 <div className="h-full w-full rounded-full" style={{ backgroundColor: c }} />
@@ -139,7 +139,7 @@ export default function NotesContent() {
           </div>
         </ModalField>
         <ModalField label="置顶">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex flex-wrap items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={newItem.pinned} onChange={(e) => setNewItem((p) => ({ ...p, pinned: e.target.checked }))} className="accent-primary" />
             <span className="text-[11px] text-text-3">置顶显示</span>
           </label>
@@ -148,7 +148,7 @@ export default function NotesContent() {
 
       <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑笔记"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className="mr-auto rounded-lg bg-danger/10 px-4 py-2 text-xs font-semibold text-danger hover:bg-danger/20 transition-colors" onClick={() => { if (selectedNote) removeNote(selectedNote.id); editModal.closeModal(); }}>删除</button>
             <button className={btnSecondary} onClick={editModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleEdit}>保存</button>
@@ -166,7 +166,7 @@ export default function NotesContent() {
               <input className={inputCls} value={(selectedNote.tags || []).join(', ')} onChange={(e) => setSelectedNote((p) => p ? { ...p, tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) } : p)} />
             </ModalField>
             <ModalField label="颜色">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {NOTE_COLORS.map((c) => (
                   <button key={c} type="button" onClick={() => setSelectedNote((p) => p ? { ...p, color: c } : p)} className={cn('h-6 w-6 rounded-full border-2 transition-all', selectedNote.color === c ? 'border-white scale-110' : 'border-transparent')}>
                     <div className="h-full w-full rounded-full" style={{ backgroundColor: c }} />
@@ -175,7 +175,7 @@ export default function NotesContent() {
               </div>
             </ModalField>
             <ModalField label="置顶">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex flex-wrap items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={selectedNote.pinned} onChange={(e) => setSelectedNote((p) => p ? { ...p, pinned: e.target.checked } : p)} className="accent-primary" />
                 <span className="text-[11px] text-text-3">置顶显示</span>
               </label>

@@ -3,7 +3,6 @@ import { Suspense, useEffect, lazy, type ReactNode, type LazyExoticComponent, ty
 import { retryLazy } from '@/lib/retryLazy';
 import { useAppStore } from '@/stores/appStore';
 import { useDeviationWatch } from '@/hooks/useDeviationWatch';
-import { Loader2 } from 'lucide-react';
 import ModulePageStub from '@/pages/ModulePageStub';
 import { CardSkeleton } from '@/components/Skeleton';
 

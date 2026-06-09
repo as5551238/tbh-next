@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useMatrixCell, useApprovals } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Clock, AlertTriangle, ChevronRight, User, Loader2, X, Plus } from 'lucide-react';
+import { CheckCircle2, Clock, AlertTriangle, ChevronRight, User, X, Plus } from 'lucide-react';
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
@@ -67,12 +67,12 @@ export default function ApprovalsView() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">审批中心</span>
         {pendingCount > 0 && (
           <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">{pendingCount} 待审批</span>
         )}
-        <div className="ml-auto flex gap-1">
+        <div className="ml-auto flex flex-wrap gap-1">
           <button onClick={createModal.openModal} className="rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 提交审批</button>
           {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
             <button
@@ -93,7 +93,7 @@ export default function ApprovalsView() {
         const oldest = approvals.filter((a) => a.status === 'pending').sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))[0];
         return oldest ? (
           <div className="mx-4 mt-3 rounded-xl border border-warn/20 bg-warn/5 px-4 py-2.5">
-            <div className="flex items-center gap-2 text-xs text-warn">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-warn">
               <AlertTriangle size={14} />
               <span className="font-semibold">待办提醒</span>
             </div>
@@ -105,7 +105,7 @@ export default function ApprovalsView() {
       })()}
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
         {loading ? (
           <CardSkeleton />
         ) : (
@@ -114,7 +114,7 @@ export default function ApprovalsView() {
             item.status === 'pending' && 'border-l-2 border-l-warn'
           )} onClick={() => { setSelected(item); detailModal.openModal(); }}>
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-text">{item.title}</span>
                 <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold', URGENCY_STYLES[item.urgency])}>
                   {item.urgency === 'urgent' ? '紧急' : item.urgency === 'normal' ? '普通' : '低'}
@@ -124,14 +124,14 @@ export default function ApprovalsView() {
                 {STATUS_LABELS[item.status]}
               </span>
             </div>
-            <div className="flex items-center gap-4 text-[10px] text-text-3">
-              <span className="flex items-center gap-1"><User size={10} />{item.applicant_id}</span>
+            <div className="flex flex-wrap items-center gap-4 text-[10px] text-text-3">
+              <span className="flex flex-wrap items-center gap-1"><User size={10} />{item.applicant_id}</span>
               <span>{TYPE_LABELS[item.type]}</span>
               {item.description && <span>{item.description}</span>}
-                <span className="flex items-center gap-1"><Clock size={10} />{item.created_at}</span>
+                <span className="flex flex-wrap items-center gap-1"><Clock size={10} />{item.created_at}</span>
             </div>
             {item.status === 'pending' && (
-              <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex flex-wrap gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={(e) => { e.stopPropagation(); editApproval(item.id, { status: 'approved' }); triggerFeedback({ type: 'approval', action: 'approved', entity: item }); }} className="rounded-lg bg-success/10 px-3 py-1.5 text-[10px] font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
                 <button onClick={(e) => { e.stopPropagation(); editApproval(item.id, { status: 'rejected' }); triggerFeedback({ type: 'approval', action: 'rejected', entity: item }); }} className="rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
                 <button onClick={(e) => { e.stopPropagation(); setSelected(item); detailModal.openModal(); }} className="rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] font-semibold text-text-3 hover:text-text transition-colors">
@@ -156,7 +156,7 @@ export default function ApprovalsView() {
       {/* Create Approval Modal */}
       {createModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={createModal.closeModal}>
-          <div className="w-96 rounded-xl border border-border bg-surface-2 p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-96 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold">提交审批</span>
               <button onClick={createModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
@@ -191,7 +191,7 @@ export default function ApprovalsView() {
                 <input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="输入描述（如有）" className={inputCls + ' w-full'} />
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex flex-wrap items-center gap-2 mt-4">
               <button onClick={handleCreate} disabled={!form.title.trim()} className={`${btnPrimary} disabled:opacity-40`}>提交</button>
               <button onClick={createModal.closeModal} className={btnSecondary}>取消</button>
             </div>

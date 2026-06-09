@@ -4,10 +4,11 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAgentDetails } from '@/hooks/useMatrix';
 import { fetchMarketplaceAgents, CATEGORIES, type MarketplaceAgent } from '@/lib/agentMarketplace';
 import { cn } from '@/lib/utils';
-import { Search, Download, Star, X, Check, Crown, Zap, Building2, Loader2 } from 'lucide-react';
+import { Search, Download, Star, X, Check, Crown, Zap, Building2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
+import { usePersistedState } from '@/hooks/usePersistedState';
 
 const INSTALLED_AGENTS_STORAGE = 'tbh-installed-agents';
 
@@ -84,17 +85,17 @@ export default function AgentMarketView() {
       <ToastOverlay toasts={toasts} />
       {/* Main list */}
       <div className="flex flex-1 flex-col min-w-0">
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <span className="text-sm font-bold">Agent 市场</span>
           <span className="text-[10px] text-text-3">{agents.length} 个Agent · {installed.length} 已安装</span>
-          <div className="ml-auto flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5">
+          <div className="ml-auto flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5">
             <Search size={13} className="text-text-3" />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索Agent..." aria-label="搜索Agent市场" className="bg-transparent text-xs text-text outline-none placeholder:text-text-3 w-32" />
           </div>
         </div>
 
         {/* Category tabs */}
-        <div className="flex gap-1.5 border-b border-border px-4 py-2 overflow-x-auto">
+        <div className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2 overflow-x-auto">
           {CATEGORIES.map((cat) => (
             <button key={cat.id} onClick={() => setCategory(cat.id)} className={cn('flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-all whitespace-nowrap', category === cat.id ? 'bg-primary/10 text-primary-2 font-semibold' : 'bg-surface-2 text-text-3 hover:text-text')}>
               <span>{cat.icon}</span> {cat.label}
@@ -103,17 +104,17 @@ export default function AgentMarketView() {
         </div>
 
         {/* Agent grid */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-3 md:p-4">
           {loading ? (
             <CardSkeleton />
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {filtered.map((agent) => (
-                <button key={agent.id} onClick={() => setSelectedAgent(agent)} className="flex flex-col rounded-xl border border-border bg-surface p-4 text-left transition-all hover:border-primary/30 hover:shadow-lg">
-                  <div className="flex items-center gap-2 mb-2">
+                <button key={agent.id} onClick={() => setSelectedAgent(agent)} className="flex flex-col rounded-xl border border-border bg-surface p-3 md:p-4 text-left transition-all hover:border-primary/30 hover:shadow-lg">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className="text-xl">{agent.icon}</span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-xs font-bold text-text truncate">{agent.name}</span>
                         {agent.isOfficial && <span className="rounded bg-primary/10 px-1 py-[1px] text-[7px] font-bold text-primary-2">官方</span>}
                       </div>
@@ -122,10 +123,10 @@ export default function AgentMarketView() {
                     {PRICE_ICONS[agent.price]}
                   </div>
                   <p className="text-[10px] text-text-2 leading-relaxed mb-2 line-clamp-2">{agent.description}</p>
-                  <div className="flex items-center gap-3 text-[9px] text-text-3 mt-auto">
-                    <span className="flex items-center gap-0.5"><Star size={9} className="text-warn fill-warn" />{agent.rating}</span>
-                    <span className="flex items-center gap-0.5"><Download size={9} />{agent.downloads}</span>
-                    {agent.isInstalled && <span className="flex items-center gap-0.5 text-success"><Check size={9} />已安装</span>}
+                  <div className="flex flex-wrap items-center gap-3 text-[9px] text-text-3 mt-auto">
+                    <span className="flex flex-wrap items-center gap-0.5"><Star size={9} className="text-warn fill-warn" />{agent.rating}</span>
+                    <span className="flex flex-wrap items-center gap-0.5"><Download size={9} />{agent.downloads}</span>
+                    {agent.isInstalled && <span className="flex flex-wrap items-center gap-0.5 text-success"><Check size={9} />已安装</span>}
                   </div>
                 </button>
               ))}
@@ -141,14 +142,14 @@ export default function AgentMarketView() {
             <span className="text-sm font-bold">Agent 详情</span>
             <button onClick={() => setSelectedAgent(null)} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2"><X size={14} /></button>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
             <div className="text-center">
               <span className="text-4xl">{selectedAgent.icon}</span>
               <h3 className="text-lg font-extrabold text-text mt-2">{selectedAgent.name}</h3>
               <p className="text-xs text-text-3">{selectedAgent.author} · v{selectedAgent.version}</p>
             </div>
 
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-4">
               <div className="text-center"><div className="text-lg font-bold text-text">{selectedAgent.rating}</div><div className="text-[9px] text-text-3">评分</div></div>
               <div className="text-center"><div className="text-lg font-bold text-text">{selectedAgent.downloads}</div><div className="text-[9px] text-text-3">下载</div></div>
               <div className="text-center"><div className="text-lg font-bold text-text">{selectedAgent.reviewCount}</div><div className="text-[9px] text-text-3">评价</div></div>
@@ -184,7 +185,7 @@ export default function AgentMarketView() {
             )}
           </div>
 
-          <div className="border-t border-border p-4">
+          <div className="border-t border-border p-3 md:p-4">
             <button onClick={toggleInstall} className={cn('w-full rounded-xl py-3 text-sm font-bold text-white transition-all',
               selectedAgent.isInstalled ? 'bg-surface-2 text-text-3' :
               selectedAgent.price === 'free' ? 'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20' :

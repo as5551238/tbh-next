@@ -114,13 +114,13 @@ export default function TeamCalView() {
       <ToastOverlay toasts={toasts} />
 
       {/* Calendar Grid */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-y-auto p-4">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-1 flex-col min-w-0 overflow-y-auto p-3 md:p-4">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <ChevronLeft size={16} className="text-text-3 cursor-pointer hover:text-text" onClick={prevMonth} />
           <span className="text-sm font-bold">{viewYear}年{viewMonth + 1}月</span>
           <ChevronRight size={16} className="text-text-3 cursor-pointer hover:text-text" onClick={nextMonth} />
           <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary-2">今天</span>
-          <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleAddOpen}>
+          <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleAddOpen}>
             <Plus size={12} />新建日程
           </button>
         </div>
@@ -149,7 +149,7 @@ export default function TeamCalView() {
                   isToday ? 'bg-primary text-white' : 'text-text-2'
                 )}>{day}</div>
                 {hasEvents && (
-                  <div className="mt-0.5 flex gap-0.5">
+                  <div className="mt-0.5 flex flex-wrap gap-0.5">
                     {eventsByDay[day].slice(0, 2).map((evt, ei) => (
                       <div key={ei} className={cn('h-1 w-1 rounded-full',
                         evt.type === 'meeting' ? 'bg-primary-2' : evt.type === 'deadline' ? 'bg-danger' : 'bg-warn'
@@ -180,7 +180,7 @@ export default function TeamCalView() {
                 evt.type === 'deadline' && 'border-l-2 border-l-danger',
                 evt.type === 'meeting' && 'border-l-2 border-l-primary'
               )} onClick={() => row && handleEditOpen(row)}>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <Clock size={11} className="text-text-3" />
                   <span className="text-[10px] font-semibold text-text-2">{evt.time}</span>
                   <span className={cn('ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-bold',
@@ -193,8 +193,8 @@ export default function TeamCalView() {
                   )}
                 </div>
                 <div className="text-xs font-semibold text-text mb-1">{evt.title}</div>
-                <div className="flex items-center gap-3 text-[10px] text-text-3">
-                  {evt.location && <span className="flex items-center gap-1"><MapPin size={9} />{evt.location}</span>}
+                <div className="flex flex-wrap items-center gap-3 text-[10px] text-text-3">
+                  {evt.location && <span className="flex flex-wrap items-center gap-1"><MapPin size={9} />{evt.location}</span>}
                 </div>
               </div>
             );
@@ -205,7 +205,7 @@ export default function TeamCalView() {
       {/* Add Modal */}
       <Modal open={addModal.open} onClose={addModal.closeModal} title="新建日程"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleAddSave} disabled={!form.title.trim()}>创建</button>
           </div>
@@ -231,9 +231,9 @@ export default function TeamCalView() {
       {/* Edit Modal */}
       <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑日程"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {editId && (
-              <button className="flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={() => handleDelete(editId)}>
+              <button className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={() => handleDelete(editId)}>
                 <Trash2 size={10} />删除
               </button>
             )}

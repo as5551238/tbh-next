@@ -3,7 +3,7 @@
  */
 import { useState, useMemo } from 'react';
 import { useFeatureFlags } from '@/hooks/useMatrix';
-import { ToggleLeft, Loader2, Shield, Users, Lock } from 'lucide-react';
+import { ToggleLeft, Shield, Users, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { setFeatureFlagOverride, FLAG_KEY_TO_FEATURE, type PlanLimits, hasFeature } from '@/lib/subscription';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -31,8 +31,8 @@ export default function FeatureFlagsContent() {
   }), [flags]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <ToggleLeft size={18} className="text-primary-2" />
         <span className="text-sm font-bold">功能开关</span>
       </div>
@@ -57,7 +57,7 @@ export default function FeatureFlagsContent() {
       ) : (
         <div className="space-y-2">
           {flags.map((f) => (
-            <div key={f.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface px-4 py-3">
+            <div key={f.id} className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-surface px-4 py-3">
               {/* Toggle */}
               <button
                 className={cn('relative h-6 w-11 rounded-full transition-colors shrink-0', f.enabled ? 'bg-success' : 'bg-surface-2')}
@@ -67,16 +67,16 @@ export default function FeatureFlagsContent() {
               </button>
 
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold text-text">{f.name}</span>
                   <code className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] text-text-3 font-mono">{f.key}</code>
                 </div>
                 <div className="text-[10px] text-text-3 mt-0.5">{f.description}</div>
               </div>
 
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
                 {/* Rollout */}
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   <Users size={10} className="text-text-3" />
                   <span className={cn('text-[10px] font-semibold', f.rollout_percentage === 100 ? 'text-success' : f.rollout_percentage > 0 ? 'text-warn' : 'text-text-3')}>
                     {f.rollout_percentage}%
@@ -84,7 +84,7 @@ export default function FeatureFlagsContent() {
                 </div>
 
                 {/* Plan */}
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   <Shield size={10} className="text-text-3" />
                   <span className="text-[10px] text-text-3">{PLAN_LABELS[f.target_plan] || f.target_plan}</span>
                 </div>

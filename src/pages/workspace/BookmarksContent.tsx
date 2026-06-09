@@ -4,7 +4,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
-import { Bookmark, Plus, Lock, Loader2, ExternalLink, Target, ListChecks, FileText, BookOpen } from 'lucide-react';
+import { Bookmark, Plus, Lock, ExternalLink, Target, ListChecks, FileText, BookOpen } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 
 const TYPE_CFG: Record<string, { label: string; color: string; icon: typeof Target }> = {
@@ -46,20 +46,20 @@ export default function BookmarksContent() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Bookmark size={18} className="text-primary-2" />
         <span className="text-sm font-bold">书签</span>
         <span className="text-[10px] text-text-3">{filtered.length} 个书签</span>
         <div className="flex-1" />
-        <button onClick={() => { if (!isPro) return; addModal.openModal(); }} className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
+        <button onClick={() => { if (!isPro) return; addModal.openModal(); }} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
           <Plus size={12} />
           添加书签
         </button>
       </div>
 
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {ALL_TYPES.map((t) => {
           const cfg = TYPE_CFG[t];
           return (
@@ -81,21 +81,21 @@ export default function BookmarksContent() {
             const cfg = TYPE_CFG[bm.target_type] ?? TYPE_CFG.other;
             const Icon = cfg.icon;
             return (
-              <div key={bm.id} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg">
+              <div key={bm.id} className="group flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-all hover:border-border-2 hover:shadow-lg">
                 <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg shrink-0', cfg.color)}>
                   <Icon size={14} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-semibold text-text truncate">{bm.title}</div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                     <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-semibold', cfg.color)}>{cfg.label}</span>
                     {bm.category && <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[9px] text-text-3">{bm.category}</span>}
                   </div>
                   <div className="text-[9px] text-text-3 mt-0.5">{new Date(bm.created_at).toLocaleDateString('zh-CN')}</div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex flex-wrap items-center gap-1 shrink-0">
                   {bm.url && (
-                    <a href={bm.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 transition-all" onClick={(e) => e.stopPropagation()}>
+                    <a href={bm.url} target="_blank" rel="noopener noreferrer" className="flex flex-wrap items-center gap-0.5 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 transition-all" onClick={(e) => e.stopPropagation()}>
                       <ExternalLink size={10} />
                       前往
                     </a>
@@ -110,7 +110,7 @@ export default function BookmarksContent() {
 
       <Modal open={addModal.open} onClose={addModal.closeModal} title="添加书签"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleAdd} disabled={!newItem.title.trim()}>添加</button>
           </div>

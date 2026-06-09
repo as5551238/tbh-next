@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useCategories } from '@/hooks/useMatrix';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { FolderTree, Plus, Lock, Loader2, X } from 'lucide-react';
+import { FolderTree, Plus, Lock, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -37,12 +37,12 @@ export default function CategoriesContent() {
   }, {} as Record<string, typeof categories>);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <FolderTree size={18} className="text-primary-2" />
         <span className="text-sm font-bold">分类管理</span>
         <span className="ml-auto text-[10px] text-text-3">{categories.length} 个分类</span>
-        <button className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; addModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; addModal.openModal(); }}>
           <Plus size={12} />新建分类
         </button>
       </div>
@@ -52,13 +52,13 @@ export default function CategoriesContent() {
       ) : (
         Object.entries(grouped).map(([type, items]) => (
           <div key={type}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="text-xs font-bold text-text uppercase tracking-wider">{TYPE_OPTIONS.find((o) => o.value === type)?.label || type}</span>
               <span className="text-[10px] text-text-3">{items.length}</span>
             </div>
             <div className="space-y-1">
               {items.sort((a, b) => a.sort_order - b.sort_order).map((c) => (
-                <div key={c.id} className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 transition-all hover:border-border-2">
+                <div key={c.id} className="group flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 transition-all hover:border-border-2">
                   <span className="text-base">{c.icon}</span>
                   <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
                   <span className="text-xs font-semibold text-text flex-1">{c.name}</span>
@@ -74,7 +74,7 @@ export default function CategoriesContent() {
       )}
 
       <Modal open={addModal.open} onClose={addModal.closeModal} title="新建分类"
-        footer={<div className="flex gap-2"><button className={btnSecondary} onClick={addModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAdd} disabled={!form.name.trim()}>创建</button></div>}
+        footer={<div className="flex flex-wrap gap-2"><button className={btnSecondary} onClick={addModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAdd} disabled={!form.name.trim()}>创建</button></div>}
       >
         <ModalField label="分类名称">
           <input className={inputCls} placeholder="输入分类名称" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
@@ -88,7 +88,7 @@ export default function CategoriesContent() {
           <input className={inputCls} placeholder="Emoji" value={form.icon} onChange={(e) => setForm((p) => ({ ...p, icon: e.target.value }))} />
         </ModalField>
         <ModalField label="颜色">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input type="color" value={form.color} onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))} className="h-8 w-8 rounded border-0 cursor-pointer" />
             <span className="text-xs text-text-3">{form.color}</span>
           </div>

@@ -3,8 +3,9 @@ import { useWorkflows, useWorkflowInstances, useMatrixCell } from '@/hooks/useMa
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { Workflow, Play, StopCircle, Copy, Edit3, Star, Clock, Loader2, Check, Trash2, Lock } from 'lucide-react';
+import { Workflow, Play, StopCircle, Copy, Edit3, Star, Clock, Check, Trash2, Lock } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { usePersistedState } from '@/hooks/usePersistedState';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -16,10 +17,8 @@ export default function WorkflowsView() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
-  const [runningIds, setRunningIds] = useState<Set<string>>(() => {
-    try { const s = localStorage.getItem('tbh-running-workflows'); return s ? new Set(JSON.parse(s)) : new Set<string>(); } catch { return new Set<string>(); }
-  });
-  function saveRunningIds(ids: Set<string>) { setRunningIds(ids); try { localStorage.setItem('tbh-running-workflows', JSON.stringify([...ids])); } catch (err) { console.warn("[workflows]", err); } }
+  const [runningIds, setRunningIds] = usePersistedState<Set<string>>('tbh-running-workflows', new Set<string>());
+  function saveRunningIds(ids: Set<string>) { setRunningIds(ids); }
   const addModal = useModal();
   const [addForm, setAddForm] = useState({ name: '', category: '通用', steps: '' });
   const [showPaywall, setShowPaywall] = useState(false);
@@ -177,7 +176,7 @@ export default function WorkflowsView() {
               <Workflow size={13} className="shrink-0 text-text-3" />
               <div className="min-w-0">
                 <div className="truncate">{wf.name}</div>
-                <div className="text-[9px] text-text-3 flex items-center gap-2"><Star size={8} />{wf.usage_count}次使用{runningIds.has(wf.id) ? ' · 运行中' : ''}</div>
+                <div className="text-[9px] text-text-3 flex flex-wrap items-center gap-2"><Star size={8} />{wf.usage_count}次使用{runningIds.has(wf.id) ? ' · 运行中' : ''}</div>
               </div>
             </button>
           ))}
@@ -188,9 +187,9 @@ export default function WorkflowsView() {
       <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
         {selected ? (
           <>
-            <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
               {editingName === selected.id ? (
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex flex-wrap items-center gap-2 flex-1">
                   <input value={editValue} onChange={(e) => setEditValue(e.target.value)} className="rounded-lg border border-primary/50 bg-surface-2 px-2 py-1 text-sm text-text outline-none" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingName(null); }} />
                   <button onClick={handleSaveEdit} className="rounded-lg bg-success/10 px-2 py-1 text-[10px] text-success hover:bg-success/20"><Check size={12} /></button>
                 </div>
@@ -200,27 +199,27 @@ export default function WorkflowsView() {
               <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary-2">{selected.category}</span>
               {selected.is_built_in && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] text-text-3">内置</span>}
               {runningIds.has(selected.id) && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[9px] font-bold text-success">运行中</span>}
-              <div className="ml-auto flex gap-2">
+              <div className="ml-auto flex flex-wrap gap-2">
                 {hasFeature('customWorkflows') ? (
                   <>
-                    <button onClick={handleCopy} className="flex items-center gap-1 rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] text-text-3 hover:text-text"><Copy size={10} />复制</button>
-                    <button onClick={handleEdit} disabled={selected.is_built_in} className="flex items-center gap-1 rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] text-text-3 hover:text-text disabled:opacity-40"><Edit3 size={10} />编辑</button>
+                    <button onClick={handleCopy} className="flex flex-wrap items-center gap-1 rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] text-text-3 hover:text-text"><Copy size={10} />复制</button>
+                    <button onClick={handleEdit} disabled={selected.is_built_in} className="flex flex-wrap items-center gap-1 rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] text-text-3 hover:text-text disabled:opacity-40"><Edit3 size={10} />编辑</button>
                   </>
                 ) : (
-                  <button onClick={() => setShowPaywall(true)} className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] text-primary-2 hover:bg-primary/20"><Lock size={10} />升级解锁</button>
+                  <button onClick={() => setShowPaywall(true)} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] text-primary-2 hover:bg-primary/20"><Lock size={10} />升级解锁</button>
                 )}
                 {runningIds.has(selected.id) ? (
-                  <button onClick={handleStop} className="flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] font-semibold text-danger hover:bg-danger/20"><StopCircle size={10} />停止</button>
+                  <button onClick={handleStop} className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] font-semibold text-danger hover:bg-danger/20"><StopCircle size={10} />停止</button>
                 ) : (
-                  <button onClick={handleStart} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-white hover:opacity-80"><Play size={10} />启动</button>
+                  <button onClick={handleStart} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-white hover:opacity-80"><Play size={10} />启动</button>
                 )}
                 {!selected.is_built_in && (
-                  <button onClick={handleDelete} className="flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20"><Trash2 size={10} />删除</button>
+                  <button onClick={handleDelete} className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20"><Trash2 size={10} />删除</button>
                 )}
               </div>
             </div>
 
-            <div className="p-4 space-y-4 max-w-2xl">
+            <div className="p-3 md:p-4 space-y-4 max-w-2xl">
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">流程步骤</div>
                 <div className="space-y-2">
@@ -228,7 +227,7 @@ export default function WorkflowsView() {
                     const isCurrent = cell.workflow[i] === step && i === cell.wfCurrent;
                     const isDone = i < cell.wfCurrent;
                     return (
-                      <div key={i} className="flex items-center gap-3">
+                      <div key={i} className="flex flex-wrap items-center gap-3">
                         <div className={cn('flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shrink-0',
                           isCurrent ? 'bg-primary text-white' : isDone ? 'bg-success/20 text-success' : 'bg-surface-2 text-text-3'
                         )}>{i + 1}</div>
@@ -244,7 +243,7 @@ export default function WorkflowsView() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-border bg-surface p-3">
                   <div className="text-[9px] text-text-3 mb-1">使用次数</div>
-                  <div className="text-lg font-extrabold text-text flex items-center gap-2"><Clock size={14} className="text-text-3" />{selected.usage_count}</div>
+                  <div className="text-lg font-extrabold text-text flex flex-wrap items-center gap-2"><Clock size={14} className="text-text-3" />{selected.usage_count}</div>
                 </div>
                 <div className="rounded-xl border border-border bg-surface p-3">
                   <div className="text-[9px] text-text-3 mb-1">步骤数</div>
@@ -261,7 +260,7 @@ export default function WorkflowsView() {
       {/* Add Workflow Modal */}
       <Modal open={addModal.open} onClose={addModal.closeModal} title="新建工作流"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleAddSave} disabled={!addForm.name.trim()}>创建</button>
           </div>

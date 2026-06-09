@@ -6,7 +6,7 @@ import { useReports, useGoals, useTasks, useRisks } from '@/hooks/useMatrix';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
-import { BarChart3, Download, Loader2, Plus } from 'lucide-react';
+import { BarChart3, Download, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { ReportInput, ReportUpdate } from '@/contracts/dataContracts';
@@ -92,31 +92,31 @@ export default function ReportsContent() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <BarChart3 size={16} className="text-primary-2" />
         <span className="text-sm font-bold">报表中心</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:opacity-80" onClick={() => { if (!rpRequire('customReports', '自定义报表需要专业版或企业版')) return; handleOpenGen(); }}>
+        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:opacity-80" onClick={() => { if (!rpRequire('customReports', '自定义报表需要专业版或企业版')) return; handleOpenGen(); }}>
           <Plus size={12} />生成报表
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
         {reports.map((report) => (
           <div key={report.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg cursor-pointer',
             report.status === 'generating' && 'animate-pulse'
           )} onClick={() => { setSelectedReport(report); editModal.openModal(); }}>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                 <BarChart3 size={16} className="text-primary-2" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex flex-wrap items-center gap-2 mb-0.5">
                   <span className="text-xs font-semibold text-text">{report.title}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold', TYPE_STYLES[report.type])}>
                     {report.type === 'weekly' ? '周报' : report.type === 'monthly' ? '月报' : '自定义'}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-text-3">
+                <div className="flex flex-wrap items-center gap-3 text-[10px] text-text-3">
                   <span>{report.generated_at}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[8px]', report.status === 'ready' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
                     {report.status === 'ready' ? '已完成' : '生成中'}
@@ -124,7 +124,7 @@ export default function ReportsContent() {
                 </div>
               </div>
               {report.status === 'ready' && (
-                <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1.5 text-[10px] text-text-3 opacity-0 group-hover:opacity-100 transition-all hover:text-text" onClick={() => handleExport(report)}>
+                <button className="flex flex-wrap items-center gap-1 rounded-lg bg-surface-2 px-2.5 py-1.5 text-[10px] text-text-3 opacity-0 group-hover:opacity-100 transition-all hover:text-text" onClick={() => handleExport(report)}>
                   <Download size={10} />导出
                 </button>
               )}
@@ -138,7 +138,7 @@ export default function ReportsContent() {
 
       <Modal open={genModal.open} onClose={genModal.closeModal} title="生成报表"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={genModal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleGenReport} disabled={!form.title.trim()}>生成</button>
           </div>

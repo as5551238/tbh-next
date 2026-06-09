@@ -78,7 +78,7 @@ export default function GoalsContent() {
         <Target size={18} className="text-primary-2" />
         <span className="text-sm font-bold">{t('goals.title')}</span>
         <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary-2">{t('goals.inProgress', { count: goals.length })}</span>
-        <button className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, '免费版最多创建5个目标，升级Pro解锁更多')) return; setNewGoalForm({ title: '', status: 'on_track', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, '免费版最多创建5个目标，升级Pro解锁更多')) return; setNewGoalForm({ title: '', status: 'on_track', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
           <Plus size={12} />{t('goals.newGoal')}
         </button>
       </div>
@@ -91,15 +91,15 @@ export default function GoalsContent() {
         return (
         <div key={g.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleCardClick(g)}>
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div onClick={(e) => e.stopPropagation()}>
                 <input type="checkbox" checked={selectedGoalIds.has(g.id)} onChange={() => { setSelectedGoalIds((prev) => { const next = new Set(prev); if (next.has(g.id)) next.delete(g.id); else next.add(g.id); return next; }); }} className="h-3.5 w-3.5 accent-primary rounded" />
               </div>
               <span className="text-sm font-semibold text-text">{g.title}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {progMismatch && (
-                <button className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-bold bg-accent/10 text-accent hover:bg-accent/20 transition-colors" onClick={(e) => { e.stopPropagation(); handleSyncAutoProgress(g); }}>
+                <button className="flex flex-wrap items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-bold bg-accent/10 text-accent hover:bg-accent/20 transition-colors" onClick={(e) => { e.stopPropagation(); handleSyncAutoProgress(g); }}>
                   <Zap size={9} />{t('goals.sync', { value: autoProg })}
                 </button>
               )}
@@ -126,7 +126,7 @@ export default function GoalsContent() {
             {g.key_results.map((kr, i) => {
               const krItem = typeof kr === 'string' ? null : kr as Record<string, unknown>;
               return (
-                <div key={i} className="flex items-center gap-2 text-xs text-text-3">
+                <div key={i} className="flex flex-wrap items-center gap-2 text-xs text-text-3">
                   <CheckCircle2 size={12} className={i < Math.ceil(g.progress / 40) ? 'text-success' : 'text-border'} />
                   <span className="flex-1">{safeStr(kr)}</span>
                   {krItem && (krItem.targetValue != null || krItem.currentValue != null) && (
@@ -144,7 +144,7 @@ export default function GoalsContent() {
 
       <Modal open={goalModal.open} onClose={goalModal.closeModal} title={t('goals.editGoal')}
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10" onClick={() => { if (editGoalData) { removeGoal(editGoalData.id); goalModal.closeModal(); setEditGoalData(null); } }}>{t('goals.delete')}</button>
             <button className={btnSecondary} onClick={goalModal.closeModal}>{t('common.cancel')}</button>
             <button className={btnPrimary} onClick={handleEditGoalSave}>{t('common.save')}</button>
@@ -179,7 +179,7 @@ export default function GoalsContent() {
 
       <Modal open={addGoalModal.open} onClose={addGoalModal.closeModal} title={t('goals.newGoalTitle')}
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addGoalModal.closeModal}>{t('common.cancel')}</button>
             <button className={btnPrimary} onClick={() => { if (!newGoalForm.title.trim()) return; addGoal({ title: newGoalForm.title, status: newGoalForm.status, progress: newGoalForm.progress, key_results: [], owner_id: null, leader_id: null, end_date: newGoalForm.end_date || null, start_date: newGoalForm.start_date || null }); addGoalModal.closeModal(); }} disabled={!newGoalForm.title.trim()}>{t('common.create')}</button>
           </div>

@@ -4,7 +4,7 @@ import PaywallModal from '@/components/PaywallModal';
 import { useState, useCallback } from 'react';
 import { useProjects } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { FolderKanban, Loader2 } from 'lucide-react';
+import { FolderKanban } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 
@@ -65,7 +65,7 @@ export default function ProjectsContent() {
       {loading ? (
         <CardSkeleton />
       ) : projects.map((p) => (
-        <div key={p.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleProjectClick(p)}>
+        <div key={p.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleProjectClick(p)}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-text">{p.title}</span>
             <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', p.status === 'active' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
@@ -84,7 +84,7 @@ export default function ProjectsContent() {
 
       <Modal open={modal.open} onClose={modal.closeModal} title="新建项目"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={modal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleSave} disabled={!form.title.trim()}>创建</button>
           </div>

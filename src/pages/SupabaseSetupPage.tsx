@@ -34,7 +34,7 @@ export default function SupabaseSetupPage() {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-bg p-4">
+    <div className="flex h-screen items-center justify-center bg-bg p-3 md:p-4">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/4 -left-1/4 w-[500px] h-[500px] rounded-full bg-accent/5 blur-3xl" />
       </div>
@@ -66,7 +66,7 @@ export default function SupabaseSetupPage() {
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button onClick={handleTest} disabled={status === 'testing'} className={cn('rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-text-2 transition-all hover:bg-surface-2',
               status === 'testing' && 'opacity-50 cursor-not-allowed'
             )}>

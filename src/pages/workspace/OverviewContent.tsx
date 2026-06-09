@@ -124,7 +124,7 @@ export default function OverviewContent() {
       <div className="rounded-xl border border-border p-3 md:p-4 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}08 0%, ${indColor}03 100%)` }}>
         <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-10" style={{ backgroundColor: indColor }} />
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className="text-lg">☀️</span>
             <span className="text-sm font-bold">{t('overview.morningFocus')}</span>
             <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{t('overview.morningReport')}</span>
@@ -155,7 +155,7 @@ export default function OverviewContent() {
                     <TypeIcon size={10} style={{ color: indColor }} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-xs font-semibold text-text truncate">{item.title}</span>
                       <span className={cn('rounded-full px-1.5 py-px text-[8px] font-bold', tagConfig.color, 'bg-current/10')} style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
                         {tagConfig.label}
@@ -218,11 +218,11 @@ export default function OverviewContent() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <button onClick={() => navigate(navigateTo('collab'))} className="group flex items-center justify-between rounded-xl border border-border bg-surface p-4 transition-all hover:border-primary/30 hover:shadow-lg">
+        <button onClick={() => navigate(navigateTo('collab'))} className="group flex items-center justify-between rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-primary/30 hover:shadow-lg">
           <div><div className="text-xs font-semibold text-text">{t('overview.collabDesk')}</div><div className="text-[10px] text-text-3 mt-0.5">{t('overview.activeChannels', { count: cell.channels.length })}</div></div>
           <ArrowRight size={16} className="text-text-3 transition-transform group-hover:translate-x-1 group-hover:text-primary-2" />
         </button>
-        <button onClick={() => navigate(navigateTo('ai'))} className="group flex items-center justify-between rounded-xl border border-border bg-surface p-4 transition-all hover:border-primary/30 hover:shadow-lg">
+        <button onClick={() => navigate(navigateTo('ai'))} className="group flex items-center justify-between rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-primary/30 hover:shadow-lg">
           <div><div className="text-xs font-semibold text-text">{t('overview.aiDesk')}</div><div className="text-[10px] text-text-3 mt-0.5">{t('overview.aiColleagues', { count: cell.agents.length })}</div></div>
           <ArrowRight size={16} className="text-text-3 transition-transform group-hover:translate-x-1 group-hover:text-primary-2" />
         </button>

@@ -240,3 +240,49 @@ export interface MarketplaceAgentRow {
   price: string;
   team_id: string | null;
 }
+
+export interface AgentConfigRow {
+  id: string;
+  name: string;
+  model: string;
+  temperature: number;
+  max_tokens: number;
+  system_prompt: string;
+  schedule: string;
+  enabled: boolean;
+  sort_order: number;
+  team_id: string | null;
+  member_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InstalledAgentRow {
+  id: string;
+  agent_id: string;
+  team_id: string | null;
+  member_id: string | null;
+  installed_at: string;
+}
+
+export interface RunningWorkflowRow {
+  id: string;
+  user_id: string | null;
+  workflow_id: string;
+  started_at: string;
+}
+
+export interface McpStatusRow {
+  id: string;
+  user_id: string | null;
+  server_id: string;
+  status: Record<string, unknown>;
+  updated_at: string;
+}
+
+export interface InstalledPackRow {
+  id: string;
+  user_id: string | null;
+  pack_id: string;
+  installed_at: string;
+}

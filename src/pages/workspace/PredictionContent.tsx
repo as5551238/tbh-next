@@ -4,7 +4,7 @@ import { hasFeature } from '@/lib/subscription'; // gate: Pro feature check
 import { useState, useCallback, useEffect } from 'react';
 import { usePredictions, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
-import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight, Loader2, Plus } from 'lucide-react';
+import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -66,21 +66,21 @@ export default function PredictionContent() {
     : 50;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Brain size={18} style={{ color: indColor }} />
         <span className="text-sm font-bold">预测引擎</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>AI驱动</span>
         <span className="text-[10px] text-text-3">基于 {cell.kpis.length} 个指标 · 每日更新</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!pdRequire('advancedAnalytics', 'AI预测需要专业版或企业版')) return; handleOpen(); }}>
+        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!pdRequire('advancedAnalytics', 'AI预测需要专业版或企业版')) return; handleOpen(); }}>
           <Plus size={12} />自定义预测
         </button>
       </div>
 
-      <div className="rounded-xl border border-border p-4 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}08 0%, ${indColor}02 100%)` }}>
+      <div className="rounded-xl border border-border p-3 md:p-4 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${indColor}08 0%, ${indColor}02 100%)` }}>
         <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-10" style={{ backgroundColor: indColor }} />
-        <div className="relative z-10 flex items-center gap-4">
+        <div className="relative z-10 flex flex-wrap items-center gap-4">
           <div className="flex flex-col items-center">
             <div className="relative h-16 w-16">
               <svg className="h-16 w-16 -rotate-90" viewBox="0 0 36 36">
@@ -104,10 +104,10 @@ export default function PredictionContent() {
 
       <div className="space-y-3">
         {allPredictions.map((p) => (
-          <div key={p.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedPred(p); editModal.openModal(); }}>
+          <div key={p.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedPred(p); editModal.openModal(); }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-text">{p.title}</span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
                   p.impact === 'positive' ? 'bg-success/10 text-success' :
                   p.impact === 'high' ? 'bg-danger/10 text-danger' :
@@ -118,7 +118,7 @@ export default function PredictionContent() {
                 {p.trend === 'up' && <ArrowUpRight size={12} className={p.impact === 'positive' ? 'text-success' : 'text-danger'} />}
               </div>
             </div>
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex flex-wrap items-center gap-3 mb-3">
               <div className="flex-1 h-1.5 rounded-full bg-surface-2 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all"
@@ -136,7 +136,7 @@ export default function PredictionContent() {
               <div className="text-[10px] font-semibold text-text-3 mb-1">原因分析</div>
               <p className="text-[11px] text-text-2">{p.reason}</p>
             </div>
-            <div className="flex items-start gap-1.5">
+            <div className="flex flex-wrap items-start gap-1.5">
               <Sparkles size={12} className="text-accent shrink-0 mt-0.5" style={{ color: indColor }} />
               <p className="text-[11px] text-text-2">{p.suggestion}</p>
             </div>
@@ -145,7 +145,7 @@ export default function PredictionContent() {
       </div>
 
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-        <div className="flex items-center gap-2 text-xs text-primary-2">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-primary-2">
           <Brain size={14} />
           <span className="font-semibold">预测引擎说明</span>
         </div>
@@ -156,7 +156,7 @@ export default function PredictionContent() {
 
       <Modal open={modal.open} onClose={modal.closeModal} title="自定义预测"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={modal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleSave} disabled={!form.title.trim()}>创建</button>
           </div>

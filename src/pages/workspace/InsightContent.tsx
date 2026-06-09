@@ -67,17 +67,17 @@ export default function InsightContent() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <ToastOverlay toasts={toasts} />
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <Lightbulb size={16} className="text-primary-2" />
         <span className="text-sm font-bold">数据洞察</span>
         <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-bold text-accent">数据分析</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleOpen}>
+        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleOpen}>
           <Plus size={12} />新建洞察
         </button>
       </div>
 
-      <div className="mx-4 mt-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-primary-2 mb-1"><Lightbulb size={14} />洞察概览</div>
+      <div className="mx-4 mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 md:p-4">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-primary-2 mb-1"><Lightbulb size={14} />洞察概览</div>
         <p className="text-[11px] text-text-2 leading-relaxed">
           {displayInsights.length > 0
             ? `当前共 ${displayInsights.length} 条洞察：${displayInsights.filter((i) => i.impact === 'negative').length} 个需关注项，${displayInsights.filter((i) => i.impact === 'positive').length} 个正向趋势。建议优先处理负面指标。`
@@ -85,10 +85,10 @@ export default function InsightContent() {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
         {displayInsights.map((insight) => (
-          <div key={insight.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg cursor-pointer" onClick={() => handleEditOpen(insight)}>
-            <div className="flex items-center gap-2 mb-2">
+          <div key={insight.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:shadow-lg cursor-pointer" onClick={() => handleEditOpen(insight)}>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
                 insight.impact === 'positive' ? 'bg-success/10' : 'bg-danger/10'
               )}>
@@ -107,13 +107,13 @@ export default function InsightContent() {
         ))}
 
         {hasFeature('advancedAnalytics') ? (
-          <div className="rounded-xl border border-border bg-surface p-4">
+          <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
             <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">指标趋势总览</div>
             <div className="grid grid-cols-2 gap-2">
               {cell.kpis.map((kpi) => {
                 const TI = TREND_ICON[kpi.trend];
                 return (
-                  <div key={kpi.name} className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
+                  <div key={kpi.name} className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
                     <TI size={13} className={kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger'} />
                     <div className="min-w-0">
                       <div className="text-[10px] text-text-3 truncate">{kpi.name}</div>
@@ -125,7 +125,7 @@ export default function InsightContent() {
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 md:p-4 text-center">
             <Lock size={18} className="mx-auto mb-1 text-primary-2" />
             <p className="text-[11px] text-text-3 mb-2">指标趋势总览需要专业版</p>
             <button
@@ -140,7 +140,7 @@ export default function InsightContent() {
 
       <Modal open={modal.open} onClose={modal.closeModal} title="新建洞察"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={modal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleSave} disabled={!form.title.trim()}>创建</button>
           </div>
@@ -164,9 +164,9 @@ export default function InsightContent() {
 
       <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑洞察"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {editId && !editId.startsWith('default-') && (
-              <button className="flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={() => handleDelete(editId)}>
+              <button className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={() => handleDelete(editId)}>
                 <Trash2 size={10} />删除
               </button>
             )}

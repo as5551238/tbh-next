@@ -180,7 +180,7 @@ export default function GlobalSidebar() {
   }
 
   return (
-    <div className="flex w-16 flex-col items-center border-r border-border bg-surface py-3 z-50 shrink-0">
+    <nav aria-label="主导航" className="flex w-16 flex-col items-center border-r border-border bg-surface py-3 z-50 shrink-0">
       {/* Logo */}
       <Tooltip label="TBH Next">
         <button onClick={() => navigate(navigateTo('workspace', 'overview'))} aria-label={t('nav.home')} className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-extrabold text-white cursor-pointer hover:scale-110 transition-transform">
@@ -257,6 +257,6 @@ export default function GlobalSidebar() {
         </Tooltip>
         {userMenuOpen && <UserMenu onClose={() => setUserMenuOpen(false)} />}
       </div>
-    </div>
+    </nav>
   );
 }

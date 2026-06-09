@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Plug, Radio, Play, ArrowRight, Loader2, Zap, RefreshCw, Unplug, Wifi } from 'lucide-react';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
+import { usePersistedState } from '@/hooks/usePersistedState';
 
 const MCP_STATUS_STORAGE = 'tbh-mcp-status';
 
@@ -137,7 +138,7 @@ export default function MCPA2AView() {
       {/* Left: Server list */}
       <div className="flex w-72 shrink-0 flex-col border-r border-border bg-surface">
         <div className="border-b border-border px-4 py-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Plug size={16} className="text-primary-2" />
             <span className="text-sm font-bold">MCP 服务 & A2A</span>
             <span className="rounded-full bg-warn/10 px-2 py-0.5 text-[8px] font-bold text-warn">模拟模式</span>
@@ -155,7 +156,7 @@ export default function MCPA2AView() {
 
           <div className="px-3 py-1.5 mt-3 text-[9px] font-bold uppercase tracking-wider text-text-3">可连接</div>
           {externalServers.filter((s) => getStatus(s) !== 'connected').map((server) => (
-            <div key={server.id} className="flex items-center gap-2 px-3 py-2 text-xs text-text-3">
+            <div key={server.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs text-text-3">
               <span className="h-2 w-2 rounded-full shrink-0 bg-text-3" />
               <span className="truncate">{server.name}</span>
               <button onClick={() => handleConnect(server.id)} className="ml-auto rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20 disabled:opacity-50" disabled={connecting === server.id}>
@@ -166,7 +167,7 @@ export default function MCPA2AView() {
 
           <div className="px-3 py-1.5 mt-3 text-[9px] font-bold uppercase tracking-wider text-text-3">A2A Agent通信</div>
           {ALL_AGENTS_DEF.map((agent) => (
-            <div key={agent.id} className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-2">
+            <div key={agent.id} className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs text-text-2">
               <span className="text-sm">{agent.icon}</span>
               <span className="truncate">{agent.name}</span>
               <span className="ml-auto h-1.5 w-1.5 rounded-full bg-success" />
@@ -179,7 +180,7 @@ export default function MCPA2AView() {
       <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
         {/* MCP Server detail */}
         <div className="border-b border-border px-4 py-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-bold">{activeServer.name}</span>
             <span className={cn('rounded-full px-2 py-0.5 text-[8px] font-bold', getStatus(activeServer) === 'connected' ? 'bg-success/10 text-success' : 'bg-text-3/10 text-text-3')}>
               {getStatus(activeServer) === 'connected' ? '已连接' : '未连接'}
@@ -190,8 +191,8 @@ export default function MCPA2AView() {
 
           {/* Connection Info */}
           {connInfo && getStatus(activeServer) === 'connected' && (
-            <div className="mt-2 flex items-center gap-4 rounded-lg bg-success/5 px-3 py-2 text-[9px] text-text-2">
-              <span className="flex items-center gap-1"><Wifi size={10} className="text-success" />{connInfo.address}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-4 rounded-lg bg-success/5 px-3 py-2 text-[9px] text-text-2">
+              <span className="flex flex-wrap items-center gap-1"><Wifi size={10} className="text-success" />{connInfo.address}</span>
               <span>协议 v{connInfo.protocolVersion}</span>
               <span>延迟 {connInfo.latency}ms</span>
               <span className="ml-auto">{new Date(connInfo.connectedAt).toLocaleTimeString('zh-CN')}</span>
@@ -200,25 +201,25 @@ export default function MCPA2AView() {
 
           {/* Disconnect button */}
           {!activeServer.isBuiltIn && getStatus(activeServer) === 'connected' && (
-            <button onClick={() => handleDisconnect(selectedServer)} className="mt-2 flex items-center gap-1 rounded-lg bg-danger/10 px-3 py-1 text-[10px] text-danger hover:bg-danger/20">
+            <button onClick={() => handleDisconnect(selectedServer)} className="mt-2 flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1 text-[10px] text-danger hover:bg-danger/20">
               <Unplug size={10} />断开连接
             </button>
           )}
 
           {/* Test Connect button for disconnected servers */}
           {!activeServer.isBuiltIn && getStatus(activeServer) !== 'connected' && (
-            <button onClick={() => handleConnect(selectedServer)} className="mt-2 flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 disabled:opacity-50" disabled={connecting === selectedServer}>
+            <button onClick={() => handleConnect(selectedServer)} className="mt-2 flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 disabled:opacity-50" disabled={connecting === selectedServer}>
               {connecting === selectedServer ? <><Loader2 size={10} className="animate-spin" />连接中...</> : <><Plug size={10} />测试连接</>}
             </button>
           )}
         </div>
 
         {/* Tools */}
-        <div className="border-b border-border p-4">
+        <div className="border-b border-border p-3 md:p-4">
           <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-3">MCP 工具 ({activeServer.tools.length})</div>
           <div className="space-y-2">
             {activeServer.tools.filter(() => getStatus(activeServer) === 'connected').map((tool) => (
-              <div key={tool.name} className="flex items-center gap-3 rounded-lg bg-surface-2 px-3 py-2">
+              <div key={tool.name} className="flex flex-wrap items-center gap-3 rounded-lg bg-surface-2 px-3 py-2">
                 <Zap size={13} className="text-primary-2 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-semibold text-text">{tool.name}</div>
@@ -237,21 +238,21 @@ export default function MCPA2AView() {
 
         {/* Tool result */}
         {toolResult !== null && (
-          <div className="border-b border-border p-4">
+          <div className="border-b border-border p-3 md:p-4">
             <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">调用结果</div>
             <pre className="rounded-lg bg-surface-2 p-3 text-[10px] text-text-2 overflow-x-auto max-h-40">{JSON.stringify(toolResult, null, 2)}</pre>
           </div>
         )}
 
         {/* A2A Pipeline */}
-        <div className="border-b border-border p-4">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="border-b border-border p-3 md:p-4">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             <Radio size={14} className="text-accent" />
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">Agent 协作流水线</span>
           </div>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             {ALL_AGENTS_DEF.map((agent, i) => (
-              <span key={agent.id} className="flex items-center gap-1 text-[10px] text-text-2">
+              <span key={agent.id} className="flex flex-wrap items-center gap-1 text-[10px] text-text-2">
                 <span className="text-sm">{agent.icon}</span> {agent.name}
                 {i < ALL_AGENTS_DEF.length - 1 && <ArrowRight size={10} className="ml-1 text-text-3" />}
               </span>
@@ -273,10 +274,10 @@ export default function MCPA2AView() {
         </div>
 
         {/* A2A Messages */}
-        <div className="p-4">
+        <div className="p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">A2A 消息总线</span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={handleA2ASend} className="rounded-lg bg-primary/10 px-2.5 py-1 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">发送测试</button>
               <button onClick={() => setA2aMessages(a2aGetMessages())} className="rounded-lg bg-surface-2 p-1 text-text-3 hover:text-text"><RefreshCw size={11} /></button>
             </div>
@@ -287,7 +288,7 @@ export default function MCPA2AView() {
             <div className="space-y-1.5">
               {a2aMessages.map((msg) => (
                 <div key={msg.id} className="rounded-lg bg-surface-2 px-3 py-2 text-[10px]">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className={cn('rounded-full px-1.5 py-0.5 font-bold', msg.type === 'delegate' && 'bg-primary/10 text-primary-2', msg.type === 'notify' && 'bg-accent/10 text-accent', msg.type === 'result' && 'bg-success/10 text-success', msg.type === 'query' && 'bg-warn/10 text-warn')}>
                       {msg.type}
                     </span>

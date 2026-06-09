@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useExperiences, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
-import { BookOpen, Sparkles, Tag, Plus, Lock, Loader2 } from 'lucide-react';
+import { BookOpen, Sparkles, Tag, Plus, Lock } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { hasFeature } from '@/lib/subscription';
@@ -74,27 +74,27 @@ export default function ExperienceContent() {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      <div className="flex items-center gap-2">
+    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
         <BookOpen size={18} style={{ color: indColor }} />
         <span className="text-sm font-bold">经验库</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>知识沉淀</span>
-        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; handleOpen(); }}>
+        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; handleOpen(); }}>
           {isPro ? <Plus size={12} /> : <Lock size={12} />}
           提炼经验
         </button>
       </div>
 
       <div className="rounded-xl border border-border p-3 relative overflow-hidden cursor-pointer hover:border-primary/40 transition-colors" style={{ background: `linear-gradient(135deg, ${indColor}06 0%, transparent 100%)` }} onClick={() => { if (!isPro) return; handleOpen(); }}>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           <Sparkles size={14} style={{ color: indColor }} />
           <span className="font-semibold text-text">经验库快捷入口</span>
         </div>
         <p className="mt-1 text-[11px] text-text-2">点击提炼新的经验条目，沉淀团队知识。</p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex-1 flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
           <BookOpen size={14} className="text-text-3" />
           <input type="text" value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} placeholder="搜索经验、标签、作者..." aria-label="搜索经验" className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3" />
         </div>
@@ -112,7 +112,7 @@ export default function ExperienceContent() {
 
       <div className="space-y-3">
         {filteredExperiences.map((e) => (
-          <div key={e.id} className="rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedExp(e); editModal.openModal(); }}>
+          <div key={e.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => { setSelectedExp(e); editModal.openModal(); }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-text">{e.title}</span>
               {e.author && <span className="text-[10px] text-text-3">{e.author}</span>}
@@ -130,7 +130,7 @@ export default function ExperienceContent() {
       </div>
 
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-        <div className="flex items-center gap-2 text-xs text-primary-2">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-primary-2">
           <Sparkles size={14} />
           <span className="font-semibold">经验提示</span>
         </div>
@@ -141,7 +141,7 @@ export default function ExperienceContent() {
 
       <Modal open={modal.open} onClose={modal.closeModal} title="提炼经验"
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={modal.closeModal}>取消</button>
             <button className={btnPrimary} onClick={handleSave} disabled={!form.title.trim()}>创建</button>
           </div>
