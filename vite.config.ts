@@ -30,9 +30,11 @@ export default defineConfig({
             if (id.includes('react-router')) return 'router';
             if (id.includes('lucide-react')) return 'lucide';
             if (id.includes('zustand')) return 'state';
+            if (id.includes('tailwind-merge') || id.includes('clsx')) return 'ui-utils';
           }
-          // AI engine modules — separate from core app
           if (id.includes('/src/lib/ai/')) return 'ai-engines';
+          if (id.includes('/src/lib/dataLayer/')) return 'data-layer';
+          if (id.includes('/src/lib/i18n/')) return 'i18n';
         },
       },
     },

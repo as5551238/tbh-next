@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useAppStore } from '@/stores/appStore';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const MAX_RECONNECT_ATTEMPTS = 3;
@@ -24,6 +25,10 @@ export function useRealtime(
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
   const [status, setStatus] = useState<RealtimeStatus>('disconnected');
+
+  // Sync status to global store for UI indicator
+  const setRealtimeStatus = useAppStore((s) => s.setRealtimeStatus);
+  useEffect(() => { setRealtimeStatus(status); }, [status, setRealtimeStatus]);
 
   // Fallback: when Realtime fails after MAX_RECONNECT, degrade to periodic refetch
   const startPolling = useCallback(() => {

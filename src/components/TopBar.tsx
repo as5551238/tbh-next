@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Search, Bell, Settings, ChevronRight, X, Menu, User } from 'lucide-react';
 import { useNotifications } from '@/hooks/useMatrix';
 import { clearAuth } from '@/lib/auth';
+import RealtimeIndicator from '@/components/RealtimeIndicator';
 
 const IFACE_LABELS: Record<string, string> = {
   workspace: '模块工作台',
@@ -95,6 +96,9 @@ export default function TopBar() {
         <ChevronRight size={12} className="text-text-3 shrink-0" />
         <span className="text-text-3 truncate max-w-[100px] md:max-w-none">{MODULE_LABELS[activeModule] ?? activeModule}</span>
       </div>
+
+      {/* Realtime status indicator */}
+      <RealtimeIndicator />
 
       {/* Context Pill — full on md+, dot-only on mobile */}
       <button

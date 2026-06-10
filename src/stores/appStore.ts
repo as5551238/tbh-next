@@ -96,6 +96,10 @@ interface AppState {
   authUser: { id: string; email: string; role: string; name: string } | null;
   setAuthUser: (user: { id: string; email: string; role: string; name: string } | null) => void;
   teamId: string;
+
+  // Realtime connection status (updated by useRealtime hook)
+  realtimeStatus: 'connected' | 'reconnecting' | 'degraded' | 'disconnected';
+  setRealtimeStatus: (status: 'connected' | 'reconnecting' | 'degraded' | 'disconnected') => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -152,4 +156,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   authUser: null,
   setAuthUser: (user) => set({ authUser: user }),
   teamId: '__default__',
+
+  realtimeStatus: 'disconnected',
+  setRealtimeStatus: (status) => set({ realtimeStatus: status }),
 }));
