@@ -1,4 +1,4 @@
-import { setCurrentPlan, getCurrentPlan } from '@/lib/subscription';
+import { getCurrentPlan } from '@/lib/subscription';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export const STRIPE_PRICES = {
@@ -96,12 +96,6 @@ async function invokeStripeCheckout(
   return { success: true, sessionId: data.sessionId, url: data.url };
 }
 
-function simulateCheckout(priceId: string): { success: boolean; sessionId: string } {
-  const tier = PLAN_MAP[priceId] ?? 'free';
-  setCurrentPlan(tier);
-  return { success: true, sessionId: `cs_test_${Date.now()}` };
-}
-
 export async function initiateCheckout(
   priceId: string,
   userId?: string,
@@ -121,13 +115,14 @@ export async function initiateCheckout(
         return result;
       }
     } catch (err) {
-      console.warn('Stripe checkout failed, falling back to demo mode:', err);
+      console.error('Stripe checkout failed:', err);
     }
   }
 
-  await new Promise((r) => setTimeout(r, 1500));
-  const fallback = simulateCheckout(priceId);
-  return { success: fallback.success, sessionId: fallback.sessionId };
+  // SECURITY: No local bypass — if Stripe is unavailable, checkout fails.
+  // Users cannot upgrade without a real payment.
+  console.warn('支付服务不可用，请联系管理员或稍后再试');
+  return { success: false };
 }
 
 export function getSubscriptionStatus(): { plan: string; active: boolean; periodEnd?: string } {
@@ -135,7 +130,8 @@ export function getSubscriptionStatus(): { plan: string; active: boolean; period
   return {
     plan,
     active: plan !== 'free',
-    periodEnd: plan !== 'free' ? new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10) : undefined,
+    // SECURITY: periodEnd only returned when verified from server
+    // Fake periodEnd removed — no client-side date fabrication
   };
 }
 
@@ -159,11 +155,7 @@ export async function cancelSubscription(customerId?: string, sessionId?: string
     }
   }
 
-  if (!STRIPE_PORTAL_CONFIG.enabled) {
-    await new Promise((r) => setTimeout(r, 1000));
-    setCurrentPlan('free');
-    return true;
-  }
-
+  // SECURITY: No local bypass — cancel must go through Stripe portal.
+  // Client-side plan downgrade removed to prevent self-service abuse.
   return false;
 }

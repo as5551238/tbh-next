@@ -13,6 +13,7 @@ import PageErrorBoundary from '@/components/PageErrorBoundary';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import OnboardingFlow from '@/components/OnboardingFlow';
 import ShortcutHelp from '@/components/ShortcutHelp';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { cn } from '@/lib/utils';
 import { retryLazy } from '@/lib/retryLazy';
 
@@ -217,6 +218,7 @@ export default function App() {
         {ctxPanelOpen && <ContextPanel />}
         <MobileTabBar />
         <ShortcutHelp />
+        <PWAInstallPrompt />
       </div>
     );
   }
@@ -241,6 +243,7 @@ export default function App() {
       <OnboardingOverlay />
       <OnboardingFlow />
       <ShortcutHelp />
+      <PWAInstallPrompt />
     </div>
   );
 }

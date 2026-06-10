@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useAuth } from '@/lib/auth';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { PLAN_LIMITS, PLAN_PRICES, fetchSubscription, fetchUsageToday, type SubscriptionInfo, type UsageSummary, getCurrentPlan, setCurrentPlan } from '@/lib/subscription';
 import { CHECKOUT_PLANS, initiateCheckout, cancelSubscription, getSubscriptionStatus } from '@/lib/payment';
@@ -175,22 +176,31 @@ export default function SubscriptionView() {
                         setSwitching(p);
                         // In demo mode: grant immediate access for trial
                         // In production: this would redirect to Stripe Checkout
-                        setCurrentPlan(p);
-                        if (user?.id) {
-                          await upsertSubscription({ user_id: user.id, plan: p, status: 'active' });
+                        // SECURITY: Only allow local plan change in demo mode (no Supabase)
+                        if (!isSupabaseConfigured()) {
+                          setCurrentPlan(p);
+                          setSub((prev) => ({ ...prev, plan: p }));
+                          const newLimits = PLAN_LIMITS[p];
+                          setUsage((prev) => prev ? {
+                            ...prev,
+                            aiQueriesLimit: newLimits.aiQueriesPerDay,
+                            agentsLimit: newLimits.maxAgents,
+                            teamMembersLimit: newLimits.maxTeamMembers,
+                            projectsLimit: newLimits.maxProjects,
+                            docsLimit: newLimits.maxDocs,
+                          } : null);
+                          setUpgradeRequested(p);
+                          setSwitching(null);
+                        } else {
+                          // Production: redirect to Stripe checkout
+                          if (user?.id) {
+                            const priceId = CHECKOUT_PLANS.find(cp => cp.tier === p && cp.interval === 'monthly')?.priceId;
+                            if (priceId) {
+                              initiateCheckout(priceId, user.id, user.email ?? undefined);
+                            }
+                          }
+                          setSwitching(null);
                         }
-                        setSub((prev) => ({ ...prev, plan: p }));
-                        const newLimits = PLAN_LIMITS[p];
-                        setUsage((prev) => prev ? {
-                          ...prev,
-                          aiQueriesLimit: newLimits.aiQueriesPerDay,
-                          agentsLimit: newLimits.maxAgents,
-                          teamMembersLimit: newLimits.maxTeamMembers,
-                          projectsLimit: newLimits.maxProjects,
-                          docsLimit: newLimits.maxDocs,
-                        } : null);
-                        setUpgradeRequested(p);
-                        setSwitching(null);
                       }}
                       disabled={isSwitching !== null}
                       className={cn(

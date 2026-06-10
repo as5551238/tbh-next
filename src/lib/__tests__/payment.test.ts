@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+// @vitest/environments jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('@/lib/supabase', () => ({
@@ -50,125 +50,31 @@ describe('payment module', () => {
       expect(result.success).toBe(false);
     });
 
-    it('returns { success: true } for valid priceId in demo mode', async () => {
-      vi.useFakeTimers();
-      const resultPromise = initiateCheckout(STRIPE_PRICES.pro_monthly);
-      await vi.advanceTimersByTimeAsync(2000);
-      const result = await resultPromise;
-      expect(result.success).toBe(true);
-      expect(result.sessionId).toBeTruthy();
-      vi.useRealTimers();
-    }, 10000);
+    it('returns failure when Stripe is unavailable (no local bypass)', async () => {
+      const result = await initiateCheckout(STRIPE_PRICES.pro_monthly);
+      // SECURITY: Without Supabase/Stripe, checkout must fail — no simulateCheckout bypass
+      expect(result.success).toBe(false);
+    });
 
-    it('sets plan to pro when pro plan checkout succeeds', async () => {
-      vi.useFakeTimers();
-      const resultPromise = initiateCheckout(STRIPE_PRICES.pro_monthly);
-      await vi.advanceTimersByTimeAsync(2000);
-      await resultPromise;
-      expect(getCurrentPlan()).toBe('pro');
-      vi.useRealTimers();
-    }, 10000);
-
-    it('sets plan to enterprise when enterprise plan checkout succeeds', async () => {
-      vi.useFakeTimers();
-      const resultPromise = initiateCheckout(STRIPE_PRICES.enterprise_monthly);
-      await vi.advanceTimersByTimeAsync(2000);
-      await resultPromise;
-      expect(getCurrentPlan()).toBe('enterprise');
-      vi.useRealTimers();
-    }, 10000);
-  });
-
-  describe('cancelSubscription', () => {
-    it('sets plan back to free in demo mode', async () => {
-      setCurrentPlan('pro');
-      expect(getCurrentPlan()).toBe('pro');
-      vi.useFakeTimers();
-      const resultPromise = cancelSubscription();
-      await vi.advanceTimersByTimeAsync(1500);
-      const result = await resultPromise;
-      expect(result).toBe(true);
-      expect(getCurrentPlan()).toBe('free');
-      vi.useRealTimers();
-    }, 10000);
-
-    it('returns true when Stripe portal is not enabled (local fallback)', async () => {
-      vi.useFakeTimers();
-      const resultPromise = cancelSubscription();
-      await vi.advanceTimersByTimeAsync(1500);
-      const result = await resultPromise;
-      expect(result).toBe(true);
-      vi.useRealTimers();
-    }, 10000);
-
-    it('sets plan to free even from enterprise', async () => {
-      setCurrentPlan('enterprise');
-      vi.useFakeTimers();
-      const resultPromise = cancelSubscription();
-      await vi.advanceTimersByTimeAsync(1500);
-      await resultPromise;
-      expect(getCurrentPlan()).toBe('free');
-      vi.useRealTimers();
-    }, 10000);
-
-    it('cancel from free plan stays free', async () => {
-      vi.useFakeTimers();
-      const resultPromise = cancelSubscription();
-      await vi.advanceTimersByTimeAsync(1500);
-      const result = await resultPromise;
-      expect(result).toBe(true);
-      expect(getCurrentPlan()).toBe('free');
-      vi.useRealTimers();
-    }, 10000);
-
-    it('returns false when Stripe portal enabled but Supabase not configured and portal config fails', async () => {
-      vi.doMock('@/lib/supabase', () => ({
-        isSupabaseConfigured: () => false,
-        supabase: null,
-      }));
-      vi.doMock('@/lib/payment', async () => {
-        const mod = await vi.importActual<typeof import('@/lib/payment')>('@/lib/payment');
-        return mod;
-      });
+    it('does not change plan when checkout fails', async () => {
+      setCurrentPlan('free');
+      await initiateCheckout(STRIPE_PRICES.pro_monthly);
       expect(getCurrentPlan()).toBe('free');
     });
   });
 
-  describe('simulateCheckout', () => {
-    it('simulateCheckout via initiateCheckout pro_monthly sets plan to pro', async () => {
-      vi.useFakeTimers();
-      const p = initiateCheckout(STRIPE_PRICES.pro_monthly);
-      await vi.advanceTimersByTimeAsync(2000);
-      await p;
+  describe('cancelSubscription', () => {
+    it('returns false when Stripe portal is unavailable (no local bypass)', async () => {
+      const result = await cancelSubscription();
+      // SECURITY: cancel must go through Stripe portal, no local downgrade
+      expect(result).toBe(false);
+    });
+
+    it('does not change plan when cancel fails', async () => {
+      setCurrentPlan('pro');
+      await cancelSubscription();
+      // Plan should NOT be changed without server verification
       expect(getCurrentPlan()).toBe('pro');
-      vi.useRealTimers();
-    }, 10000);
-
-    it('simulateCheckout via initiateCheckout enterprise_yearly sets plan to enterprise', async () => {
-      vi.useFakeTimers();
-      const p = initiateCheckout(STRIPE_PRICES.enterprise_yearly);
-      await vi.advanceTimersByTimeAsync(2000);
-      await p;
-      expect(getCurrentPlan()).toBe('enterprise');
-      vi.useRealTimers();
-    }, 10000);
-
-    it('simulateCheckout returns a sessionId starting with cs_test_', async () => {
-      vi.useFakeTimers();
-      const p = initiateCheckout(STRIPE_PRICES.pro_yearly);
-      await vi.advanceTimersByTimeAsync(2000);
-      const result = await p;
-      expect(result.sessionId).toMatch(/^cs_test_/);
-      vi.useRealTimers();
-    }, 10000);
-
-    it('simulateCheckout for unknown priceId sets plan to free', async () => {
-      vi.useFakeTimers();
-      const p = initiateCheckout('price_unknown');
-      await vi.advanceTimersByTimeAsync(2000);
-      const result = await p;
-      expect(result.success).toBe(false);
-      vi.useRealTimers();
     });
   });
 
@@ -180,18 +86,13 @@ describe('payment module', () => {
       expect(status.periodEnd).toBeUndefined();
     });
 
-    it('returns active status for pro plan', () => {
+    it('returns active status for pro plan without fabricated periodEnd', () => {
       setCurrentPlan('pro');
       const status = getSubscriptionStatus();
       expect(status.plan).toBe('pro');
       expect(status.active).toBe(true);
-      expect(status.periodEnd).toBeTruthy();
-    });
-
-    it('returns periodEnd as date string for paid plan', () => {
-      setCurrentPlan('pro');
-      const status = getSubscriptionStatus();
-      expect(status.periodEnd).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      // SECURITY: no client-side periodEnd fabrication
+      expect(status.periodEnd).toBeUndefined();
     });
   });
 

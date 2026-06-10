@@ -20,7 +20,7 @@ import MyToday from './pages/MyToday';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import AuditLogView from './pages/AuditLogView';
-import RequireAuth from './lib/auth';
+import RequireAuth, { RequireRole } from './lib/auth';
 import { initTheme } from '@/hooks/useTheme';
 import './index.css';
 import '@/lib/i18n';
@@ -61,7 +61,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="collab/:module" element={null} />
           <Route path="ai" element={<Navigate to="/ai/main" replace />} />
           <Route path="ai/:module" element={null} />
-          <Route path="audit" element={<AuditLogView />} />
+          <Route path="audit" element={<RequireRole roles={['admin']}><AuditLogView /></RequireRole>} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
