@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import GlobalSidebar from '@/components/GlobalSidebar';
 import ModuleSidebar from '@/components/ModuleSidebar';
 import TopBar from '@/components/TopBar';
-import ContextPanel from '@/components/ContextPanel';
+import ContextPanel from '@/components/contextPanel';
 import PageErrorBoundary from '@/components/PageErrorBoundary';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import OnboardingFlow from '@/components/OnboardingFlow';
