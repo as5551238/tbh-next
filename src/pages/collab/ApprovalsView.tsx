@@ -60,7 +60,6 @@ export default function ApprovalsView() {
       created_at: new Date().toISOString(),
     } as ApprovalInput);
     setForm({ title: '', type: 'expense', description: '', urgency: 'normal' });
-    setForm({ title: '', type: 'expense', amount: '', urgency: 'normal' });
     createModal.closeModal();
   }
 
@@ -132,8 +131,8 @@ export default function ApprovalsView() {
             </div>
             {item.status === 'pending' && (
               <div className="flex flex-wrap gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={(e) => { e.stopPropagation(); editApproval(item.id, { status: 'approved' }); triggerFeedback({ type: 'approval', action: 'approved', entity: item }); }} className="rounded-lg bg-success/10 px-3 py-1.5 text-[10px] font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
-                <button onClick={(e) => { e.stopPropagation(); editApproval(item.id, { status: 'rejected' }); triggerFeedback({ type: 'approval', action: 'rejected', entity: item }); }} className="rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
+                <button onClick={(e) => { e.stopPropagation(); editApproval(item.id, { status: 'approved' }); triggerFeedback({ type: 'approval', action: 'approved', entity: item as unknown as Record<string, unknown> }); }} className="rounded-lg bg-success/10 px-3 py-1.5 text-[10px] font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
+                <button onClick={(e) => { e.stopPropagation(); editApproval(item.id, { status: 'rejected' }); triggerFeedback({ type: 'approval', action: 'rejected', entity: item as unknown as Record<string, unknown> }); }} className="rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
                 <button onClick={(e) => { e.stopPropagation(); setSelected(item); detailModal.openModal(); }} className="rounded-lg bg-surface-2 px-3 py-1.5 text-[10px] font-semibold text-text-3 hover:text-text transition-colors">
                   详情 <ChevronRight size={10} className="inline" />
                 </button>
@@ -144,11 +143,11 @@ export default function ApprovalsView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="审批详情" fields={APPROVAL_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'approval', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editApproval(selected.id, updated); } }} onDelete={() => { if (selected) { removeApproval(selected.id); detailModal.closeModal(); } }} extraFooter={
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="审批详情" fields={APPROVAL_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'approval', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editApproval(selected.id, updated); } }} onDelete={() => { if (selected) { removeApproval(selected.id); detailModal.closeModal(); } }} extraFooter={
         selected?.status === 'pending' ? (
           <>
-            <button type="button" onClick={() => { if (selected) { editApproval(selected.id, { status: 'approved' }); detailModal.closeModal(); triggerFeedback({ type: 'approval', action: 'approved', entity: selected }); } }} className="rounded-lg bg-success/10 px-4 py-2 text-xs font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
-            <button type="button" onClick={() => { if (selected) { editApproval(selected.id, { status: 'rejected' }); detailModal.closeModal(); triggerFeedback({ type: 'approval', action: 'rejected', entity: selected }); } }} className="rounded-lg bg-danger/10 px-4 py-2 text-xs font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
+            <button type="button" onClick={() => { if (selected) { editApproval(selected.id, { status: 'approved' }); detailModal.closeModal(); triggerFeedback({ type: 'approval', action: 'approved', entity: selected as unknown as Record<string, unknown> }); } }} className="rounded-lg bg-success/10 px-4 py-2 text-xs font-semibold text-success hover:bg-success/20 transition-colors">通过</button>
+            <button type="button" onClick={() => { if (selected) { editApproval(selected.id, { status: 'rejected' }); detailModal.closeModal(); triggerFeedback({ type: 'approval', action: 'rejected', entity: selected as unknown as Record<string, unknown> }); } }} className="rounded-lg bg-danger/10 px-4 py-2 text-xs font-semibold text-danger hover:bg-danger/20 transition-colors">驳回</button>
           </>
         ) : undefined
       } />

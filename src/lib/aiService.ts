@@ -190,7 +190,7 @@ export async function chatCompletion(
   // Route priority: Edge Function proxy (secure) > local fallback (offline)
   let route: 'edge' | 'local' = 'local';
   try {
-    let response: AIResponse;
+    let response: AIResponse | null = null;
 
     if (options?.enableTools && isSupabaseConfigured() && supabase) {
       // === S8.1: Tool-enabled path with execution loop ===

@@ -153,7 +153,7 @@ export default function ScheduleContent() {
           {loading ? (
             <CardSkeleton />
           ) : todayEvents.map((evt) => (
-            <div key={evt.id} onClick={() => openEditModal(evt)} className={cn('rounded-xl border border-border p-3 cursor-pointer hover:border-primary/30 transition-colors',
+            <div key={evt.id} onClick={() => openEditModal({ id: evt.id, title: evt.title, time: evt.time, location: evt.location ?? undefined, type: evt.type })} className={cn('rounded-xl border border-border p-3 cursor-pointer hover:border-primary/30 transition-colors',
               evt.type === 'deadline' && 'border-l-2 border-l-danger',
               evt.type === 'meeting' && 'border-l-2 border-l-primary'
             )}>

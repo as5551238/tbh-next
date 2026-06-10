@@ -301,9 +301,9 @@ export default function MCPA2AView() {
                   <div className="mt-1 text-text-3">
                     <span>时间: {new Date(msg.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                     <span className="ml-3">发送者: {msg.from}</span>
-                    {msg.payload && typeof msg.payload === 'object' && 'text' in (msg.payload as object) && (
-                      <span className="ml-3 text-text-2">内容: {(msg.payload as { text: string }).text}</span>
-                    )}
+                    {msg.payload && typeof msg.payload === 'object' && 'text' in (msg.payload as object) ? (
+                      <span className="ml-3 text-text-2">内容: {String((msg.payload as Record<string, unknown>).text)}</span>
+                    ) : null}
                   </div>
                 </div>
               ))}

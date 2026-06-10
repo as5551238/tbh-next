@@ -36,7 +36,7 @@ export default function GoalsContent() {
       title: g.title,
       status: g.status === 'active' || g.status === 'on_track' ? 'on_track' : 'at_risk',
       progress: g.progress,
-      key_results: krTexts,
+      key_results: krTexts as string[],
     });
     goalModal.openModal();
   }, [goalModal.openModal]);
@@ -131,7 +131,7 @@ export default function GoalsContent() {
                   <span className="flex-1">{safeStr(kr)}</span>
                   {krItem && (krItem.targetValue != null || krItem.currentValue != null) && (
                     <span className="text-[10px] text-text-3 shrink-0">
-                      {krItem.currentValue ?? 0}/{krItem.targetValue ?? '-'}
+                      {String(krItem.currentValue ?? 0)}/{String(krItem.targetValue ?? '-')}
                     </span>
                   )}
                 </div>

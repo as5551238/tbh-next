@@ -131,11 +131,11 @@ export default function KpiDashView() {
         {cell.kpis.map((kpi) => {
           const displayTarget = localTargets[kpi.name] ?? kpi.target;
           const TrendIcon = TREND_ICON[kpi.trend];
-          const progress = displayTarget > 0 ? Math.min(100, Math.round((Number(kpi.value) / Number(displayTarget)) * 100)) : 0;
+          const progress = Number(displayTarget) > 0 ? Math.min(100, Math.round((Number(kpi.value) / Number(displayTarget)) * 100)) : 0;
           const isExpanded = expandedKpi === kpi.name;
           const sparkBars = generateSparkline(kpi.name, kpi.value, displayTarget);
           const gap = Number(kpi.value) - Number(displayTarget);
-          const gapPct = displayTarget > 0 ? Math.round((gap / Number(displayTarget)) * 100) : 0;
+          const gapPct = Number(displayTarget) > 0 ? Math.round((gap / Number(displayTarget)) * 100) : 0;
 
           return (
             <div key={kpi.name} className="rounded-xl border border-border bg-surface">

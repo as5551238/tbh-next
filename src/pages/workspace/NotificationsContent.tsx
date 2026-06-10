@@ -41,9 +41,9 @@ export default function NotificationsContent() {
     confirmModal.openModal();
   }
 
-  const displayMsg = (n: NotificationRow) => n.message ?? (n as Record<string, unknown>).content as string ?? '';
-  const displaySource = (n: NotificationRow) => n.source ?? n.related_type ?? '系统';
-  const displayTime = (n: NotificationRow) => n.time ?? (n.created_at ? new Date(n.created_at).toLocaleString('zh-CN') : '');
+  const displayMsg = (n: NotificationRow) => n.message ?? '';
+  const displaySource = (n: NotificationRow) => (n as unknown as Record<string, unknown>).source as string ?? n.related_type ?? '系统';
+  const displayTime = (n: NotificationRow) => (n as unknown as Record<string, unknown>).time as string ?? (n.created_at ? new Date(n.created_at).toLocaleString('zh-CN') : '');
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">

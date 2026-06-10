@@ -45,7 +45,7 @@ export async function createGoal(data: Omit<GoalRow, 'id'>): Promise<GoalRow> {
 
 export async function updateGoal(id: string, data: Partial<Omit<GoalRow, 'id'>>): Promise<GoalRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as GoalRow;
-  const row = filterColumns('goals', data as Record<string, unknown>);
+  const row = filterColumns('goals', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('goals').update(row).eq('id', id).select().single();
   if (error) throw error;
   return result as GoalRow;
@@ -109,7 +109,7 @@ export async function createProject(data: Omit<ProjectRow, 'id'>): Promise<Proje
 
 export async function updateProject(id: string, data: Partial<Omit<ProjectRow, 'id'>>): Promise<ProjectRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as ProjectRow;
-  const row = filterColumns('projects', data as Record<string, unknown>);
+  const row = filterColumns('projects', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('projects').update(row).eq('id', id).select().single();
   if (error) throw error;
   return result as ProjectRow;
@@ -133,7 +133,7 @@ export async function createMember(data: Omit<MemberRow, 'id'>): Promise<MemberR
 
 export async function updateMember(id: string, data: Partial<Omit<MemberRow, 'id'>>): Promise<MemberRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as MemberRow;
-  const row = filterColumns('members', data as Record<string, unknown>);
+  const row = filterColumns('members', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('members').update(row).eq('id', id).select().single();
   if (error) throw error;
   return result as MemberRow;
@@ -152,15 +152,15 @@ export async function createKnowledgeDoc(data: Omit<KnowledgeDocRow, 'id' | 'cre
   const row = filterColumns('knowledge', { ...data, team_id: '__default__' } as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('knowledge').insert(row).select().single();
   if (error) throw error;
-  return row as KnowledgeDocRow;
+  return row as unknown as KnowledgeDocRow;
 }
 
 export async function updateKnowledgeDoc(id: string, data: Partial<Omit<KnowledgeDocRow, 'id' | 'created_at' | 'updated_at'>>): Promise<KnowledgeDocRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, created_at: '', updated_at: new Date().toISOString(), ...data } as KnowledgeDocRow;
-  const row = filterColumns('knowledge', data as Record<string, unknown>);
+  const row = filterColumns('knowledge', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('knowledge').update(row).eq('id', id).select().single();
   if (error) throw error;
-  return row as KnowledgeDocRow;
+  return row as unknown as KnowledgeDocRow;
 }
 
 export async function deleteKnowledgeDoc(id: string): Promise<void> {
@@ -177,7 +177,7 @@ export async function fetchActionItems(goalId?: string): Promise<ActionItemRow[]
   if (goalId) query = query.eq('goal_id', goalId);
   const { data, error } = await query;
   if (error || !data) return [];
-  return (data as Record<string, unknown>[]).map((a) => ({
+  return (data as unknown as Record<string, unknown>[]).map((a) => ({
     id: String(a.id ?? ''),
     title: String(a.title ?? ''),
     description: String(a.description ?? ''),
@@ -198,7 +198,7 @@ export async function fetchActionItems(goalId?: string): Promise<ActionItemRow[]
 }
 
 export async function createActionItem(data: ActionItemInput): Promise<ActionItemRow> {
-  if (!isSupabaseConfigured() || !supabase) return { id: `ai_local_${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...data };
+  if (!isSupabaseConfigured() || !supabase) return { id: `ai_local_${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...data } as unknown as ActionItemRow;
   const row = filterColumns('action_items', { ...data } as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('action_items').insert(row).select().single();
   if (error) throw error;
@@ -207,7 +207,7 @@ export async function createActionItem(data: ActionItemInput): Promise<ActionIte
 
 export async function updateActionItem(id: string, data: ActionItemUpdate): Promise<ActionItemRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, created_at: '', updated_at: new Date().toISOString(), ...data } as ActionItemRow;
-  const row = filterColumns('action_items', data as Record<string, unknown>);
+  const row = filterColumns('action_items', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('action_items').update(row).eq('id', id).select().single();
   if (error) throw error;
   return result as ActionItemRow;
@@ -227,7 +227,7 @@ export async function fetchDeviationAlerts(unreadOnly?: boolean): Promise<Deviat
   if (unreadOnly) query = query.eq('is_read', false).eq('is_resolved', false);
   const { data, error } = await query;
   if (error || !data) return [];
-  return (data as Record<string, unknown>[]).map((d) => ({
+  return (data as unknown as Record<string, unknown>[]).map((d) => ({
     id: String(d.id ?? ''),
     goal_id: d.goal_id ? String(d.goal_id) : null,
     task_id: d.task_id ? String(d.task_id) : null,
@@ -244,7 +244,7 @@ export async function fetchDeviationAlerts(unreadOnly?: boolean): Promise<Deviat
 }
 
 export async function createDeviationAlert(data: DeviationAlertInput): Promise<DeviationAlertRow> {
-  if (!isSupabaseConfigured() || !supabase) return { id: `da_local_${Date.now()}`, created_at: new Date().toISOString(), ...data };
+  if (!isSupabaseConfigured() || !supabase) return { id: `da_local_${Date.now()}`, created_at: new Date().toISOString(), ...data } as unknown as DeviationAlertRow;
   const row = filterColumns('deviation_alerts', { ...data } as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('deviation_alerts').insert(row).select().single();
   if (error) throw error;
@@ -253,7 +253,7 @@ export async function createDeviationAlert(data: DeviationAlertInput): Promise<D
 
 export async function updateDeviationAlert(id: string, data: DeviationAlertUpdate): Promise<DeviationAlertRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, created_at: '', ...data } as DeviationAlertRow;
-  const row = filterColumns('deviation_alerts', data as Record<string, unknown>);
+  const row = filterColumns('deviation_alerts', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('deviation_alerts').update(row).eq('id', id).select().single();
   if (error) throw error;
   return result as DeviationAlertRow;
@@ -353,7 +353,7 @@ export async function deleteContact(id: string): Promise<void> {
 
 export async function createScheduleEvent(data: ScheduleEventInput): Promise<ScheduleEventRow | null> {
   if (!isSupabaseConfigured() || !supabase) return null;
-  const filtered = filterColumns('schedule_events', data as Record<string, unknown>);
+  const filtered = filterColumns('schedule_events', data as unknown as Record<string, unknown>);
   const { data: row, error } = await supabase!.from('schedule_events').insert(filtered).select().single();
   if (error) { console.error('createScheduleEvent error:', error); return null; }
   return row as ScheduleEventRow;
@@ -375,7 +375,7 @@ export async function deleteScheduleEvent(id: string): Promise<void> {
 
 export async function createDoc(data: DocInput): Promise<DocRow | null> {
   if (!isSupabaseConfigured() || !supabase) return null;
-  const filtered = filterColumns('docs', data as Record<string, unknown>);
+  const filtered = filterColumns('docs', data as unknown as Record<string, unknown>);
   const { data: row, error } = await supabase!.from('docs').insert(filtered).select().single();
   if (error) { console.error('createDoc error:', error); return null; }
   return row as DocRow;
@@ -429,7 +429,7 @@ export async function fetchMessages(channel: string): Promise<import('./types').
     .eq('channel', channel)
     .order('created_at', { ascending: true });
   if (error || !data) return [];
-  return (data as Record<string, unknown>[]).map((m) => ({
+  return (data as unknown as Record<string, unknown>[]).map((m) => ({
     id: String(m.id ?? ''),
     channel: String(m.channel ?? ''),
     sender_id: m.sender_id ? String(m.sender_id) : null,
@@ -457,7 +457,7 @@ export async function updateAgentDetail(id: string, data: AgentDetailUpdate): Pr
 
 export async function createAgentDetail(data: AgentDetailInput): Promise<AgentDetailRow> {
   if (!isSupabaseConfigured() || !supabase) return {} as AgentDetailRow;
-  const filtered = filterColumns('agent_details', data);
+  const filtered = filterColumns('agent_details', data as unknown as Record<string, unknown>);
   const { data: row, error } = await supabase!.from('agent_details').insert(filtered).select().single();
   if (error) throw new Error(`createAgentDetail: ${error.message}`);
   return row as AgentDetailRow;
@@ -473,7 +473,7 @@ export async function deleteAgentDetail(id: string): Promise<void> {
 
 export async function createApproval(data: ApprovalInput): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
-  const filtered = filterColumns('approvals', data);
+  const filtered = filterColumns('approvals', data as unknown as Record<string, unknown>);
   const { error } = await supabase!.from('approvals').insert(filtered);
   if (error) throw new Error(`createApproval: ${error.message}`);
 }
@@ -488,7 +488,7 @@ export async function deleteApproval(id: string): Promise<void> {
 
 export async function createRisk(data: RiskInput): Promise<RiskRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `risk_local_${Date.now()}`, ...data } as RiskRow;
-  const filtered = filterColumns('risks', data as Record<string, unknown>);
+  const filtered = filterColumns('risks', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('risks').insert(filtered).select().single();
   if (error) throw new Error(`createRisk: ${error.message}`);
   return result as RiskRow;
@@ -496,7 +496,7 @@ export async function createRisk(data: RiskInput): Promise<RiskRow> {
 
 export async function updateRisk(id: string, data: RiskUpdate): Promise<RiskRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as RiskRow;
-  const filtered = filterColumns('risks', data as Record<string, unknown>);
+  const filtered = filterColumns('risks', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('risks').update(filtered).eq('id', id).select().single();
   if (error) throw new Error(`updateRisk: ${error.message}`);
   return result as RiskRow;
@@ -512,7 +512,7 @@ export async function deleteRisk(id: string): Promise<void> {
 
 export async function createReport(data: ReportInput): Promise<ReportRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `rpt_local_${Date.now()}`, ...data } as ReportRow;
-  const filtered = filterColumns('reports', data as Record<string, unknown>);
+  const filtered = filterColumns('reports', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('reports').insert(filtered).select().single();
   if (error) throw new Error(`createReport: ${error.message}`);
   return result as ReportRow;
@@ -520,7 +520,7 @@ export async function createReport(data: ReportInput): Promise<ReportRow> {
 
 export async function updateReport(id: string, data: ReportUpdate): Promise<ReportRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as ReportRow;
-  const filtered = filterColumns('reports', data as Record<string, unknown>);
+  const filtered = filterColumns('reports', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('reports').update(filtered).eq('id', id).select().single();
   if (error) throw new Error(`updateReport: ${error.message}`);
   return result as ReportRow;
@@ -536,7 +536,7 @@ export async function deleteReport(id: string): Promise<void> {
 
 export async function createPrediction(data: PredictionInput): Promise<PredictionRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `pred_local_${Date.now()}`, ...data } as PredictionRow;
-  const filtered = filterColumns('predictions', data as Record<string, unknown>);
+  const filtered = filterColumns('predictions', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('predictions').insert(filtered).select().single();
   if (error) throw new Error(`createPrediction: ${error.message}`);
   return result as PredictionRow;
@@ -544,7 +544,7 @@ export async function createPrediction(data: PredictionInput): Promise<Predictio
 
 export async function updatePrediction(id: string, data: PredictionUpdate): Promise<PredictionRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as PredictionRow;
-  const filtered = filterColumns('predictions', data as Record<string, unknown>);
+  const filtered = filterColumns('predictions', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('predictions').update(filtered).eq('id', id).select().single();
   if (error) throw new Error(`updatePrediction: ${error.message}`);
   return result as PredictionRow;
@@ -560,7 +560,7 @@ export async function deletePrediction(id: string): Promise<void> {
 
 export async function createExperience(data: ExperienceInput): Promise<ExperienceRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `exp_local_${Date.now()}`, ...data } as ExperienceRow;
-  const filtered = filterColumns('experiences', data as Record<string, unknown>);
+  const filtered = filterColumns('experiences', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('experiences').insert(filtered).select().single();
   if (error) throw new Error(`createExperience: ${error.message}`);
   return result as ExperienceRow;
@@ -568,7 +568,7 @@ export async function createExperience(data: ExperienceInput): Promise<Experienc
 
 export async function updateExperience(id: string, data: ExperienceUpdate): Promise<ExperienceRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as ExperienceRow;
-  const filtered = filterColumns('experiences', data as Record<string, unknown>);
+  const filtered = filterColumns('experiences', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('experiences').update(filtered).eq('id', id).select().single();
   if (error) throw new Error(`updateExperience: ${error.message}`);
   return result as ExperienceRow;
@@ -584,7 +584,7 @@ export async function deleteExperience(id: string): Promise<void> {
 
 export async function createRole(data: RoleInput): Promise<RoleRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `role_local_${Date.now()}`, ...data } as RoleRow;
-  const filtered = filterColumns('roles', data as Record<string, unknown>);
+  const filtered = filterColumns('roles', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('roles').insert(filtered).select().single();
   if (error) throw new Error(`createRole: ${error.message}`);
   return result as RoleRow;
@@ -592,7 +592,7 @@ export async function createRole(data: RoleInput): Promise<RoleRow> {
 
 export async function updateRole(id: string, data: RoleUpdate): Promise<RoleRow> {
   if (!isSupabaseConfigured() || !supabase) return { id, ...data } as RoleRow;
-  const filtered = filterColumns('roles', data as Record<string, unknown>);
+  const filtered = filterColumns('roles', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('roles').update(filtered).eq('id', id).select().single();
   if (error) throw new Error(`updateRole: ${error.message}`);
   return result as RoleRow;

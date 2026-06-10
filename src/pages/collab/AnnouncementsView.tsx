@@ -92,7 +92,7 @@ export default function AnnouncementsView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="公告详情" fields={ANN_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'announcement', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editAnnouncement(selected.id, updated); } }} onDelete={() => { if (selected) { removeAnnouncement(selected.id); detailModal.closeModal(); } }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="公告详情" fields={ANN_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'announcement', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editAnnouncement(selected.id, updated); } }} onDelete={() => { if (selected) { removeAnnouncement(selected.id); detailModal.closeModal(); } }} />
 
       {/* Create Announcement Modal */}
       {createModal.open && (

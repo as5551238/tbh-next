@@ -16,18 +16,19 @@ describe('sentry (no DSN)', () => {
     mockInit.mockReset();
     mockCaptureException.mockReset();
     vi.stubEnv('VITE_SENTRY_DSN', '');
-    vi.stubEnv('PROD', '');
+    vi.stubEnv('PROD', false);
     vi.stubEnv('MODE', 'test');
   });
 
   it('returns false and does not call Sentry.init when DSN is empty', async () => {
     const { initSentry } = await import('@/lib/sentry');
-    expect(initSentry()).toBe(false);
+    const result = initSentry();
+    expect(result).toBe(false);
     expect(mockInit).not.toHaveBeenCalled();
   });
 
   it('warns in production when DSN is missing', async () => {
-    vi.stubEnv('PROD', 'true');
+    vi.stubEnv('PROD', true);
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { initSentry } = await import('@/lib/sentry');
     initSentry();
@@ -66,7 +67,7 @@ describe('sentry (with DSN)', () => {
     mockInit.mockReset();
     mockCaptureException.mockReset();
     vi.stubEnv('VITE_SENTRY_DSN', 'https://test@sentry.io/123');
-    vi.stubEnv('PROD', '');
+    vi.stubEnv('PROD', false);
     vi.stubEnv('MODE', 'test');
   });
 

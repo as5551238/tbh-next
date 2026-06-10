@@ -33,8 +33,6 @@ export interface TaskRow {
   done: boolean;
   goal_id: string | null;
   completed_at?: string | null;
-  leader_id?: string | null;
-  done?: boolean;
 }
 
 export interface ProjectRow {
@@ -149,9 +147,9 @@ export interface ApiKeyRow {
 }
 
 export type {
-  NotificationRow, ReportRow, ApprovalRow, AnnouncementRow,
+  ReportRow, ApprovalRow, AnnouncementRow,
   MeetingRow, CollabDocRow, SharedFileRow, ContactRow,
-  AgentDetailRow, AgentConfigRow, RiskRow, WorkflowRow,
+  AgentDetailRow, RiskRow, WorkflowRow,
   ScheduleEventRow, OrgInfoRow, RoleRow, PredictionRow,
   ExperienceRow, DocRow,
   ActivityRow, NoteRow, SprintRow, TemplateRow, BookmarkRow,

@@ -219,7 +219,7 @@ function filterColumns(table: string, data: Record<string, unknown>): Record<str
   if (!allowed) return data;
   const filtered: Record<string, unknown> = {};
   for (const key of Object.keys(data)) {
-    if (allowed.includes(key)) {
+    if (allowed.has(key)) {
       filtered[key] = data[key];
     }
   }

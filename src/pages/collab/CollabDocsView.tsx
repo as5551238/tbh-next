@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, type FC } from 'react';
 import { useCollabDocs } from '@/hooks/useMatrix';
+import type { CollabDocRow } from '@/lib/dataLayer';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/lib/auth';
 import { useRealtime, usePresence } from '@/hooks/useRealtime';
@@ -67,16 +68,16 @@ export default function CollabDocsView() {
   useEffect(() => {
     if (activeDoc) {
       const doc = docs.find((d) => d.id === activeDoc);
-      if (doc) setEditContent(doc.content || `# ${doc.title}\n\n在此编辑文档内容...`);
+      if (doc) setEditContent((doc as unknown as Record<string, unknown>).content as string || `# ${doc.title}\n\n在此编辑文档内容...`);
     }
   }, [activeDoc, docs]);
 
   async function handleSave() {
     if (!activeDoc) return;
     setSaving(true);
-    await editDoc(activeDoc, { content: editContent, last_edited: new Date().toLocaleDateString('zh-CN'), last_edited_by: user?.email ?? '当前用户' });
+    await editDoc(activeDoc, { last_edited: new Date().toLocaleDateString('zh-CN'), last_edited_by: user?.email ?? '当前用户' } as Partial<CollabDocRow>);
     const doc = docs.find((d) => d.id === activeDoc);
-    if (doc) triggerFeedback({ type: 'doc_status', action: 'saved', entity: doc });
+    if (doc) triggerFeedback({ type: 'doc_status', action: 'saved', entity: doc as unknown as Record<string, unknown> });
     setSaving(false);
   }
 
@@ -86,12 +87,11 @@ export default function CollabDocsView() {
       title: newTitle.trim(),
       type: newType,
       status: 'editing',
-      content: `# ${newTitle.trim()}\n\n在此编辑文档内容...`,
       last_edited: new Date().toLocaleDateString('zh-CN'),
       last_edited_by: user?.email ?? '当前用户',
       editors: 1,
       viewers: 0,
-    });
+    } as Partial<CollabDocRow>);
     setNewTitle('');
     setNewType('doc');
     createModal.closeModal();

@@ -10,9 +10,9 @@ export type {
 } from './types';
 
 export type {
-  NotificationRow, ReportRow, ApprovalRow, AnnouncementRow,
+  ReportRow, ApprovalRow, AnnouncementRow,
   MeetingRow, CollabDocRow, SharedFileRow, ContactRow,
-  AgentDetailRow, AgentConfigRow, RiskRow, WorkflowRow,
+  AgentDetailRow, RiskRow, WorkflowRow,
   ScheduleEventRow, OrgInfoRow, RoleRow, PredictionRow,
   ExperienceRow, DocRow,
   ActivityRow, NoteRow, SprintRow, TemplateRow, BookmarkRow,

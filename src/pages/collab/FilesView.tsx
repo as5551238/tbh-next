@@ -17,7 +17,7 @@ const FILE_ICONS: Record<string, FC<{ size?: number; className?: string }>> = {
   image: Image,
   archive: FileArchive,
   pdf: FileText,
-  other: File,
+  other: File as unknown as FC<{ size?: number; className?: string }>,
 };
 
 const FILE_COLORS: Record<string, string> = {
@@ -79,11 +79,10 @@ export default function FilesView() {
       name: pendingFile.name,
       type: fileType,
       size: sizeStr,
-      size_kb: sizeKb,
       uploaded_by: '我',
       uploaded_at: new Date().toLocaleDateString('zh-CN'),
       downloads: 0,
-    });
+    } as Partial<SharedFileRow>);
     setPendingFile(null);
     uploadModal.closeModal();
   }
@@ -185,7 +184,7 @@ export default function FilesView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="文件详情" fields={FILE_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'file', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { const updatedFile = { ...selected, ...updated } as SharedFileRow; setSelected(updatedFile); editFile(selected.id, updatedFile); } }} onDelete={() => { if (selected) { removeFile(selected.id); setSelected(null); detailModal.closeModal(); } }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="文件详情" fields={FILE_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'file', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { const updatedFile = { ...selected, ...updated } as SharedFileRow; setSelected(updatedFile); editFile(selected.id, updatedFile); } }} onDelete={() => { if (selected) { removeFile(selected.id); setSelected(null); detailModal.closeModal(); } }} />
 
       {/* Upload Modal */}
       {uploadModal.open && (

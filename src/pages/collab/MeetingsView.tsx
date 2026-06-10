@@ -57,7 +57,7 @@ export default function MeetingsView() {
       window.open(location, '_blank');
     } else {
       editMeeting(mtg.id, { status: 'ongoing' });
-      triggerFeedback({ type: 'meeting', action: 'started', entity: mtg });
+      triggerFeedback({ type: 'meeting', action: 'started', entity: mtg as unknown as Record<string, unknown> });
       showToast(`已加入会议: ${mtg.title ?? ''}`);
     }
   }
@@ -120,7 +120,7 @@ export default function MeetingsView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="会议详情" fields={MEETING_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'meeting', id: String(selected.id) } : null}
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="会议详情" fields={MEETING_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'meeting', id: String(selected.id) } : null}
         onSave={(updated) => {
           if (selected) {
             editMeeting(selected.id, updated);

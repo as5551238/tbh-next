@@ -23,6 +23,7 @@ import {
   type GoalRow, type TaskRow, type ProjectRow, type KnowledgeDocRow,
   type ScheduleEventRow, type DocRow, type ExperienceRow, type PredictionRow,
 } from '@/lib/dataLayer';
+import type { InsightInput, WorkflowInstanceInput, ScheduleEventInput, DocInput, ExperienceInput, PredictionInput } from '@/contracts/dataContracts';
 
 export function useGoals() {
   const [goals, setGoals] = useState<GoalRow[]>([]);
@@ -144,13 +145,13 @@ export function useInsights() {
     fetchInsights().then((rows) => { setInsights(rows || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  const addInsight = useCallback(async (data: Record<string, unknown>) => {
+  const addInsight = useCallback(async (data: InsightInput) => {
     const row = await createInsight(data);
     setInsights((prev) => [row, ...prev]);
     return row;
   }, []);
 
-  const editInsight = useCallback(async (id: string, data: Record<string, unknown>) => {
+  const editInsight = useCallback(async (id: string, data: InsightInput) => {
     setInsights((prev) => prev.map((i) => i.id === id ? { ...i, ...data } : i));
     try { await updateInsight(id, data); } catch { /* optimistic */ }
   }, []);
@@ -171,14 +172,14 @@ export function useWorkflowInstances() {
     fetchWorkflowInstances().then((rows) => { setInstances(rows || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  const addInstance = useCallback(async (data: Record<string, unknown>) => {
+  const addInstance = useCallback(async (data: WorkflowInstanceInput) => {
     const row = await createWorkflowInstance(data);
     setInstances((prev) => [...prev, row]);
     return row;
   }, []);
 
-  const editInstance = useCallback(async (id: string, data: Record<string, unknown>) => {
-    setInstances((prev) => prev.map((w) => w.id === id ? { ...w, ...data } : w));
+  const editInstance = useCallback(async (id: string, data: WorkflowInstanceInput) => {
+    setInstances((prev) => prev.map((w) => w.id === id ? { ...w, ...data } as WorkflowInstanceRow : w));
     try { await updateWorkflowInstance(id, data); } catch { /* optimistic */ }
   }, []);
 
@@ -202,7 +203,7 @@ export function useScheduleEvents() {
     const tempId = `evt-${Date.now()}`;
     const tempRow = { id: tempId, ...data } as ScheduleEventRow;
     setEvents((prev) => [tempRow, ...prev]);
-    const dbRow = await createScheduleEvent(data as Record<string, unknown>);
+    const dbRow = await createScheduleEvent(data as ScheduleEventInput);
     if (dbRow) {
       setEvents((prev) => prev.map((e) => e.id === tempId ? dbRow as ScheduleEventRow : e));
     }
@@ -211,7 +212,7 @@ export function useScheduleEvents() {
 
   const editEvent = useCallback(async (id: string, data: Partial<ScheduleEventRow>) => {
     setEvents((prev) => prev.map((e) => e.id === id ? { ...e, ...data } : e));
-    try { await updateScheduleEvent(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await updateScheduleEvent(id, data as ScheduleEventInput); } catch { /* optimistic */ }
   }, []);
 
   const removeEvent = useCallback(async (id: string) => {
@@ -234,7 +235,7 @@ export function useDocs() {
     const tempId = `wsdoc-${Date.now()}`;
     const tempRow = { id: tempId, ...data } as DocRow;
     setDocs((prev) => [tempRow, ...prev]);
-    const dbRow = await createDoc(data as Record<string, unknown>);
+    const dbRow = await createDoc(data as DocInput);
     if (dbRow) {
       setDocs((prev) => prev.map((d) => d.id === tempId ? dbRow as DocRow : d));
     }
@@ -243,7 +244,7 @@ export function useDocs() {
 
   const editDoc = useCallback(async (id: string, data: Partial<DocRow>) => {
     setDocs((prev) => prev.map((d) => d.id === id ? { ...d, ...data } : d));
-    try { await updateDoc(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await updateDoc(id, data as DocInput); } catch { /* optimistic */ }
   }, []);
 
   const removeDoc = useCallback(async (id: string) => {
@@ -263,13 +264,13 @@ export function useExperiences() {
   }, []);
 
   const addExperience = useCallback(async (data: Partial<ExperienceRow>) => {
-    const row = await createExperience(data as Record<string, unknown>);
+    const row = await createExperience(data as ExperienceInput);
     setExperiences((prev) => [row, ...prev]);
     return row;
   }, []);
 
   const editExperience = useCallback(async (id: string, data: Partial<ExperienceRow>) => {
-    const row = await updateExperience(id, data as Record<string, unknown>);
+    const row = await updateExperience(id, data as ExperienceInput);
     setExperiences((prev) => prev.map((e) => e.id === id ? row : e));
     return row;
   }, []);
@@ -291,13 +292,13 @@ export function usePredictions() {
   }, []);
 
   const addPrediction = useCallback(async (data: Partial<PredictionRow>) => {
-    const row = await createPrediction(data as Record<string, unknown>);
+    const row = await createPrediction(data as PredictionInput);
     setPredictions((prev) => [row, ...prev]);
     return row;
   }, []);
 
   const editPrediction = useCallback(async (id: string, data: Partial<PredictionRow>) => {
-    const row = await updatePrediction(id, data as Record<string, unknown>);
+    const row = await updatePrediction(id, data as PredictionInput);
     setPredictions((prev) => prev.map((p) => p.id === id ? row : p));
     return row;
   }, []);

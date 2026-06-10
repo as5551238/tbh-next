@@ -24,7 +24,7 @@ export default function SprintsContent() {
   const [newItem, setNewItem] = useState({ name: '', goal_id: '', status: 'planning', start_date: '', end_date: '' });
 
   const sorted = useMemo(() => {
-    const order = { active: 0, planning: 1, completed: 2 };
+    const order: Record<string, number> = { active: 0, planning: 1, completed: 2 };
     return [...sprints].sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
   }, [sprints]);
 

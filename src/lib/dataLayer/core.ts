@@ -26,7 +26,7 @@ export async function getAuthenticatedUserId(): Promise<string | null> {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id ?? null;
     if (import.meta.env.DEV) {
-      console.log("[dataLayer] Auth state:", userId ? "authenticated" : "anonymous");
+      console.warn("[dataLayer] Auth state:", userId ? "authenticated" : "anonymous");
     }
     return userId;
   }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import { lazy, Suspense, useEffect, type LazyExoticComponent, type CSSProperties } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
@@ -96,7 +96,7 @@ function MobileTabBar() {
           onClick={() => handleTab(t.id)}
           className={cn(
             'flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors',
-            iface === t.id && t.id !== 'menu' ? 'text-primary-2' : 'text-text-3'
+            iface === t.id && String(t.id) !== 'menu' ? 'text-primary-2' : 'text-text-3'
           )}
         >
           <span className="text-lg">{t.icon}</span>
@@ -200,10 +200,11 @@ export default function App() {
   if (isMobile) {
     return (
       <div className="flex h-screen flex-col" style={{ '--ind-color': indColor } as CSSProperties}>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-[var(--color-accent-purple)] focus:text-white focus:rounded-md focus:text-sm">跳到主要内容</a>
         <RouteSync />
         <MobileDrawer />
         <TopBar />
-        <div className="flex-1 overflow-hidden">
+        <div id="main-content" role="main" className="flex-1 overflow-hidden">
           <PageErrorBoundary key={iface}>
             <Suspense fallback={<PageLoader />}>
               <Page />
@@ -218,12 +219,13 @@ export default function App() {
 
   return (
     <div className="flex h-screen" style={{ '--ind-color': indColor } as CSSProperties}>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-[var(--color-accent-purple)] focus:text-white focus:rounded-md focus:text-sm">跳到主要内容</a>
       <RouteSync />
       <GlobalSidebar />
       <ModuleSidebar />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <TopBar />
-        <div className="flex-1 overflow-hidden">
+        <div id="main-content" role="main" className="flex-1 overflow-hidden">
           <PageErrorBoundary key={iface}>
             <Suspense fallback={<PageLoader />}>
               <Page />

@@ -23,6 +23,7 @@ import {
   type CollabDocRow, type SharedFileRow, type ContactRow,
   type OrgInfoRow, type RoleRow,
 } from '@/lib/dataLayer';
+import type { ReportInput, ApprovalInput, AnnouncementInput, MeetingInput, SharedFileInput, ContactInput, RoleInput } from '@/contracts/dataContracts';
 
 export function useMembers() {
   const [members, setMembers] = useState<MemberRow[]>([]);
@@ -68,13 +69,11 @@ export function useNotifications() {
       read: false,
       team_id: '__default__',
       created_at: new Date().toISOString(),
-      source: data.related_type ?? '系统',
-      time: '刚刚',
     };
     setNotifications((prev) => [tempRow, ...prev]);
-    const dbRow = await createNotification(data);
+    const dbRow = await createNotification(data as Parameters<typeof createNotification>[0]);
     if (dbRow) {
-      setNotifications((prev) => prev.map((n) => n.id === tempId ? { ...dbRow, source: dbRow.related_type ?? '系统', time: dbRow.created_at ? new Date(dbRow.created_at).toLocaleString('zh-CN') : '' } : n));
+      setNotifications((prev) => prev.map((n) => n.id === tempId ? dbRow : n));
     }
   }, []);
 
@@ -110,13 +109,13 @@ export function useReports() {
   }, []);
 
   const addReport = useCallback(async (data: Partial<ReportRow>) => {
-    const row = await createReport(data as Record<string, unknown>);
-    setReports((prev) => [row, ...prev]);
-    return row;
+      const row = await createReport(data as ReportInput);
+      setReports((prev) => [row, ...prev]);
+      return row;
   }, []);
 
   const editReport = useCallback(async (id: string, data: Partial<ReportRow>) => {
-    const row = await updateReport(id, data as Record<string, unknown>);
+      const row = await updateReport(id, data as ReportInput);
     setReports((prev) => prev.map((r) => r.id === id ? row : r));
     return row;
   }, []);
@@ -147,7 +146,7 @@ export function useApprovals() {
     const id = `appr-${Date.now()}`;
     const row = { id, ...data } as ApprovalRow;
     setApprovals((prev) => [row, ...prev]);
-    try { await createApproval(data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await createApproval(data as ApprovalInput); } catch { /* optimistic */ }
     return row;
   }, []);
 
@@ -171,13 +170,13 @@ export function useAnnouncements() {
     const id = `ann-${Date.now()}`;
     const row = { id, ...data } as AnnouncementRow;
     setAnnouncements((prev) => [row, ...prev]);
-    try { await createAnnouncement(data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await createAnnouncement(data as AnnouncementInput); } catch { /* optimistic */ }
     return row;
   }, []);
 
   const editAnnouncement = useCallback(async (id: string, data: Partial<AnnouncementRow>) => {
     setAnnouncements((prev) => prev.map((a) => a.id === id ? { ...a, ...data } : a));
-    try { await updateAnnouncement(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await updateAnnouncement(id, data as AnnouncementInput); } catch { /* optimistic */ }
   }, []);
 
   const removeAnnouncement = useCallback(async (id: string) => {
@@ -200,13 +199,13 @@ export function useMeetings() {
     const id = `mtg-${Date.now()}`;
     const row = { id, ...data } as MeetingRow;
     setMeetings((prev) => [row, ...prev]);
-    try { await createMeeting(data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await createMeeting(data as MeetingInput); } catch { /* optimistic */ }
     return row;
   }, []);
 
   const editMeeting = useCallback(async (id: string, data: Partial<MeetingRow>) => {
     setMeetings((prev) => prev.map((m) => m.id === id ? { ...m, ...data } : m));
-    try { await updateMeeting(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await updateMeeting(id, data as MeetingInput); } catch { /* optimistic */ }
   }, []);
 
   const removeMeeting = useCallback(async (id: string) => {
@@ -258,13 +257,13 @@ export function useSharedFiles() {
     const id = `file-${Date.now()}`;
     const row = { id, ...data } as SharedFileRow;
     setFiles((prev) => [row, ...prev]);
-    try { await createSharedFile(data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await createSharedFile(data as SharedFileInput); } catch { /* optimistic */ }
     return row;
   }, []);
 
   const editFile = useCallback(async (id: string, data: Partial<SharedFileRow>) => {
     setFiles((prev) => prev.map((f) => f.id === id ? { ...f, ...data } : f));
-    try { await updateSharedFile(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await updateSharedFile(id, data as SharedFileInput); } catch { /* optimistic */ }
   }, []);
 
   const removeFile = useCallback(async (id: string) => {
@@ -287,13 +286,13 @@ export function useContacts() {
     const id = `con-${Date.now()}`;
     const row = { id, ...data } as ContactRow;
     setContacts((prev) => [row, ...prev]);
-    try { await createContact(data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await createContact(data as ContactInput); } catch { /* optimistic */ }
     return row;
   }, []);
 
   const editContact = useCallback(async (id: string, data: Partial<ContactRow>) => {
     setContacts((prev) => prev.map((c) => c.id === id ? { ...c, ...data } : c));
-    try { await updateContact(id, data as Record<string, unknown>); } catch { /* optimistic */ }
+    try { await updateContact(id, data as ContactInput); } catch { /* optimistic */ }
   }, []);
 
   const removeContact = useCallback(async (id: string) => {
@@ -343,13 +342,13 @@ export function useRoles() {
   }, []);
 
   const addRole = useCallback(async (data: Partial<RoleRow>) => {
-    const row = await createRole(data as Record<string, unknown>);
+    const row = await createRole(data as RoleInput);
     setRoles((prev) => [row, ...prev]);
     return row;
   }, []);
 
   const editRole = useCallback(async (id: string, data: Partial<RoleRow>) => {
-    const row = await updateRole(id, data as Record<string, unknown>);
+    const row = await updateRole(id, data as RoleInput);
     setRoles((prev) => prev.map((r) => r.id === id ? row : r));
     return row;
   }, []);

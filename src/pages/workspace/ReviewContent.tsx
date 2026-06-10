@@ -650,8 +650,9 @@ export default function ReviewContent() {
                         goal_id: ai.goal_id,
                         assignee_id: ai.assignee_id,
                         priority: ai.priority,
+                        done: false,
                         status: 'todo',
-                      } as Parameters<typeof createTask>[0]);
+                      } as unknown as Parameters<typeof createTask>[0]);
                       await updateActionItem(ai.id, { status: 'completed', closed_loop: true });
                       setActionItems((prev) => prev.map((p) => p.id === ai.id ? { ...p, status: 'completed', closed_loop: true } : p));
                     }}

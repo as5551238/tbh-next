@@ -12,7 +12,7 @@
  * install, and contribute to. Pro/Enterprise users can create custom packs.
  */
 
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 // --- Types ---
 
@@ -175,10 +175,10 @@ export async function fetchKnowledgePacks(industry?: string): Promise<KnowledgeP
   const { fetchKnowledgePacks: dlFetch } = await import('@/lib/dataLayer');
   const rows = await dlFetch(industry);
   if (!rows.length) return industry ? KNOWLEDGE_PACKS.filter((p) => p.industry === industry) : KNOWLEDGE_PACKS;
-  return rows.map(mapDbToPack);
+  return rows.map((row: import('@/lib/dataLayer/types').KnowledgePackRow) => mapDbToPack(row));
 }
 
-function mapDbToPack(row: Record<string, unknown>): KnowledgePack {
+function mapDbToPack(row: import('@/lib/dataLayer/types').KnowledgePackRow): KnowledgePack {
   const cat = row.category as string ?? 'framework';
   const catObj = KNOWLEDGE_CATEGORIES.find((c) => c.id === cat);
   return {
@@ -194,8 +194,8 @@ function mapDbToPack(row: Record<string, unknown>): KnowledgePack {
     version: row.version as string ?? '1.0.0',
     downloads: row.downloads as number ?? 0,
     rating: row.rating as number ?? 0,
-    isOfficial: row.is_official as boolean ?? false,
-    isInstalled: row.is_installed as boolean ?? false,
+    isOfficial: row.is_official ?? false,
+    isInstalled: false,
     plan: row.plan as 'free' | 'pro' | 'enterprise' ?? 'free',
     updatedAt: row.updated_at as string ?? '',
   };

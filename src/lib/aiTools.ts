@@ -17,7 +17,7 @@ import {
   createNotification,
   fetchKnowledgeDocs, createKnowledgeDoc,
   fetchRisks, createRisk,
-  type TaskRow, type GoalRow, type ActionItemRow, type NotificationRow, type RiskRow,
+  type TaskRow, type GoalRow, type ActionItemRow, type NotificationRow, type RiskRow, type KnowledgeDocRow,
 } from '@/lib/dataLayer';
 import { computeAutoProgress, computePerformanceScore } from '@/lib/reviewEngine';
 
@@ -76,11 +76,12 @@ const toolDefs: ToolDefinition[] = [
         title: String(params.title),
         priority: String(params.priority ?? 'medium'),
         status: 'todo',
+        done: false,
         goal_id: (params.goal_id as string) ?? null,
         due_date: (params.due_date as string) ?? null,
         assignee_id: null,
         leader_id: null,
-      });
+      } as Omit<TaskRow, 'id'>);
     },
   },
   {
@@ -193,13 +194,13 @@ const toolDefs: ToolDefinition[] = [
     handler: async (params) => {
       const docs = await fetchKnowledgeDocs();
       const q = String(params.query).toLowerCase();
-      const results = docs.filter((d: Record<string, unknown>) => {
+      const results = docs.filter((d) => {
         const title = String(d.title ?? '').toLowerCase();
         const content = String(d.content ?? '').toLowerCase();
         const tags = Array.isArray(d.tags) ? d.tags.map((t: unknown) => String(t).toLowerCase()) : [];
         return title.includes(q) || content.includes(q) || tags.some((t: string) => t.includes(q));
       });
-      return results.slice(0, 10).map((d: Record<string, unknown>) => ({
+      return results.slice(0, 10).map((d) => ({
         id: d.id, title: d.title, tags: d.tags,
         snippet: String(d.content ?? '').slice(0, 200),
       }));
@@ -222,7 +223,8 @@ const toolDefs: ToolDefinition[] = [
         tags,
         member_id: null,
         related_items: [],
-      });
+        color: '#7b6cf0',
+      } as Omit<KnowledgeDocRow, 'id' | 'created_at' | 'updated_at'>);
     },
   },
   {

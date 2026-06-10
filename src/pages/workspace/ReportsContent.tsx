@@ -71,7 +71,7 @@ export default function ReportsContent() {
     if (report.type === 'weekly') {
       lines.push('', '## 本周概览', '', `- 目标完成率: ${goalRate}%`, `- 任务交付: ${doneTasks}/${totalTasks}`, `- 风险项: ${riskCount}`, `- 偏差预警: ${deviationCount}`);
     } else if (report.type === 'monthly') {
-      const goalProgressLines = goals.slice(0, 5).map(g => `  - ${g.name}: ${Math.round(g.progress)}%`).join('\n');
+      const goalProgressLines = goals.slice(0, 5).map(g => `  - ${g.title}: ${Math.round(g.progress)}%`).join('\n');
       lines.push('', '## 本月概览', '', `- OKR进度:`, goalProgressLines || '  - 暂无目标', `- 任务完成: ${doneTasks}/${totalTasks}`, `- 风险项: ${riskCount}`);
     }
     const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });

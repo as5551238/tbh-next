@@ -60,7 +60,7 @@ export default function AgentConfigView() {
     if (configs.length === 0) return;
     const saved = loadSavedConfigs();
     if (Object.keys(saved).length === 0) return;
-    setConfigs((prev) => prev.map((c) => saved[c.id] ? { ...c, ...saved[c.id] } : c));
+    setConfigs((prev) => prev.map((c) => saved[c.id] ? { ...c, ...(saved[c.id] as Record<string, unknown>) } : c));
   }, [configs.length > 0]);
 
   const originalRef = useRef<typeof selected>(null);

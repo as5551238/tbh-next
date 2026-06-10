@@ -40,7 +40,7 @@ export default function InsightContent() {
 
   const handleSave = useCallback(async () => {
     if (!form.title.trim()) return;
-    await addInsight({ title: form.title, description: form.description, impact: form.impact, kpi: form.kpi, team_id: 'default' });
+    await addInsight({ title: form.title, impact: form.impact, kpi: form.kpi, summary: form.description } as Parameters<typeof addInsight>[0]);
     modal.closeModal();
     success(`洞察"${form.title}"已创建`);
   }, [form, addInsight, modal, success]);

@@ -4,6 +4,7 @@ import { hasFeature } from '@/lib/subscription';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMatrixCell, useIndustryColor, useGoals, useTasks, useActionItems, useDeviationAlerts } from '@/hooks/useMatrix';
+import type { ActionItemRow } from '@/lib/dataLayer';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/lib/auth';
 import { useRealtime } from '@/hooks/useRealtime';
@@ -62,7 +63,7 @@ function MainChatView() {
   const { user } = useAuth();
   const { goals } = useGoals();
   const { tasks } = useTasks();
-  const { items: actionItems } = useActionItems();
+  const { actionItems } = useActionItems();
   const { alerts: deviationAlerts } = useDeviationAlerts(true);
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -81,7 +82,7 @@ function MainChatView() {
 
   const atRiskGoals = useMemo(() => goals.filter((g) => g.status === 'at_risk' || (g.progress < 50 && g.end_date && new Date(g.end_date) < new Date(Date.now() + 14 * 86400000))), [goals]);
 
-  const openActionItems = useMemo(() => actionItems.filter((a) => a.status === 'open' || a.status === 'in_progress'), [actionItems]);
+  const openActionItems = useMemo(() => actionItems.filter((a: ActionItemRow) => a.status === 'open' || a.status === 'in_progress'), [actionItems]);
 
   function navTo(iface: string, mod: string) {
     const path = storeNavigateTo(iface, mod);
@@ -142,11 +143,11 @@ function MainChatView() {
       if (cancelled) return;
       const loaded: ChatMsg[] = rows.map((m, i) => ({
         id: i + 1,
-        role: m.sender_type === 'ai' ? 'ai' as const : m.sender_type === 'system' ? 'ai' as const : m.sender_type === 'tool' ? 'tool' as const : 'user' as const,
+        role: m.sender_type === 'ai' ? 'ai' as const : m.sender_type === 'system' ? 'ai' as const : 'user' as const,
         text: m.content,
         time: m.created_at ? new Date(m.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '',
         agent: m.sender_type === 'ai' ? 'general' : undefined,
-        agentIcon: m.sender_type === 'ai' ? '🧠' : m.sender_type === 'tool' ? '⚡' : undefined,
+        agentIcon: m.sender_type === 'ai' ? '🧠' : undefined,
       }));
       if (loaded.length === 0 && cell.morning) {
         loaded.push({

@@ -9,6 +9,47 @@ import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs } from '@/ho
 import { CardSkeleton } from '@/components/Skeleton';
 import PaywallModal from '@/components/PaywallModal';
 
+function CheckoutPlanCard({ plan, isCurrent, onCheckout }: { plan: typeof CHECKOUT_PLANS[number]; isCurrent: boolean; onCheckout: () => Promise<void> }) {
+  const [processing, setProcessing] = useState(false);
+  return (
+    <div className={cn(
+      'rounded-xl border p-4 transition-all',
+      plan.highlighted ? 'border-primary/50 bg-primary/5' : 'border-border',
+      isCurrent && 'ring-1 ring-success/30'
+    )}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-bold text-text">{plan.name}</span>
+        {plan.highlighted && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">推荐</span>}
+        {isCurrent && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">当前</span>}
+      </div>
+      <div className="mb-3">
+        <span className="text-2xl font-extrabold text-text">${plan.price}</span>
+        <span className="text-xs text-text-3">/{plan.period === 'monthly' ? '月' : '年'}</span>
+      </div>
+      <ul className="space-y-1 mb-3">
+        {plan.features.map((f) => (
+          <li key={f} className="flex flex-wrap items-center gap-1 text-[10px] text-text-2">
+            <CheckCircle2 size={8} className="text-success shrink-0" />{f}
+          </li>
+        ))}
+      </ul>
+      {!isCurrent && (
+        <button
+          onClick={async () => { setProcessing(true); await onCheckout(); setProcessing(false); }}
+          disabled={processing}
+          className={cn(
+            'w-full rounded-lg py-2 text-xs font-semibold transition-all',
+            plan.highlighted ? 'bg-primary text-white hover:opacity-80' : 'bg-surface-2 text-text-2 hover:bg-surface-2/80',
+            processing && 'opacity-60'
+          )}
+        >
+          {processing ? '处理中...' : '立即订阅'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function SubscriptionView() {
   const [showPaywall, setShowPaywall] = useState(false);
   const { user } = useAuth();
@@ -47,7 +88,11 @@ export default function SubscriptionView() {
           projectsLimit: limits.maxProjects,
           docs: knowledgeDocs.length,
           docsLimit: limits.maxDocs,
-        });
+          goals: 0,
+          goalsLimit: limits.maxGoals ?? 0,
+          tasks: 0,
+          tasksLimit: 0,
+        } as UsageSummary);
       }
       setLoading(false);
     }
@@ -162,7 +207,7 @@ export default function SubscriptionView() {
                       已激活试用
                     </div>
                   )}
-                  {isUpgrade && !isCurrent && !isRequested && !isSwitching && p !== 'free' && (
+                  {isUpgrade && !isCurrent && !isRequested && !isSwitching && p !== ('free' as typeof p) && (
                     <div className="mt-1 flex flex-wrap items-center justify-center gap-0.5 text-[8px] text-text-3">
                       <Lock size={8} /> 需升级
                     </div>
@@ -182,47 +227,9 @@ export default function SubscriptionView() {
             <CreditCard size={14} className="text-primary-2" /> 选择方案并支付
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {CHECKOUT_PLANS.map((plan) => {
-              const isCurrent = (plan.id.includes('pro') && sub.plan === 'pro') || (plan.id.includes('enterprise') && sub.plan === 'enterprise');
-              const [processing, setProcessing] = useState(false);
-              return (
-                <div key={plan.id} className={cn(
-                  'rounded-xl border p-4 transition-all',
-                  plan.highlighted ? 'border-primary/50 bg-primary/5' : 'border-border',
-                  isCurrent && 'ring-1 ring-success/30'
-                )}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold text-text">{plan.name}</span>
-                    {plan.highlighted && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">推荐</span>}
-                    {isCurrent && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">当前</span>}
-                  </div>
-                  <div className="mb-3">
-                    <span className="text-2xl font-extrabold text-text">${plan.price}</span>
-                    <span className="text-xs text-text-3">/{plan.period === 'monthly' ? '月' : '年'}</span>
-                  </div>
-                  <ul className="space-y-1 mb-3">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex flex-wrap items-center gap-1 text-[10px] text-text-2">
-                        <CheckCircle2 size={8} className="text-success shrink-0" />{f}
-                      </li>
-                    ))}
-                  </ul>
-                  {!isCurrent && (
-                    <button
-                      onClick={async () => { setProcessing(true); await initiateCheckout(plan.priceId); setSub((prev) => ({ ...prev, plan: plan.id.includes('pro') ? 'pro' : 'enterprise' })); setProcessing(false); }}
-                      disabled={processing}
-                      className={cn(
-                        'w-full rounded-lg py-2 text-xs font-semibold transition-all',
-                        plan.highlighted ? 'bg-primary text-white hover:opacity-80' : 'bg-surface-2 text-text-2 hover:bg-surface-2/80',
-                        processing && 'opacity-60'
-                      )}
-                    >
-                      {processing ? '处理中...' : '立即订阅'}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+            {CHECKOUT_PLANS.map((plan) => (
+                <CheckoutPlanCard key={plan.id} plan={plan} isCurrent={(plan.id.includes('pro') && sub.plan === 'pro') || (plan.id.includes('enterprise') && sub.plan === 'enterprise')} onCheckout={async () => { await initiateCheckout(plan.priceId); setSub((prev) => ({ ...prev, plan: plan.id.includes('pro') ? 'pro' : 'enterprise' })); }} />
+              ))}
           </div>
           <p className="text-[10px] text-text-3 mt-3">
             当前为演示模式，订阅即时生效。正式版将通过Stripe安全支付，支持信用卡/借记卡。
@@ -286,8 +293,6 @@ function UsageMeter({ icon, label, current, limit, color }: { icon: ReactNode; l
       <div className="h-1.5 rounded-full bg-surface-2">
         <div className={cn('h-full rounded-full transition-all', isDanger && 'bg-danger', isWarn && 'bg-warn', !isWarn && !isDanger && 'bg-primary')} style={{ width: `${pct}%`, backgroundColor: (!isWarn && !isDanger) ? color : undefined }} />
       </div>
-    
-      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="订阅管理需要专业版或企业版" feature="ai_subscription" />
-</div>
+    </div>
   );
 }

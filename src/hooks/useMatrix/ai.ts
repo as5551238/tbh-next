@@ -21,8 +21,8 @@ import {
   type AutomationRuleRow, type StatusFlowRuleRow, type ItemLinkRow,
   type AgentDetailRow, type AgentConfigRow, type RiskRow, type WorkflowRow,
 } from '@/lib/dataLayer';
-import type { ActionItemRow } from '@/lib/dataLayer';
-import type { DeviationAlertRow } from '@/lib/dataLayer';
+import type { ActionItemRow, DeviationAlertRow, TaskRow } from '@/lib/dataLayer/types';
+import type { RiskInput } from '@/contracts/dataContracts';
 
 export function useAgentDetails() {
   const [agents, setAgents] = useState<AgentDetailRow[]>([]);
@@ -82,7 +82,7 @@ export function useRisks() {
   }, []);
 
   const addRisk = useCallback(async (data: Partial<RiskRow>) => {
-    const row = await createRisk(data as Record<string, unknown>);
+    const row = await createRisk(data as RiskInput);
     setRisks((prev) => [row, ...prev]);
     return row;
   }, []);

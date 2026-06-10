@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMatrixCell, useScheduleEvents } from '@/hooks/useMatrix';
+import type { ScheduleEventRow } from '@/lib/dataLayer';
 import { useAppStore } from '@/stores/appStore';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
@@ -80,7 +81,7 @@ export default function TeamCalView() {
 
   const handleAddSave = async () => {
     if (!form.title.trim()) return;
-    await addEvent({ title: form.title, type: form.type, start_date: form.start_date, description: form.description, team_id: 'default' });
+    await addEvent({ title: form.title, type: form.type, start_date: form.start_date, description: form.description } as Partial<ScheduleEventRow>);
     addModal.closeModal();
     success(`日程"${form.title}"已创建`);
   };

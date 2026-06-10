@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMembers } from '@/hooks/useMatrix';
+import type { MemberRow } from '@/lib/dataLayer';
 import { useAppStore } from '@/stores/appStore';
 import { getDepartments } from '@/matrix/data';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
@@ -14,7 +15,7 @@ export default function MembersContent() {
   const deptOptions = getDepartments(industry);
   const inviteModal = useModal();
   const editModal = useModal();
-  const [editingMember, setEditingMember] = useState<{ id: string; name: string; department: string; email: string; role: string } | null>(null);
+  const [editingMember, setEditingMember] = useState<{ id: string; name: string; department: string; email: string; role: string; phone: string } | null>(null);
   const [form, setForm] = useState({ name: '', department: '', email: '', role: 'member', phone: '' });
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -31,7 +32,7 @@ export default function MembersContent() {
 
   function handleInvite() {
     if (!form.name.trim() || !form.email.trim()) return;
-    addMember({ name: form.name, department: form.department, email: form.email, role: form.role, phone: form.phone, avatar: '', status: 'active', join_date: new Date().toISOString().split('T')[0] });
+    addMember({ name: form.name, department: form.department, email: form.email, role: form.role, phone: form.phone, avatar: '', status: 'active', join_date: new Date().toISOString().split('T')[0], nickname: form.name } as Omit<MemberRow, 'id'>);
     setForm({ name: '', department: '', email: '', role: 'member', phone: '' });
     inviteModal.closeModal();
   }
@@ -44,8 +45,8 @@ export default function MembersContent() {
   }
 
   function openEdit(m: typeof members[0]) {
-    setEditingMember({ id: m.id, name: m.name, department: m.department, email: m.email, role: m.role });
-    setForm({ name: m.name, department: m.department, email: m.email, role: m.role });
+    setEditingMember({ id: m.id, name: m.name, department: m.department, email: m.email, role: m.role, phone: m.phone });
+    setForm({ name: m.name, department: m.department, email: m.email, role: m.role, phone: m.phone });
     editModal.openModal();
   }
 

@@ -88,11 +88,12 @@ export function createBuiltinMCPTools(cell: MatrixCell, industry: string, dept: 
         title: { type: 'string', description: '任务标题', required: true },
         priority: { type: 'string', description: '优先级: high/medium/low' },
       },
-      handler: async (params) => {
-        const { title, priority = 'medium' } = params;
+      handler: async (params: Record<string, unknown>) => {
+        const title = params.title as string;
+        const priority = (params.priority as string) ?? 'medium';
         if (isSupabaseConfigured()) {
           try {
-            const task = await createTask({ title, priority, assignee_id: null, leader_id: null, due_date: null, status: 'todo', team_id: '__default__' });
+            const task = await createTask({ title, priority, assignee_id: null, leader_id: null, due_date: null, status: 'todo', done: false, goal_id: null });
             return { success: true, task };
           } catch (err: any) {
             return { success: false, error: err.message };

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import PageErrorBoundary from '@/components/PageErrorBoundary';
 
-function ThrowError({ error }: { error: Error }) {
+function ThrowError({ error }: { error: Error }): React.ReactElement {
   throw error;
 }
 

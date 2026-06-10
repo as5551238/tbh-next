@@ -98,7 +98,7 @@ const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(nu
         footer={
           <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={() => { if (!form.title.trim()) return; addRisk({ title: form.title, level: form.level, description: form.description, source: form.source || '手动上报', affected_kpi: form.affected_kpi || null, status: form.status, detected_at: new Date().toISOString().split('T')[0], team_id: '__default__' }).then((risk) => { triggerFeedback({ type: 'risk_created', action: 'created', entity: risk }); }).catch((err) => { console.error('[risk]', err); toast('操作失败，请重试', 'error'); }); addModal.closeModal(); }} disabled={!form.title.trim()}>创建</button>
+            <button className={btnPrimary} onClick={() => { if (!form.title.trim()) return; addRisk({ title: form.title, level: form.level, description: form.description, source: form.source || '手动上报', affected_kpi: form.affected_kpi || null, status: form.status, detected_at: new Date().toISOString().split('T')[0] }).then((risk) => { triggerFeedback({ type: 'risk_created', action: 'created', entity: risk as unknown as Record<string, unknown> }); }).catch((err) => { console.error('[risk]', err); }); addModal.closeModal(); }} disabled={!form.title.trim()}>创建</button>
           </div>
         }>
         <ModalField label="风险标题">

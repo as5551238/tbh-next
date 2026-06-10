@@ -61,8 +61,7 @@ export default function DirectoryView() {
       email: form.email,
       phone: form.phone,
       status: form.status as ContactRow['status'],
-      avatar: form.name.trim().charAt(0),
-    });
+    } as Partial<ContactRow>);
     setForm({ name: '', department: '', role: '', email: '', phone: '', status: 'online' });
     createModal.closeModal();
   }
@@ -154,7 +153,7 @@ export default function DirectoryView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="联系人详情" fields={CONTACT_FIELDS} data={selected} commentTarget={selected?.id ? { type: 'contact', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editContact(selected.id, updated); setSelected({ ...selected, ...updated } as ContactRow); } }} onDelete={() => { if (selected) { removeContact(selected.id); detailModal.closeModal(); } }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="联系人详情" fields={CONTACT_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'contact', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editContact(selected.id, updated); setSelected({ ...selected, ...updated } as ContactRow); } }} onDelete={() => { if (selected) { removeContact(selected.id); detailModal.closeModal(); } }} />
 
       {/* Create Contact Modal */}
       {createModal.open && (

@@ -19,5 +19,5 @@ export function getDeployInfo() {
 
 /** Exposed on window for quick debugging in browser console */
 if (typeof window !== 'undefined') {
-  (window as Record<string, unknown>).__TBH_INFO = getDeployInfo();
+  (window as unknown as Record<string, unknown>).__TBH_INFO = getDeployInfo();
 }

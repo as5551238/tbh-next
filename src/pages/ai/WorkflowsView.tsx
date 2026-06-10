@@ -79,7 +79,7 @@ export default function WorkflowsView() {
     newRunning.add(selected.id);
     saveRunningIds(newRunning);
     try {
-      await editInstance(selected.id, { usage_count: newCount, status: 'running', current_step: 0 });
+      await editInstance(selected.id, { usage_count: newCount, status: 'running', current_step: 0, workflow_id: selected.id, name: selected.name } as Parameters<typeof editInstance>[1]);
     } catch (err) { console.warn("[workflows]", err); }
     showToast(`工作流"${selected.name}"已启动`);
   }
@@ -90,7 +90,7 @@ export default function WorkflowsView() {
     newRunning.delete(selected.id);
     saveRunningIds(newRunning);
     try {
-      await editInstance(selected.id, { status: 'idle' });
+      await editInstance(selected.id, { status: 'idle', workflow_id: selected.id, name: selected.name } as Parameters<typeof editInstance>[1]);
     } catch (err) { console.warn("[workflows]", err); }
     showToast(`工作流"${selected.name}"已停止`);
   }
@@ -108,7 +108,7 @@ export default function WorkflowsView() {
     }
     setWorkflows((prev) => prev.map((w) => w.id === editingName ? { ...w, name: editValue.trim() } : w));
     try {
-      await editInstance(editingName, { name: editValue.trim() });
+      await editInstance(editingName, { name: editValue.trim(), workflow_id: selected?.id ?? editingName } as Parameters<typeof editInstance>[1]);
     } catch (err) { console.warn("[workflows]", err); }
     setEditingName(null);
   }

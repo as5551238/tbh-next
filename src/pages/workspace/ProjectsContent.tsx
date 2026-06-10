@@ -3,6 +3,7 @@ import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { useState, useCallback } from 'react';
 import { useProjects } from '@/hooks/useMatrix';
+import type { ProjectRow } from '@/lib/dataLayer';
 import { cn } from '@/lib/utils';
 import { FolderKanban } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
@@ -34,10 +35,11 @@ export default function ProjectsContent() {
     addProject({
       title: form.title,
       status: form.status,
-      end_date: form.end_date || '待定',
+      end_date: form.end_date || null,
       progress: 0,
       member_ids: [],
-    });
+      task_count: 0,
+    } as Omit<ProjectRow, 'id'>);
     modal.closeModal();
   }, [form, addProject, modal.closeModal]);
 

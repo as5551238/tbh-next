@@ -216,8 +216,10 @@ describe('Data Layer (local fallback)', () => {
         progress: 0,
         status: 'active',
         key_results: [],
-        owner: 'Test',
-        due_date: null,
+        owner_id: 'Test',
+        end_date: null,
+        start_date: null,
+        leader_id: null,
       });
       expect(goal.id).toMatch(/^g_local_/);
       expect(goal.title).toBe('Test Goal');
@@ -237,10 +239,12 @@ describe('Data Layer (local fallback)', () => {
       const task = await createTask({
         title: 'Test Task',
         priority: 'high',
-        assignee: 'Alice',
-        due: '2026-07-01',
+        assignee_id: 'Alice',
+        due_date: '2026-07-01',
+        status: 'todo',
         done: false,
         goal_id: null,
+        leader_id: null,
       });
       expect(task.id).toMatch(/^t_local_/);
     });
@@ -257,11 +261,12 @@ describe('Data Layer (local fallback)', () => {
 
     it('createProject returns object with local id', async () => {
       const project = await createProject({
-        name: 'Test Project',
+        title: 'Test Project',
         status: 'planned',
         progress: 0,
-        members: 1,
-        deadline: '2026-12-31',
+        member_ids: [],
+        task_count: 0,
+        end_date: '2026-12-31',
       });
       expect(project.id).toMatch(/^p_local_/);
     });
@@ -280,10 +285,13 @@ describe('Data Layer (local fallback)', () => {
       const member = await createMember({
         name: 'Test Member',
         role: 'tester',
-        dept: '质量部',
+        department: '质量部',
         email: 'test@tbh.ai',
         phone: '13900000000',
         status: 'active',
+        avatar: '',
+        join_date: '2026-01-01',
+        nickname: 'Tester',
       });
       expect(member.id).toMatch(/^m_local_/);
     });

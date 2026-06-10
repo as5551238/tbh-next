@@ -12,15 +12,14 @@ export function usePresenceStatus(userId: string, room = 'global') {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
 
   const onSync = useCallback(
-    (states: Record<string, { user: string; online_at: string }[]>) => {
+    (states: Record<string, { user: string; online_at: string }>) => {
       const users: OnlineUser[] = [];
-      for (const [key, presences] of Object.entries(states)) {
-        if (presences && presences.length > 0) {
-          const latest = presences[presences.length - 1];
+      for (const [key, presence] of Object.entries(states)) {
+        if (presence) {
           users.push({
             id: key,
-            name: latest.user || key,
-            onlineAt: latest.online_at,
+            name: presence.user || key,
+            onlineAt: presence.online_at,
           });
         }
       }

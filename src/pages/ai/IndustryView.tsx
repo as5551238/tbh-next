@@ -77,15 +77,15 @@ export default function IndustryView() {
   // Auto-check benchmarks against current KPI values
   const checkedBenchmarks = useMemo(() => {
     return perspective.benchmarks.map((bm: Record<string, unknown>) => {
-      // Auto-detect if any KPI matches this benchmark
+      const bmLabel = String(bm.label ?? '');
       const matchingKpi = cell.kpis.find((kpi) => {
-        const bmLower = bm.label.toLowerCase();
+        const bmLower = bmLabel.toLowerCase();
         const kpiLower = kpi.name.toLowerCase();
         return bmLower.includes(kpiLower) || kpiLower.includes(bmLower.split(' ')[0]);
       });
       if (matchingKpi) {
-        const progress = matchingKpi.target > 0 ? (Number(matchingKpi.value) / Number(matchingKpi.target)) * 100 : 0;
-        return { ...bm, met: progress >= 100 };
+        const progress = Number(matchingKpi.target) > 0 ? (Number(matchingKpi.value) / Number(matchingKpi.target)) * 100 : 0;
+        return { ...(bm as Record<string, unknown>), met: progress >= 100 };
       }
       return bm;
     });
@@ -113,9 +113,10 @@ export default function IndustryView() {
 
   const handleToggleBenchmark = (idx: number) => {
     setPerspectives((prev: Record<string, unknown>) => {
-      const current = prev[industry] ?? prev['IT业'];
-      const newBenchmarks = [...current.benchmarks];
-      newBenchmarks[idx] = { ...newBenchmarks[idx], met: !newBenchmarks[idx].met };
+      const current = (prev[industry] ?? prev['IT业']) as Record<string, unknown>;
+      const benchmarks = current.benchmarks as Record<string, unknown>[];
+      const newBenchmarks = [...benchmarks];
+      newBenchmarks[idx] = { ...(newBenchmarks[idx] as Record<string, unknown>), met: !(newBenchmarks[idx] as Record<string, unknown>).met };
       const next = { ...prev, [industry]: { ...current, benchmarks: newBenchmarks } };
       persistPerspectives(next);
       return next;
@@ -138,19 +139,19 @@ export default function IndustryView() {
 
   const handleSave = () => {
     setPerspectives((prev: Record<string, unknown>) => {
-      const current = prev[industry] ?? prev['IT业'];
+      const current = (prev[industry] ?? prev['IT业']) as Record<string, unknown>;
       let next: typeof prev;
       if (editField === 'focus') {
         next = { ...prev, [industry]: { ...current, focus: editValue } };
       } else if (editField === 'trend') {
-        const newTrends = [...current.trends];
+        const newTrends = [...(current.trends as string[])];
         if (editIdx === -1) newTrends.push(editValue);
         else newTrends[editIdx] = editValue;
         next = { ...prev, [industry]: { ...current, trends: newTrends } };
       } else {
-        const newBm = [...current.benchmarks];
+        const newBm = [...(current.benchmarks as Record<string, unknown>[])];
         if (editIdx === -1) newBm.push({ label: editValue, met: false });
-        else newBm[editIdx] = { ...newBm[editIdx], label: editValue };
+        else newBm[editIdx] = { ...(newBm[editIdx] as Record<string, unknown>), label: editValue };
         next = { ...prev, [industry]: { ...current, benchmarks: newBm } };
       }
       persistPerspectives(next);
@@ -202,7 +203,7 @@ export default function IndustryView() {
           <div className="grid grid-cols-2 gap-2">
             {cell.kpis.slice(0, 6).map((kpi) => {
               const TrendIcon = TREND_ICON[kpi.trend];
-              const progress = kpi.target > 0 ? Math.min(100, Math.round((Number(kpi.value) / Number(kpi.target)) * 100)) : 0;
+              const progress = Number(kpi.target) > 0 ? Math.min(100, Math.round((Number(kpi.value) / Number(kpi.target)) * 100)) : 0;
               return (
                 <div key={kpi.name} className="rounded-xl border border-border bg-surface p-3 cursor-pointer hover:border-primary/30 transition-all" onClick={navigateToKpi}>
                   <div className="flex items-center justify-between mb-1">
@@ -232,7 +233,7 @@ export default function IndustryView() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                   <TrendingUp size={14} className="text-primary-2" />
                 </div>
-                <span className="text-xs text-text flex-1">{trend}</span>
+                <span className="text-xs text-text flex-1">{String(trend)}</span>
                 <button onClick={() => handleEditTrend(i)} className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Edit3 size={10} className="text-text-3" />
                 </button>
@@ -256,9 +257,9 @@ export default function IndustryView() {
                     bm.met ? 'bg-success border-success' : 'border-border hover:border-primary/40'
                   )}
                 >
-                  {bm.met && <Check size={12} className="text-white" />}
+                  {bm.met ? <Check size={12} className="text-white" /> : null}
                 </button>
-                <span className={cn('text-[11px] flex-1', bm.met ? 'text-success line-through' : 'text-text-2')}>{bm.label}</span>
+                <span className={cn('text-[11px] flex-1', bm.met ? 'text-success line-through' : 'text-text-2')}>{String(bm.label)}</span>
                 <button onClick={() => handleEditBenchmark(i)} className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Edit3 size={10} className="text-text-3" />
                 </button>

@@ -426,7 +426,7 @@ serve(async (req) => {
     // === Non-streaming path with server-side tool loop ===
     const currentMessages = [...messages]
     const MAX_TOOL_ROUNDS = 5
-    let totalUsage = { prompt_tokens: 0, completion_tokens: 0 }
+    const totalUsage = { prompt_tokens: 0, completion_tokens: 0 }
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const llmBody: Record<string, unknown> = {

@@ -2,6 +2,7 @@ import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { useState, useCallback, type MouseEvent } from 'react';
 import { useTasks } from '@/hooks/useMatrix';
+import type { TaskRow } from '@/lib/dataLayer';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, Plus } from 'lucide-react';
@@ -106,7 +107,7 @@ export default function TasksContent() {
         footer={
           <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addTaskModal.closeModal}>{t('common.cancel')}</button>
-            <button className={btnPrimary} onClick={() => { if (!newTaskForm.title.trim()) return; addTask({ title: newTaskForm.title, priority: newTaskForm.priority, status: newTaskForm.status, due_date: newTaskForm.due_date || null, assignee_id: newTaskForm.assignee_id || null, leader_id: null, goal_id: newTaskForm.goal_id || null }); addTaskModal.closeModal(); }} disabled={!newTaskForm.title.trim()}>{t('common.create')}</button>
+            <button className={btnPrimary} onClick={() => { if (!newTaskForm.title.trim()) return; addTask({ title: newTaskForm.title, priority: newTaskForm.priority, status: newTaskForm.status, due_date: newTaskForm.due_date || null, assignee_id: newTaskForm.assignee_id || null, leader_id: null, goal_id: newTaskForm.goal_id || null, done: false } as unknown as Omit<TaskRow, 'id'>); addTaskModal.closeModal(); }} disabled={!newTaskForm.title.trim()}>{t('common.create')}</button>
           </div>
         }>
         <ModalField label={t('tasks.taskTitle')}>

@@ -42,7 +42,7 @@ export function Modal({ open, onClose, title, children, width = 'max-w-md', foot
   useEffect(() => {
     if (!open) return;
     triggerRef.current = document.activeElement as HTMLElement;
-    const container = ref.current;
+    const container = ref.current!;
     if (!container) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') { onClose(); return; }

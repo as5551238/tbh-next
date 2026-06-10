@@ -45,7 +45,7 @@ export async function fetchInsights(): Promise<InsightRow[]> {
 
 export async function createInsight(data: InsightInput): Promise<InsightRow> {
   if (!isSupabaseConfigured() || !supabase) return {} as InsightRow;
-  const filtered = filterColumns('insights', data);
+  const filtered = filterColumns('insights', data as unknown as Record<string,unknown>);
   const { data: result, error } = await supabase.from('insights').insert(filtered).select().single();
   if (error) throw new Error(`createInsight: ${error.message}`);
   return result as InsightRow;
@@ -53,7 +53,7 @@ export async function createInsight(data: InsightInput): Promise<InsightRow> {
 
 export async function updateInsight(id: string, data: InsightUpdate): Promise<InsightRow> {
   if (!isSupabaseConfigured() || !supabase) return {} as InsightRow;
-  const filtered = filterColumns('insights', data);
+  const filtered = filterColumns('insights', data as unknown as Record<string,unknown>);
   const { data: result, error } = await supabase.from('insights').update(filtered).eq('id', id).select().single();
   if (error) throw new Error(`updateInsight: ${error.message}`);
   return result as InsightRow;
@@ -74,7 +74,7 @@ export async function fetchWorkflowInstances(): Promise<WorkflowInstanceRow[]> {
 
 export async function createWorkflowInstance(data: WorkflowInstanceInput): Promise<WorkflowInstanceRow> {
   if (!isSupabaseConfigured() || !supabase) return {} as WorkflowInstanceRow;
-  const filtered = filterColumns('workflow_instances', data);
+  const filtered = filterColumns('workflow_instances', data as unknown as Record<string,unknown>);
   const { data: result, error } = await supabase.from('workflow_instances').insert(filtered).select().single();
   if (error) throw new Error(`createWorkflowInstance: ${error.message}`);
   return result as WorkflowInstanceRow;
@@ -82,7 +82,7 @@ export async function createWorkflowInstance(data: WorkflowInstanceInput): Promi
 
 export async function updateWorkflowInstance(id: string, data: WorkflowInstanceUpdate): Promise<WorkflowInstanceRow> {
   if (!isSupabaseConfigured() || !supabase) return {} as WorkflowInstanceRow;
-  const filtered = filterColumns('workflow_instances', data);
+  const filtered = filterColumns('workflow_instances', data as unknown as Record<string,unknown>);
   const { data: result, error } = await supabase.from('workflow_instances').update(filtered).eq('id', id).select().single();
   if (error) throw new Error(`updateWorkflowInstance: ${error.message}`);
   return result as WorkflowInstanceRow;
