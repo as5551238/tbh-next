@@ -701,7 +701,11 @@ function generateLocalResponse(systemContext: string, userInput: string): string
 
 // --- Utility: build system prompt from cell context ---
 
-export function buildSystemPrompt(cell: MatrixCell, industry: string, dept: string): string {
+export function buildSystemPrompt(cell: MatrixCell, industry: string, dept: string, moduleContext?: string): string {
+  const moduleSection = moduleContext
+    ? ['', '## 当前页面上下文', moduleContext, '']
+    : [];
+
   return [
     `你是「团队业务中台」的AI工作助手，服务于「${industry} · ${dept}」部门。`,
     '',
@@ -711,7 +715,7 @@ export function buildSystemPrompt(cell: MatrixCell, industry: string, dept: stri
     `- 晨间播报：${cell.morning}`,
     `- 业务概览：${cell.ribbon}`,
     `- 下一步建议：${cell.nextStep}`,
-    '',
+    ...moduleSection,
     '## KPI 数据',
     ...cell.kpis.map((k) => `- ${k.name}: ${k.value}（目标 ${k.target}，状态 ${k.status === 'good' ? '达标' : k.status === 'warn' ? '告警' : '危险'}，趋势 ${k.trend === 'up' ? '上升' : k.trend === 'down' ? '下降' : '持平'}）`),
     '',
@@ -724,7 +728,8 @@ export function buildSystemPrompt(cell: MatrixCell, industry: string, dept: stri
     '## 回答原则',
     '1. 基于上述数据给出专业、简洁的分析',
     '2. 优先关注告警和危险项，给出具体建议',
-    '3. 使用中文回答，可使用表格和列表增强可读性',
-    '4. 如数据不足以回答，明确说明缺少什么信息',
+    '3. 如果用户当前在某个页面上下文中，优先回应与该页面相关的操作',
+    '4. 使用中文回答，可使用表格和列表增强可读性',
+    '5. 如数据不足以回答，明确说明缺少什么信息',
   ].join('\n');
 }

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Send, Bot, User, TrendingUp, TrendingDown, Minus, ChevronRight, Zap, Target, ListTodo, PlusCircle, ShieldAlert, ArrowRight, AlertTriangle, CheckCircle2, Brain } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
 import { routeToAgent, ALL_AGENTS, type AgentDef } from '@/lib/agents';
+import { buildModuleContext } from '@/lib/moduleContext';
 import { auditStore } from '@/lib/agentHarness';
 import { createMessage, fetchMessages, type MessageRow } from '@/lib/dataLayer';
 import { executeToolCall } from '@/lib/aiTools';
@@ -259,7 +260,13 @@ function MainChatView() {
 
     const systemPrompt = matchedAgent
       ? matchedAgent.systemPrompt(cell, industry, dept)
-      : buildSystemPrompt(cell, industry, dept);
+      : buildSystemPrompt(cell, industry, dept, buildModuleContext(activeModule, {
+          tasksTotal: tasks.length,
+          tasksOverdue: tasks.filter(t => t.status !== 'done' && new Date(t.due_date ?? '') < new Date()).length,
+          goalsTotal: goals.length,
+          goalsAtRisk: goals.filter(g => g.status === 'at_risk').length,
+          actionItemsOpen: actionItems.filter(a => a.status === 'open').length,
+        }));
 
     const aiMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },

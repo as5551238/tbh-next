@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Plus, Check, Edit3 } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { CardSkeleton } from '@/components/Skeleton';
+import PageHeader from '@/components/PageHeader';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 
@@ -87,11 +88,9 @@ export default function AgentListView() {
           <Check size={12} className="mr-1.5 inline" />{toast}
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
-        <span className="text-sm font-bold">Agent 列表</span>
-        <span className="text-[10px] text-text-3">{runningCount} 运行中 · {agents.length} 总计</span>
-        <button onClick={registerModal.openModal} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 新建Agent</button>
-      </div>
+      <PageHeader icon={<Bot size={16} />} title="Agent 列表" badge={`${runningCount} 运行中 · ${agents.length} 总计`}>
+        <button onClick={registerModal.openModal} className="rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors"><Plus size={12} className="mr-1 inline" />新建Agent</button>
+      </PageHeader>
 
       {/* Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mx-4 mt-3">

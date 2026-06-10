@@ -10,6 +10,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { TableRowSkeleton } from '@/components/Skeleton';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import BulkActionBar from '@/components/BulkActionBar';
+import PageHeader from '@/components/PageHeader';
 import { t } from '@/lib/i18n';
 import { exportToCSV, exportToJSON } from '@/lib/export';
 
@@ -89,11 +90,8 @@ export default function TasksContent() {
   }, [tasks]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
-      <div className="flex flex-wrap items-center gap-2 mb-2">
-        <CheckCircle2 size={18} className="text-primary-2" />
-        <span className="text-sm font-bold">{t('tasks.title')}</span>
-        <span className="ml-auto text-[10px] text-text-3">{t('tasks.taskSummary', { total: tasks.length, done: tasks.filter(t => t.done).length, pending: tasks.filter(t => !t.done).length })}</span>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <PageHeader icon={<CheckCircle2 size={16} />} title={t('tasks.title')} badge={t('tasks.taskSummary', { total: tasks.length, done: tasks.filter(t => t.done).length, pending: tasks.filter(t => !t.done).length })}>
         <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!tpLimit('maxTasks', tasks.length, '免费版最多创建20个任务，升级Pro解锁更多')) return; setNewTaskForm({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '' }); addTaskModal.openModal(); }}>
           <Plus size={12} />{t('tasks.newTask')}
         </button>
@@ -107,7 +105,8 @@ export default function TasksContent() {
             </div>
           </>)}
         </div>
-      </div>
+      </PageHeader>
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)}</div>
       ) : tasks.map((t) => (
@@ -170,6 +169,7 @@ export default function TasksContent() {
         onBatchAssign={bulkAssign}
       />
       <PaywallModal open={tpShow} onClose={tpClose} reason={tpReason} feature={tpFeat} />
+      </div>
     </div>
   );
 }

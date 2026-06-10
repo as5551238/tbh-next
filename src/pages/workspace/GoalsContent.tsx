@@ -6,6 +6,7 @@ import { cn, safeStr } from '@/lib/utils';
 import { Target, CheckCircle2, Zap, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { CardSkeleton } from '@/components/Skeleton';
+import PageHeader from '@/components/PageHeader';
 import { computeAutoProgress } from '@/lib/reviewEngine';
 import CommentSection from '@/components/CommentSection';
 import { exportToCSV, exportToJSON, formatDateForExport } from '@/lib/export';
@@ -85,11 +86,8 @@ export default function GoalsContent() {
   }, [goals]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
-      <div className="flex items-center gap-2 mb-2 flex-wrap">
-        <Target size={18} className="text-primary-2" />
-        <span className="text-sm font-bold">{t('goals.title')}</span>
-        <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary-2">{t('goals.inProgress', { count: goals.length })}</span>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <PageHeader icon={<Target size={16} />} title={t('goals.title')} badge={t('goals.inProgress', { count: goals.length })}>
         <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, '免费版最多创建5个目标，升级Pro解锁更多')) return; setNewGoalForm({ title: '', status: 'on_track', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
           <Plus size={12} />{t('goals.newGoal')}
         </button>
@@ -103,7 +101,8 @@ export default function GoalsContent() {
             </div>
           </>)}
         </div>
-      </div>
+      </PageHeader>
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
       {loading ? (
         <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}</div>
       ) : goals.map((g) => {
@@ -232,6 +231,7 @@ export default function GoalsContent() {
         onBatchAssign={(assignee) => { /* goals don't have assignee, no-op */ }}
       />
       <PaywallModal open={showPaywall} onClose={closePaywall} reason={paywallReason} feature={paywallFeature} />
+      </div>
     </div>
   );
 }

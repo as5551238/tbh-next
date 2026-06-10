@@ -5,9 +5,10 @@ import { useState, useCallback } from 'react';
 import { useProjects } from '@/hooks/useMatrix';
 import type { ProjectRow } from '@/lib/dataLayer';
 import { cn } from '@/lib/utils';
-import { FolderKanban } from 'lucide-react';
+import { FolderKanban, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
+import PageHeader from '@/components/PageHeader';
 import { exportToCSV, exportToJSON } from '@/lib/export';
 
 export default function ProjectsContent() {
@@ -70,11 +71,9 @@ export default function ProjectsContent() {
   }, [projects]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
-      <div className="flex items-center gap-2 mb-2 flex-wrap">
-        <FolderKanban size={18} className="text-primary-2" />
-        <span className="text-sm font-bold">项目管理</span>
-        <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={handleOpen}>+ 新建项目</button>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <PageHeader icon={<FolderKanban size={16} />} title="项目管理" badge={`${projects.length} 个项目`}>
+        <button className="rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={handleOpen}><Plus size={12} className="mr-1 inline" />新建项目</button>
         <div className="relative">
           <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setProjExportOpen((v) => !v)}>导出 ▾</button>
           {projExportOpen && (<>
@@ -85,7 +84,8 @@ export default function ProjectsContent() {
             </div>
           </>)}
         </div>
-      </div>
+      </PageHeader>
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
       {loading ? (
         <CardSkeleton />
       ) : projects.map((p) => (
@@ -133,6 +133,7 @@ export default function ProjectsContent() {
 
       <PaywallModal open={ppShow} onClose={ppClose} reason={ppReason} feature={ppFeat} />
       <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title="编辑项目" fields={projectFields} data={editData} onSave={handleProjectSave} onDelete={() => { if (editData?.id) { removeProject(String(editData.id)); editModal.closeModal(); } }} commentTarget={editData?.id ? { type: 'project', id: String(editData.id) } : null} />
+      </div>
     </div>
   );
 }
