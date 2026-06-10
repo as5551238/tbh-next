@@ -68,7 +68,7 @@ export default function AgentListView() {
     setFormName(agent.name);
     setFormModel(agent.model ?? 'gpt-4o');
     setFormDesc(agent.description ?? '');
-    setFormSystemPrompt((agent as Record<string, unknown>).system_prompt as string ?? '');
+    setFormSystemPrompt(agent.system_prompt ?? '');
     registerModal.openModal();
   }
 

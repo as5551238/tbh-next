@@ -285,6 +285,7 @@ CREATE TABLE IF NOT EXISTS agent_details (
   enabled BOOLEAN DEFAULT true,
   capabilities JSONB DEFAULT '[]',
   team_id TEXT DEFAULT '__default__',
+  system_prompt TEXT DEFAULT '' NOT NULL,
   created_by TEXT,
   sort_order INT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now(),

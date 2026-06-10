@@ -52,6 +52,7 @@ export interface AgentDetailRow {
   status: string; tasks_completed: number; uptime: string;
   enabled: boolean; capabilities: string[];
   avatar: string; skills: string[]; team_id: string;
+  system_prompt: string;
   created_at: string; updated_at: string;
 }
 export interface AgentConfigRow {

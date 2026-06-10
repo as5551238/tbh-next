@@ -168,6 +168,7 @@ export interface AgentDetailInput {
   uptime?: string;
   enabled?: boolean;
   capabilities?: string[];
+  system_prompt?: string;
   team_id?: string;
   created_by?: string | null;
   sort_order?: number;
