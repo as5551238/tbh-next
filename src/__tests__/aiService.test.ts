@@ -1,10 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock supabase and env so aiService falls back to local
+// Mock supabase so aiService skips Edge Function path
 vi.mock('@/lib/supabase', () => ({
   isSupabaseConfigured: () => false,
   supabase: null,
 }));
+
+// Mock fetch to reject DeepSeek API calls, forcing localFallback
+const originalFetch = globalThis.fetch;
+beforeEach(() => {
+  globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network disabled for test')) as any;
+});
+afterEach(() => {
+  globalThis.fetch = originalFetch as any;
+});
 
 import { chatCompletion, buildSystemPrompt } from '@/lib/aiService';
 import type { MatrixCell } from '@/matrix/data';
