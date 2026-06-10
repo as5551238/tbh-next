@@ -157,7 +157,7 @@ export default function AiAgentsView() {
                 </div>
                 <div className="text-[11px] text-text-3">{agent.description}</div>
               </div>
-              <button onClick={() => toggleAgent(agent.id)} className="shrink-0">
+              <button onClick={() => toggleAgent(agent.id)} aria-label="启用/禁用Agent" className="shrink-0">
                 {agent.enabled ? (
                   <ToggleRight size={28} className="text-primary-2" />
                 ) : (
@@ -195,7 +195,7 @@ export default function AiAgentsView() {
           <div className="w-96 rounded-xl border border-border bg-bg p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-bold">添加AI同事</span>
-              <button onClick={addModal.closeModal}><X size={16} className="text-text-3" /></button>
+              <button onClick={addModal.closeModal} aria-label="关闭"><X size={16} className="text-text-3" /></button>
             </div>
             <div className="space-y-3">
               <div>
@@ -228,7 +228,7 @@ export default function AiAgentsView() {
           <div className="w-96 rounded-xl border border-border bg-bg p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-bold">{statsAgent.name} 统计</span>
-              <button onClick={statsModal.closeModal}><X size={16} className="text-text-3" /></button>
+              <button onClick={statsModal.closeModal} aria-label="关闭"><X size={16} className="text-text-3" /></button>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">

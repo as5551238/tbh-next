@@ -106,8 +106,8 @@ export default function FilesView() {
             />
           </div>
           <div className="flex rounded-lg border border-border overflow-hidden">
-            <button onClick={() => setViewMode('list')} className={cn('p-1.5', viewMode === 'list' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><List size={14} /></button>
-            <button onClick={() => setViewMode('grid')} className={cn('p-1.5', viewMode === 'grid' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><Grid size={14} /></button>
+            <button onClick={() => setViewMode('list')} aria-label="列表视图" className={cn('p-1.5', viewMode === 'list' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><List size={14} /></button>
+            <button onClick={() => setViewMode('grid')} aria-label="网格视图" className={cn('p-1.5', viewMode === 'grid' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><Grid size={14} /></button>
           </div>
           <button onClick={uploadModal.openModal} className="flex flex-wrap items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">
             <Upload size={12} />上传
@@ -192,7 +192,7 @@ export default function FilesView() {
           <div className="w-80 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold">上传文件</span>
-              <button onClick={uploadModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
+              <button onClick={uploadModal.closeModal} aria-label="关闭" className="text-text-3 hover:text-text"><X size={16} /></button>
             </div>
             <div className="mb-3">
               <button onClick={() => fileInputRef.current?.click()} className="flex flex-wrap w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-6 text-xs text-text-3 hover:border-primary/40 hover:text-primary-2 transition-colors">

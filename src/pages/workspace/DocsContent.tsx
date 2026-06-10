@@ -97,7 +97,7 @@ export default function DocsContent() {
                 </div>
               </div>
               {st && <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', st.cls)}>{st.label}</span>}
-              <button onClick={(e) => { e.stopPropagation(); setSelectedDoc(d); editModal.openModal(); }} className="opacity-0 group-hover:opacity-100 transition-opacity text-text-3 hover:text-text">
+              <button onClick={(e) => { e.stopPropagation(); setSelectedDoc(d); editModal.openModal(); }} aria-label="更多操作" className="opacity-0 group-hover:opacity-100 transition-opacity text-text-3 hover:text-text">
                 <MoreHorizontal size={14} />
               </button>
             </div>

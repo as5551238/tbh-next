@@ -166,7 +166,7 @@ export default function WorkflowsView() {
         <div className="border-b border-border px-3 py-2.5 flex items-center">
           <span className="text-xs font-bold">工作流模板</span>
           <span className="ml-2 text-[9px] text-text-3">{workflows.length} 个</span>
-          <button onClick={hasFeature('customWorkflows') ? addModal.openModal : undefined} className="ml-auto rounded-lg bg-primary/10 p-1 hover:bg-primary/20 disabled:opacity-40" disabled={!hasFeature('customWorkflows')}>
+          <button onClick={hasFeature('customWorkflows') ? addModal.openModal : undefined} aria-label="新建工作流" className="ml-auto rounded-lg bg-primary/10 p-1 hover:bg-primary/20 disabled:opacity-40" disabled={!hasFeature('customWorkflows')}>
             {!hasFeature('customWorkflows') ? <Lock size={12} className="text-text-3" /> : <Plus size={12} className="text-primary-2" />}
           </button>
         </div>
@@ -191,7 +191,7 @@ export default function WorkflowsView() {
               {editingName === selected.id ? (
                 <div className="flex flex-wrap items-center gap-2 flex-1">
                   <input value={editValue} onChange={(e) => setEditValue(e.target.value)} className="rounded-lg border border-primary/50 bg-surface-2 px-2 py-1 text-sm text-text outline-none" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingName(null); }} />
-                  <button onClick={handleSaveEdit} className="rounded-lg bg-success/10 px-2 py-1 text-[10px] text-success hover:bg-success/20"><Check size={12} /></button>
+                  <button onClick={handleSaveEdit} aria-label="保存编辑" className="rounded-lg bg-success/10 px-2 py-1 text-[10px] text-success hover:bg-success/20"><Check size={12} /></button>
                 </div>
               ) : (
                 <span className="text-sm font-bold">{selected.name}</span>

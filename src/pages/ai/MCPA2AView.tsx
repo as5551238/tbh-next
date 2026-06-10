@@ -225,7 +225,7 @@ export default function MCPA2AView() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">A2A 消息总线</span>
             <div className="flex flex-wrap items-center gap-2">
               <button onClick={handleA2ASend} className="rounded-lg bg-primary/10 px-2.5 py-1 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">发送测试</button>
-              <button onClick={() => setA2aMessages(a2aGetMessages())} className="rounded-lg bg-surface-2 p-1 text-text-3 hover:text-text"><RefreshCw size={11} /></button>
+              <button onClick={() => setA2aMessages(a2aGetMessages())} aria-label="刷新消息" className="rounded-lg bg-surface-2 p-1 text-text-3 hover:text-text"><RefreshCw size={11} /></button>
             </div>
           </div>
           {a2aMessages.length === 0 ? (

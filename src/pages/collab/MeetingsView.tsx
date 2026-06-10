@@ -137,7 +137,7 @@ export default function MeetingsView() {
           <div className="w-96 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold">预约会议</span>
-              <button onClick={createModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
+              <button onClick={createModal.closeModal} aria-label="关闭" className="text-text-3 hover:text-text"><X size={16} /></button>
             </div>
             <div className="space-y-3">
               <div>

@@ -219,7 +219,7 @@ export default function IndustryView() {
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <Target size={14} style={{ color: indColor }} />
               <span className="text-xs font-bold">核心关注</span>
-              <button onClick={handleEditFocus} className="ml-auto rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80">
+              <button onClick={handleEditFocus} aria-label="编辑核心关注" className="ml-auto rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80">
                 <Edit3 size={10} className="text-text-3" />
               </button>
             </div>
@@ -269,7 +269,7 @@ export default function IndustryView() {
                   <TrendingUp size={14} className="text-primary-2" />
                 </div>
                 <span className="text-xs text-text flex-1">{trend}</span>
-                <button onClick={() => handleEditTrend(i)} className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => handleEditTrend(i)} aria-label="编辑趋势" className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Edit3 size={10} className="text-text-3" />
                 </button>
               </div>
@@ -288,6 +288,7 @@ export default function IndustryView() {
               <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-2.5 group">
                 <button
                   onClick={() => handleToggleBenchmark(i)}
+                  aria-label="切换达标状态"
                   className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
                     bm.met ? 'bg-success border-success' : 'border-border hover:border-primary/40'
                   )}
@@ -295,7 +296,7 @@ export default function IndustryView() {
                   {bm.met ? <Check size={12} className="text-white" /> : null}
                 </button>
                 <span className={cn('text-[11px] flex-1', bm.met ? 'text-success line-through' : 'text-text-2')}>{bm.label}</span>
-                <button onClick={() => handleEditBenchmark(i)} className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => handleEditBenchmark(i)} aria-label="编辑对标" className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Edit3 size={10} className="text-text-3" />
                 </button>
               </div>

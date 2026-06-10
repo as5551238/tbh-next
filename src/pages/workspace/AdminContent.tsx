@@ -297,7 +297,7 @@ export default function AdminContent() {
         <div className="space-y-3">
           <div className="rounded-xl border border-border bg-surface p-3 md:p-4 space-y-3">
             <div className="text-xs font-bold text-text">收件邮箱</div>
-            <input type="email" placeholder="your@email.com" value={emailSettings.address} onChange={(e) => setEmailSettings((s) => ({ ...s, address: e.target.value }))} className="h-8 w-full rounded-md border border-border bg-bg px-3 text-xs text-text" />
+            <input type="email" aria-label="收件邮箱" placeholder="your@email.com" value={emailSettings.address} onChange={(e) => setEmailSettings((s) => ({ ...s, address: e.target.value }))} className="h-8 w-full rounded-md border border-border bg-bg px-3 text-xs text-text" />
             <div className="text-[10px] text-text-3">用于接收通知摘要和告警邮件</div>
           </div>
           <div className="rounded-xl border border-border bg-surface p-3 md:p-4 space-y-3">
@@ -386,7 +386,7 @@ export default function AdminContent() {
                 <div className="text-xs font-medium text-text truncate">{k.name}</div>
                 <div className="text-[10px] text-text-3">{maskKey(k.key)} · 创建于 {k.created}</div>
               </div>
-              <button onClick={() => removeApiKey(k.id)} className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-md text-text-3 hover:bg-danger/10 hover:text-danger transition-colors">
+              <button onClick={() => removeApiKey(k.id)} aria-label="删除密钥" className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-md text-text-3 hover:bg-danger/10 hover:text-danger transition-colors">
                 <Trash2 size={13} />
               </button>
             </div>
@@ -395,8 +395,8 @@ export default function AdminContent() {
         <div className="border-t border-border pt-3">
           <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">新增密钥</div>
           <div className="flex flex-wrap gap-2">
-            <input className={`${inputCls} flex-1`} placeholder="名称" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} />
-            <input type="password" className={`${inputCls} flex-1`} placeholder="密钥值" value={newKeyValue} onChange={(e) => setNewKeyValue(e.target.value)} />
+            <input className={`${inputCls} flex-1`} aria-label="密钥名称" placeholder="名称" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} />
+            <input type="password" className={`${inputCls} flex-1`} aria-label="密钥值" placeholder="密钥值" value={newKeyValue} onChange={(e) => setNewKeyValue(e.target.value)} />
             <button onClick={addApiKey} className={`${btnPrimary} flex items-center gap-1 whitespace-nowrap`}>
               <Plus size={12} /> 添加
             </button>

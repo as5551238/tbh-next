@@ -118,9 +118,9 @@ export default function MembersContent() {
                   <div className="text-[10px] text-text-3">{m.department} · {m.email}</div>
                 </div>
                 <div className="hidden group-hover:flex flex-wrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                   <button onClick={() => m.email && (window.location.href = 'mailto:' + m.email)} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><Mail size={13} /></button>
-                   <button onClick={() => m.phone && (window.location.href = 'tel:' + m.phone)} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><Phone size={13} /></button>
-                   <button onClick={() => { navigator.clipboard.writeText(m.email); }} title="复制邮箱" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><MoreHorizontal size={13} /></button>
+                   <button onClick={() => m.email && (window.location.href = 'mailto:' + m.email)} aria-label="发送邮件" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><Mail size={13} /></button>
+                   <button onClick={() => m.phone && (window.location.href = 'tel:' + m.phone)} aria-label="拨打电话" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><Phone size={13} /></button>
+                   <button onClick={() => { navigator.clipboard.writeText(m.email); }} title="复制邮箱" aria-label="复制邮箱" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><MoreHorizontal size={13} /></button>
                 </div>
               </div>
             );

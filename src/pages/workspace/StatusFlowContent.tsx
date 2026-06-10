@@ -77,7 +77,7 @@ export default function StatusFlowContent() {
                     {r.require_comment && (
                       <span className="rounded-full bg-warn/10 px-1.5 py-0.5 text-[9px] font-semibold text-warn">需评论</span>
                     )}
-                    <button className="rounded p-0.5 text-text-3 opacity-0 hover:bg-danger/10 hover:text-danger group-hover:opacity-100 transition-opacity" onClick={() => removeRule(r.id)}>
+                    <button className="rounded p-0.5 text-text-3 opacity-0 hover:bg-danger/10 hover:text-danger group-hover:opacity-100 transition-opacity" onClick={() => removeRule(r.id)} aria-label="删除规则">
                       <X size={10} />
                     </button>
                   </div>

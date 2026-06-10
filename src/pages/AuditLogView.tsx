@@ -113,7 +113,7 @@ export default function AuditLogView() {
           <option value="DELETE">删除</option>
         </select>
 
-        <input type="text" placeholder="搜索..." value={filter.search} onChange={(e) => setFilter({ ...filter, search: e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm flex-1 max-w-xs" />
+        <input type="text" aria-label="搜索审计日志" placeholder="搜索..." value={filter.search} onChange={(e) => setFilter({ ...filter, search: e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm flex-1 max-w-xs" />
       </div>
 
       {/* Log table */}

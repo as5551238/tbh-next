@@ -449,7 +449,7 @@ export default function ContextPanel() {
           <Sparkles size={16} style={{ color: indColor }} />
           <span className="text-sm font-bold">AI 理解你的工作</span>
         </div>
-        <button onClick={toggleCtxPanel} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text">
+        <button onClick={toggleCtxPanel} aria-label="关闭面板" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text">
           <X size={16} />
         </button>
       </div>
@@ -468,7 +468,7 @@ export default function ContextPanel() {
       <div className="border-b border-border px-4 py-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">词汇层</span>
-          <button onClick={() => handleLayerEdit('vocab', cell.kpis.slice(0, 3).map((k) => k.name).join(', '))} className="text-text-3 hover:text-primary-2 transition-colors"><Pencil size={10} /></button>
+          <button onClick={() => handleLayerEdit('vocab', cell.kpis.slice(0, 3).map((k) => k.name).join(', '))} aria-label="编辑词汇层" className="text-text-3 hover:text-primary-2 transition-colors"><Pencil size={10} /></button>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {cell.kpis.slice(0, 3).map((kpi) => (
@@ -480,7 +480,7 @@ export default function ContextPanel() {
 
         <div className="flex items-center justify-between mb-2 mt-3">
           <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">流程层</span>
-          <button onClick={() => handleLayerEdit('flow', cell.workflow.join(' → '))} className="text-text-3 hover:text-primary-2 transition-colors"><Pencil size={10} /></button>
+          <button onClick={() => handleLayerEdit('flow', cell.workflow.join(' → '))} aria-label="编辑流程层" className="text-text-3 hover:text-primary-2 transition-colors"><Pencil size={10} /></button>
         </div>
         <div className="flex items-center gap-1 text-[10px] text-text-2">
           {cell.workflow.map((step, i) => (
@@ -493,7 +493,7 @@ export default function ContextPanel() {
 
         <div className="flex items-center justify-between mb-2 mt-3">
           <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">指标层</span>
-          <button onClick={() => handleLayerEdit('kpi', cell.kpis.map((k) => `${k.name}: ${k.value}`).join(', '))} className="text-text-3 hover:text-primary-2 transition-colors"><Pencil size={10} /></button>
+          <button onClick={() => handleLayerEdit('kpi', cell.kpis.map((k) => `${k.name}: ${k.value}`).join(', '))} aria-label="编辑指标层" className="text-text-3 hover:text-primary-2 transition-colors"><Pencil size={10} /></button>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {cell.kpis.map((kpi) => (

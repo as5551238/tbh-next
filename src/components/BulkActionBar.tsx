@@ -46,7 +46,7 @@ export default function BulkActionBar({ selectedCount, onSelectAll, onDeselectAl
                 <button onClick={() => setAssignOpen(!assignOpen)} className="rounded-md bg-brand-accent/10 px-3 py-1.5 text-xs font-medium text-brand-accent hover:bg-brand-accent/20 transition-colors">批量指派</button>
                 {assignOpen && (
                   <div className="absolute bottom-full right-0 mb-2 flex gap-2 rounded-lg border border-border bg-surface p-2 shadow-xl">
-                    <input type="text" placeholder="指派人" value={assignee} onChange={(e) => setAssignee(e.target.value)} className="h-7 w-28 rounded-md border border-border bg-bg px-2 text-xs text-text" />
+                    <input type="text" aria-label="批量指派人" placeholder="指派人" value={assignee} onChange={(e) => setAssignee(e.target.value)} className="h-7 w-28 rounded-md border border-border bg-bg px-2 text-xs text-text" />
                     <button onClick={() => { if (assignee.trim()) { onBatchAssign(assignee.trim()); setAssignee(''); setAssignOpen(false); } }} className="h-7 rounded-md bg-brand-accent px-3 text-xs font-bold text-white">确认</button>
                   </div>
                 )}

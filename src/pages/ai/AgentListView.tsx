@@ -129,10 +129,10 @@ export default function AgentListView() {
                 </div>
                 <div className="text-[11px] text-text-3 mt-0.5">{agent.description}</div>
               </div>
-              <button onClick={() => handleEditOpen(agent)} className="shrink-0 rounded-lg p-1 text-text-3 hover:bg-surface-2 hover:text-primary-2">
+              <button onClick={() => handleEditOpen(agent)} aria-label="编辑Agent" className="shrink-0 rounded-lg p-1 text-text-3 hover:bg-surface-2 hover:text-primary-2">
                 <Edit3 size={14} />
               </button>
-              <button onClick={() => toggleAgent(agent.id)} className="shrink-0">
+              <button onClick={() => toggleAgent(agent.id)} aria-label="启用/禁用Agent" className="shrink-0">
                 {agent.enabled ? <ToggleRight size={28} className="text-primary-2" /> : <ToggleLeft size={28} className="text-text-3" />}
               </button>
             </div>

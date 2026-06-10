@@ -66,7 +66,7 @@ export default function SavedViewsContent() {
                 <div className="text-[9px] text-text-3 mt-0.5 font-mono truncate">筛选: {v.filters}</div>
               </div>
               {v.is_default && <span className="text-[9px] text-warn font-semibold">默认</span>}
-              <button className="rounded p-1 text-text-3 opacity-0 hover:bg-danger/10 hover:text-danger group-hover:opacity-100 transition-opacity" onClick={() => removeView(v.id)}>
+              <button className="rounded p-1 text-text-3 opacity-0 hover:bg-danger/10 hover:text-danger group-hover:opacity-100 transition-opacity" onClick={() => removeView(v.id)} aria-label="删除视图">
                 <X size={12} />
               </button>
             </div>

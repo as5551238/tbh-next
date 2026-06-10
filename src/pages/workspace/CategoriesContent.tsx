@@ -63,7 +63,7 @@ export default function CategoriesContent() {
                   <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
                   <span className="text-xs font-semibold text-text flex-1">{c.name}</span>
                   <span className="text-[10px] text-text-3">排序: {c.sort_order}</span>
-                  <button className="rounded p-0.5 text-text-3 opacity-0 hover:bg-danger/10 hover:text-danger group-hover:opacity-100 transition-opacity" onClick={() => removeCategory(c.id)}>
+                  <button className="rounded p-0.5 text-text-3 opacity-0 hover:bg-danger/10 hover:text-danger group-hover:opacity-100 transition-opacity" onClick={() => removeCategory(c.id)} aria-label="删除分类">
                     <X size={10} />
                   </button>
                 </div>

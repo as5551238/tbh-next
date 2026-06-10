@@ -115,7 +115,7 @@ export default function RolesContent() {
               <div className="flex flex-wrap items-center gap-1 text-text-3">
                 <Users size={12} />
                 <span className="text-[10px]">{r.members} 人</span>
-                <button onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }} className="ml-2 rounded p-1 text-text-3 hover:text-danger hover:bg-danger/10 transition-colors"><Trash2 size={12} /></button>
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }} aria-label="删除角色" className="ml-2 rounded p-1 text-text-3 hover:text-danger hover:bg-danger/10 transition-colors"><Trash2 size={12} /></button>
               </div>
             </div>
             <div className="flex flex-wrap gap-1.5">

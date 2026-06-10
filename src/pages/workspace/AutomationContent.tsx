@@ -61,7 +61,7 @@ export default function AutomationContent() {
         <div className="space-y-2">
           {rules.map((r) => (
             <div key={r.id} className={cn('flex items-center gap-3 rounded-xl border bg-surface px-4 py-3 transition-all hover:shadow-lg', r.is_active ? 'border-border' : 'border-border opacity-60')}>
-              <button className="shrink-0" onClick={() => editRule(r.id, { is_active: !r.is_active })} title={r.is_active ? '暂停' : '启用'}>
+              <button className="shrink-0" onClick={() => editRule(r.id, { is_active: !r.is_active })} title={r.is_active ? '暂停' : '启用'} aria-label="启用/暂停规则">
                 {r.is_active ? <Power size={16} className="text-success" /> : <PowerOff size={16} className="text-text-3" />}
               </button>
               <div className="min-w-0 flex-1">
@@ -77,7 +77,7 @@ export default function AutomationContent() {
                   <span className="text-[10px] text-text-3">优先级: {r.priority}</span>
                 </div>
               </div>
-              <button className="rounded p-1 text-text-3 hover:bg-danger/10 hover:text-danger" onClick={() => removeRule(r.id)} title="删除">
+              <button className="rounded p-1 text-text-3 hover:bg-danger/10 hover:text-danger" onClick={() => removeRule(r.id)} title="删除" aria-label="删除规则">
                 <X size={12} />
               </button>
             </div>

@@ -157,10 +157,10 @@ export default function KnowledgeOSPView() {
 
       {/* Detail panel */}
       {selectedPack && (
-        <div className="flex w-[420px] shrink-0 flex-col border-l border-border bg-surface">
+        <div className="flex w-full md:w-[360px] lg:w-[420px] shrink-0 flex-col border-l border-border bg-surface">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <span className="text-sm font-bold">{selectedPack.categoryLabel}</span>
-            <button onClick={() => setSelectedPack(null)} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2"><X size={14} /></button>
+            <button onClick={() => setSelectedPack(null)} aria-label="关闭" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2"><X size={14} /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
             <div>

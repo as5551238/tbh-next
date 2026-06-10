@@ -49,7 +49,7 @@ export default function ItemLinksPanel({ sourceId, sourceType }: { sourceId: str
       <div className="flex items-center gap-2 mb-2">
         <Link2 size={14} className="text-text-3" />
         <span className="text-xs font-bold text-text">关联 ({links.length})</span>
-        <button className="ml-auto rounded-md p-1 text-text-3 hover:bg-primary/10 hover:text-primary-2" onClick={() => setAdding(!adding)} title="添加关联">
+        <button className="ml-auto rounded-md p-1 text-text-3 hover:bg-primary/10 hover:text-primary-2" onClick={() => setAdding(!adding)} title="添加关联" aria-label="添加关联">
           <Plus size={12} />
         </button>
       </div>
@@ -66,7 +66,7 @@ export default function ItemLinksPanel({ sourceId, sourceType }: { sourceId: str
               <span className="text-[11px] font-semibold text-text">{typeLabel(l.target_type)}</span>
               <span className="text-[10px] text-text-3 truncate">{l.target_id}</span>
               {l.label && <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary-2">{l.label}</span>}
-              <button className="ml-auto rounded p-0.5 text-text-3 opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity" onClick={() => removeLink(l.id)}>
+              <button className="ml-auto rounded p-0.5 text-text-3 opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity" onClick={() => removeLink(l.id)} aria-label="移除关联">
                 <X size={10} />
               </button>
             </div>
@@ -80,9 +80,9 @@ export default function ItemLinksPanel({ sourceId, sourceType }: { sourceId: str
             <select className="h-7 rounded-md border border-border bg-bg px-2 text-[11px] text-text" value={targetType} onChange={(e) => setTargetType(e.target.value)}>
               {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.icon} {o.label}</option>)}
             </select>
-            <input type="text" placeholder="目标ID" value={targetId} onChange={(e) => setTargetId(e.target.value)} className="h-7 flex-1 rounded-md border border-border bg-bg px-2 text-[11px] text-text" />
+            <input type="text" aria-label="关联目标ID" placeholder="目标ID" value={targetId} onChange={(e) => setTargetId(e.target.value)} className="h-7 flex-1 rounded-md border border-border bg-bg px-2 text-[11px] text-text" />
           </div>
-          <input type="text" placeholder="标签（可选，如：阻塞、依赖）" value={label} onChange={(e) => setLabel(e.target.value)} className="h-7 w-full rounded-md border border-border bg-bg px-2 text-[11px] text-text" />
+          <input type="text" aria-label="关联标签" placeholder="标签（可选，如：阻塞、依赖）" value={label} onChange={(e) => setLabel(e.target.value)} className="h-7 w-full rounded-md border border-border bg-bg px-2 text-[11px] text-text" />
           <div className="flex items-center gap-2 justify-end">
             <button className="h-7 rounded-md px-3 text-[11px] text-text-3 hover:text-text" onClick={() => setAdding(false)}>取消</button>
             <button className="h-7 rounded-md bg-primary px-3 text-[11px] font-bold text-white hover:opacity-80 disabled:opacity-30" disabled={!targetId.trim()} onClick={handleAdd}>关联</button>

@@ -103,7 +103,7 @@ export default function CollabDocsView() {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-2.5">
-          <button onClick={() => setActiveDoc(null)} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2">
+          <button onClick={() => setActiveDoc(null)} aria-label="关闭" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2">
             <X size={14} />
           </button>
           <span className="text-sm font-bold">{activeDocData.title}</span>

@@ -194,7 +194,7 @@ export default function GoalsContent() {
             <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-text-3">{t('goals.keyResults')}</div>
             {editGoalData.key_results.map((kr, i) => (
               <div key={i} className="flex items-center gap-2 mb-2 flex-wrap">
-                <input className={inputCls} value={kr} placeholder={`KR ${i + 1}`} onChange={(e) => handleKrTextChange(i, e.target.value)} />
+                <input className={inputCls} aria-label={`关键结果 ${i + 1}`} value={kr} placeholder={`KR ${i + 1}`} onChange={(e) => handleKrTextChange(i, e.target.value)} />
                 <button className="shrink-0 text-[10px] text-danger hover:text-danger/80" onClick={() => handleRemoveKr(i)}>{t('goals.delete')}</button>
               </div>
             ))}

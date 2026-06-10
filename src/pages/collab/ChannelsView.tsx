@@ -301,7 +301,7 @@ export default function ChannelsView() {
               className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3"
               disabled={isTyping}
             />
-            <button onClick={handleSend} className="rounded-lg bg-primary p-1.5 text-white transition-opacity hover:opacity-80 disabled:opacity-50" disabled={isTyping || !msgInput.trim()}>
+            <button onClick={handleSend} aria-label="发送消息" className="rounded-lg bg-primary p-1.5 text-white transition-opacity hover:opacity-80 disabled:opacity-50" disabled={isTyping || !msgInput.trim()}>
               <Send size={14} />
             </button>
           </div>
@@ -314,7 +314,7 @@ export default function ChannelsView() {
           <div className="w-80 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold">新建频道</span>
-              <button onClick={createChModal.closeModal} className="text-text-3 hover:text-text"><X size={16} /></button>
+              <button onClick={createChModal.closeModal} aria-label="关闭" className="text-text-3 hover:text-text"><X size={16} /></button>
             </div>
             <div>
               <label className="text-[10px] text-text-3 mb-1 block">频道名称 *</label>

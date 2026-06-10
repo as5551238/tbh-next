@@ -165,7 +165,7 @@ export default function OrgContent() {
               <div className="h-6 w-16 rounded-full overflow-hidden bg-surface-2">
                 <div className="h-full rounded-full" style={{ width: `${Math.min(d.members / 12 * 100, 100)}%`, backgroundColor: d.color }} />
               </div>
-              <button className="opacity-0 group-hover:opacity-100 text-text-3 hover:text-text transition-opacity" onClick={(e) => { e.stopPropagation(); openEditDept(d); }}>
+              <button className="opacity-0 group-hover:opacity-100 text-text-3 hover:text-text transition-opacity" onClick={(e) => { e.stopPropagation(); openEditDept(d); }} aria-label="编辑部门">
                 <Settings size={14} />
               </button>
             </div>

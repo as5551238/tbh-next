@@ -41,7 +41,7 @@ export default function PWAInstallPrompt() {
         onClick={handleInstall}
         className="rounded-lg bg-primary px-3 py-1 text-[11px] font-bold text-white hover:bg-primary/90"
       >安装</button>
-      <button onClick={() => setDismissed(true)} className="text-text-3 hover:text-text">
+      <button onClick={() => setDismissed(true)} aria-label="关闭" className="text-text-3 hover:text-text">
         <X size={14} />
       </button>
     </div>

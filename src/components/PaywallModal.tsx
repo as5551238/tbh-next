@@ -46,7 +46,7 @@ export default function PaywallModal({ open, onClose, reason, feature }: Paywall
             <h2 id="paywall-title" className="text-lg font-extrabold text-text">升级解锁更多能力</h2>
             <p className="text-xs text-text-3 mt-0.5">{reason}</p>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2">
+          <button onClick={onClose} aria-label="关闭" className="flex h-8 w-8 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2">
             <X size={16} />
           </button>
         </div>

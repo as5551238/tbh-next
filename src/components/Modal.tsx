@@ -68,7 +68,7 @@ export function Modal({ open, onClose, title, children, width = 'max-w-md', foot
         className={cn('relative z-10 w-full mx-4 rounded-2xl border border-border bg-surface shadow-2xl outline-none', width)}>
         <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
           <h2 className="text-sm font-bold text-text">{title}</h2>
-          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text transition-colors">
+          <button onClick={onClose} aria-label="关闭对话框" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text transition-colors">
             <X size={15} />
           </button>
         </div>

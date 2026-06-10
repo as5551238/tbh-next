@@ -95,6 +95,12 @@
     --placeholder-muted: #adb5bd;
     --progress-track: #e9ecef;
     --focus-tag-bg: rgba(0, 0, 0, 0.05);
+    --tw-accent: #00b894;
+    --tw-surface-3: #e9ecef;
+    --tw-it: #339af0;
+    --tw-manuf: #f08c00;
+    --tw-edu: #20c997;
+    --tw-finance: #7950f2;
   }
 }
 
@@ -119,6 +125,13 @@
   --placeholder-muted: #4a4d5a;
   --progress-track: #1e2030;
   --focus-tag-bg: rgba(255, 255, 255, 0.05);
+  /* Tailwind theme tokens — replace hardcoded colors in tailwind.config.cjs */
+  --tw-accent: #00d4aa;
+  --tw-surface-3: #222739;
+  --tw-it: #4facfe;
+  --tw-manuf: #f5a623;
+  --tw-edu: #4ecdc4;
+  --tw-finance: #a78bfa;
 }
 
 * {

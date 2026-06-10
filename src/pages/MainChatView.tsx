@@ -466,7 +466,7 @@ function MainChatView() {
       </div>
 
       {/* Right: Context panel */}
-      <div className="flex w-[380px] shrink-0 flex-col overflow-y-auto">
+      <div className="flex w-full md:w-[320px] lg:w-[380px] shrink-0 flex-col overflow-y-auto">
         {/* Agent switcher */}
         <div className="border-b border-border p-3 md:p-4">
           <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-3">AI 同事</div>

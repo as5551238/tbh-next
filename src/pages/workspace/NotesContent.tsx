@@ -89,7 +89,7 @@ export default function NotesContent() {
 
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3" />
-        <input className={cn(inputCls, 'pl-9')} placeholder="搜索标题/内容/标签..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className={cn(inputCls, 'pl-9')} aria-label="搜索笔记" placeholder="搜索标题/内容/标签..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {pinned.length > 0 && (
