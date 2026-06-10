@@ -23,9 +23,11 @@ import './index.css';
 import '@/lib/i18n';
 
 // Register Service Worker for PWA
+// Use BASE_URL for correct path on GitHub Pages sub-directory hosting
+const swPath = (import.meta.env.BASE_URL + 'sw.js').replace(/\/+/g, '/');
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    navigator.serviceWorker.register(swPath).catch(() => {
       // SW registration failed - non-critical, continue without PWA
     });
   });
