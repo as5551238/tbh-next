@@ -3,8 +3,10 @@ import { useRoles } from '@/hooks/useMatrix';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { Shield, Plus, Users, Lock, Eye, Trash2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
+import { ALL_PERMISSION_KEYS, PERMISSION_LABELS, getRolePermissions, canAccess } from '@/lib/permissions';
+import type { PermissionKey } from '@/lib/permissions';
 
-const ALL_PERMISSIONS = ['系统配置', '成员管理', '目标管理', '审批', '任务管理', '文档协作', '数据分析', '只读访问'];
+const DEFAULT_PERMS: PermissionKey[] = ['goals:read', 'tasks:read', 'projects:read', 'knowledge:read', 'ai:chat', 'reports:read'];
 
 export default function RolesContent() {
   const { roles, addRole, editRole, removeRole, loading } = useRoles();
@@ -16,7 +18,7 @@ export default function RolesContent() {
   function openCreate() {
     setActiveRole(null);
     setForm({ key: '', name: '', description: '' });
-    setFormPerms(['只读访问']);
+    setFormPerms(DEFAULT_PERMS);
     openModal();
   }
 
@@ -62,41 +64,39 @@ export default function RolesContent() {
         </button>
       </div>
 
-      {/* Permission Matrix */}
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      {/* Permission Matrix — uses system-defined role permission sets */}
+      <div className="rounded-xl border border-border bg-surface overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border bg-surface-2/50">
-              <th className="px-3 py-2 text-left font-semibold text-text-3">权限项</th>
+              <th className="px-3 py-2 text-left font-semibold text-text-3 whitespace-nowrap">权限项</th>
               {roles.map((r) => (
-                <th key={r.key} className="px-2 py-2 text-center font-semibold" style={{ color: r.color }}>
+                <th key={r.key} className="px-2 py-2 text-center font-semibold whitespace-nowrap" style={{ color: r.color }}>
                   {r.name}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {[
-              { name: '系统配置', perms: ['admin'] },
-              { name: '成员管理', perms: ['admin', 'manager'] },
-              { name: '目标管理', perms: ['admin', 'manager'] },
-              { name: '审批', perms: ['admin', 'manager'] },
-              { name: '任务管理', perms: ['admin', 'manager', 'member'] },
-              { name: '文档协作', perms: ['admin', 'manager', 'member', 'agent'] },
-              { name: '数据分析', perms: ['admin', 'manager', 'agent'] },
-              { name: '只读访问', perms: ['admin', 'manager', 'member', 'agent', 'viewer'] },
-            ].map((row, i) => (
-              <tr key={row.name} className={i % 2 === 0 ? '' : 'bg-surface-2/30'}>
-                <td className="px-3 py-1.5 text-text-2">{row.name}</td>
-                {roles.map((r) => (
-                  <td key={r.key} className="px-2 py-1.5 text-center">
-                    {row.perms.includes(r.key) ? (
-                      <span className="inline-block h-4 w-4 rounded-full bg-success/20 text-success text-[9px] leading-4">&#10003;</span>
-                    ) : (
-                      <span className="inline-block h-4 w-4 rounded-full bg-surface-2 text-text-3 text-[9px] leading-4">&#8212;</span>
-                    )}
-                  </td>
-                ))}
+            {ALL_PERMISSION_KEYS.map((permKey, i) => (
+              <tr key={permKey} className={i % 2 === 0 ? '' : 'bg-surface-2/30'}>
+                <td className="px-3 py-1.5 text-text-2 whitespace-nowrap">{PERMISSION_LABELS[permKey]}</td>
+                {roles.map((r) => {
+                  // System roles use getRolePermissions; custom roles check r.permissions array
+                  const hasSystemPerms = getRolePermissions(r.key).size > 0;
+                  const hasPerm = hasSystemPerms
+                    ? canAccess(permKey, r.key)
+                    : r.permissions.includes(permKey);
+                  return (
+                    <td key={r.key} className="px-2 py-1.5 text-center">
+                      {hasPerm ? (
+                        <span className="inline-block h-4 w-4 rounded-full bg-success/20 text-success text-[9px] leading-4">&#10003;</span>
+                      ) : (
+                        <span className="inline-block h-4 w-4 rounded-full bg-surface-2 text-text-3 text-[9px] leading-4">&#8212;</span>
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
@@ -119,12 +119,16 @@ export default function RolesContent() {
               </div>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {r.permissions.map((p) => (
-                <span key={p} className="rounded-full px-2 py-0.5 text-[9px] bg-surface-2 text-text-2 flex flex-wrap items-center gap-1">
-                  {p === '只读访问' ? <Eye size={9} /> : <Lock size={9} />}
-                  {p}
-                </span>
-              ))}
+              {r.permissions.map((p) => {
+                const label = (PERMISSION_LABELS as Record<string, string>)[p] ?? p;
+                const isReadonly = p.endsWith(':read');
+                return (
+                  <span key={p} className="rounded-full px-2 py-0.5 text-[9px] bg-surface-2 text-text-2 flex items-center gap-1">
+                    {isReadonly ? <Eye size={9} /> : <Lock size={9} />}
+                    {label}
+                  </span>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -153,13 +157,16 @@ export default function RolesContent() {
         </ModalField>
         <div className="mt-3">
           <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">权限配置</div>
-          <div className="grid grid-cols-2 gap-2">
-            {ALL_PERMISSIONS.map((perm) => (
-              <label key={perm} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 cursor-pointer hover:border-border-2 transition-colors" onClick={(e) => e.stopPropagation()}>
-                <input type="checkbox" checked={formPerms.includes(perm)} onChange={() => togglePerm(perm)} className="accent-primary-2 h-3 w-3" />
-                <span className="text-[11px] text-text-2">{perm}</span>
-              </label>
-            ))}
+          <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+            {ALL_PERMISSION_KEYS.map((permKey) => {
+              const label = PERMISSION_LABELS[permKey];
+              return (
+                <label key={permKey} className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 cursor-pointer hover:border-border-2 transition-colors" onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={formPerms.includes(permKey)} onChange={() => togglePerm(permKey)} className="accent-primary-2 h-3 w-3" />
+                  <span className="text-[11px] text-text-2">{label}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       </Modal>

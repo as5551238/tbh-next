@@ -157,7 +157,7 @@ export default function OverviewContent() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-xs font-semibold text-text truncate">{item.title}</span>
-                      <span className={cn('rounded-full px-1.5 py-px text-[8px] font-bold', tagConfig.color, 'bg-current/10')} style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                      <span className={cn('rounded-full px-1.5 py-px text-[8px] font-bold', tagConfig.color)} style={{ backgroundColor: 'var(--focus-tag-bg)' }}>
                         {tagConfig.label}
                       </span>
                     </div>
@@ -200,7 +200,7 @@ export default function OverviewContent() {
                 <div className="mt-2 h-1 rounded-full bg-surface-2 overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{
                     width: `${pct}%`,
-                    backgroundColor: kpi.status === 'good' ? '#22c984' : kpi.status === 'warn' ? '#ffc44d' : '#ff5c6a',
+                    backgroundColor: kpi.status === 'good' ? 'var(--color-success)' : kpi.status === 'warn' ? 'var(--color-warn)' : 'var(--color-danger)',
                   }} />
                 </div>
               </div>

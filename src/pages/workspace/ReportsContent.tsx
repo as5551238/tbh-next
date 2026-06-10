@@ -6,7 +6,9 @@ import { useReports, useGoals, useTasks, useRisks } from '@/hooks/useMatrix';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
-import { BarChart3, Download, Plus } from 'lucide-react';
+import { chatCompletion } from '@/lib/aiService';
+import { usePermission } from '@/hooks/usePermission';
+import { BarChart3, Download, Plus, Sparkles } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { ReportInput, ReportUpdate } from '@/contracts/dataContracts';
@@ -21,11 +23,14 @@ export default function ReportsContent() {
   const { tasks } = useTasks();
   const { risks } = useRisks();
   const { user } = useAuth();
+  const { can } = usePermission();
   const { toasts, error } = useToast();
   const genModal = useModal();
   const editModal = useModal();
   const [selectedReport, setSelectedReport] = useState<(typeof reports)[number] | null>(null);
   const [form, setForm] = useState({ title: '', type: 'weekly' });
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiSummarizing, setAiSummarizing] = useState(false);
 
   const handleOpenGen = useCallback(() => {
     setForm({ title: '', type: 'weekly' });
@@ -83,6 +88,23 @@ export default function ReportsContent() {
     URL.revokeObjectURL(url);
   }, [goals, tasks, risks]);
 
+  const handleAiSummary = useCallback(async () => {
+    if (aiSummarizing) return;
+    setAiSummarizing(true);
+    setAiSummary(null);
+    try {
+      const goalRate = goals.length > 0 ? Math.round(goals.filter(g => g.progress >= 100).length / goals.length * 100) : 0;
+      const taskDone = tasks.filter(t => t.done || t.status === 'done').length;
+      const overdue = tasks.filter(t => !t.done && t.due_date && t.due_date < new Date().toISOString().slice(0, 10)).length;
+      const res = await chatCompletion([{ role: 'user', content: `基于以下团队数据生成简短的工作摘要（150字内）：目标完成率${goalRate}%，任务${taskDone}/${tasks.length}已完成，${overdue}项逾期，${risks.length}个风险。` }]);
+      setAiSummary(res?.text ?? 'AI暂无摘要');
+    } catch {
+      setAiSummary('AI摘要暂不可用，请稍后再试。');
+    } finally {
+      setAiSummarizing(false);
+    }
+  }, [goals, tasks, risks, aiSummarizing]);
+
   if (loading) {
     return (
       <CardSkeleton />
@@ -95,11 +117,22 @@ export default function ReportsContent() {
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <BarChart3 size={16} className="text-primary-2" />
         <span className="text-sm font-bold">报表中心</span>
+        {can('ai:chat') && (
+        <button className="flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1 text-[11px] font-semibold text-accent hover:bg-accent/20 disabled:opacity-50" onClick={handleAiSummary} disabled={aiSummarizing}><Sparkles size={12} />{aiSummarizing ? '生成中...' : 'AI摘要'}</button>
+        )}
         <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:opacity-80" onClick={() => { if (!rpRequire('customReports', '自定义报表需要专业版或企业版')) return; handleOpenGen(); }}>
           <Plus size={12} />生成报表
         </button>
       </div>
-
+      {aiSummary && (
+        <div className="mx-3 md:mx-4 mt-2 rounded-lg border border-accent/20 bg-accent/5 p-3 text-xs text-text-2">
+          <div className="flex items-start justify-between gap-2">
+            <Sparkles size={12} className="mt-0.5 shrink-0 text-accent" />
+            <span className="flex-1 whitespace-pre-wrap">{aiSummary}</span>
+          </div>
+          <button className="mt-1 text-[9px] text-text-3 hover:text-text" onClick={() => setAiSummary(null)}>关闭</button>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
         {reports.map((report) => (
           <div key={report.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg cursor-pointer',

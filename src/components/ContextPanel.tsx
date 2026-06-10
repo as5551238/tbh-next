@@ -442,7 +442,7 @@ export default function ContextPanel() {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={toggleCtxPanel} />
-      <div className="fixed inset-y-0 right-0 w-full md:w-[380px] md:relative md:inset-auto shrink-0 flex-col border-l border-border bg-surface z-50 md:z-40 flex">
+      <div className="fixed inset-y-0 right-0 w-full md:w-[320px] lg:w-[380px] md:relative md:inset-auto shrink-0 flex-col border-l border-border bg-surface z-50 md:z-40 flex">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">

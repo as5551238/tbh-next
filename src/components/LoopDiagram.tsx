@@ -9,7 +9,7 @@ interface Props {
 const NODES = [
   { key: 'goals', emoji: '🎯', label: '目标', color: 'var(--brand-accent)' },
   { key: 'tasks', emoji: '✅', label: '任务', color: 'var(--status-success)' },
-  { key: 'actionItems', emoji: '⚡', label: '行动', color: '#4facfe' },
+  { key: 'actionItems', emoji: '⚡', label: '行动', color: 'var(--color-accent-blue)' },
   { key: 'reviews', emoji: '🔄', label: '复盘', color: 'var(--status-warning)' },
 ] as const;
 
@@ -30,7 +30,7 @@ export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, rev
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <svg viewBox="0 0 400 400" className="mx-auto w-full max-w-sm">
+      <svg viewBox="0 0 400 400" className="mx-auto w-full max-w-sm" role="img" aria-label="MLOO闭环图">
         <defs>
           <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
             <polygon points="0 0, 8 3, 0 6" fill="var(--brand-accent)" opacity="0.6" />
@@ -59,7 +59,7 @@ export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, rev
         })}
 
         {/* Center ring chart */}
-        <circle cx={cx} cy={cy} r="40" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+        <circle cx={cx} cy={cy} r="40" fill="none" stroke="var(--surface-muted-border)" strokeWidth="6" />
         <circle
           cx={cx}
           cy={cy}
@@ -74,7 +74,7 @@ export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, rev
           className="transition-all duration-700"
         />
         <text x={cx} y={cy - 6} textAnchor="middle" fill="var(--brand-accent)" fontSize="18" fontWeight="bold">{pct}%</text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="9">完成率</text>
+        <text x={cx} y={cy + 12} textAnchor="middle" fill="var(--text-overlay-weak)" fontSize="9">完成率</text>
 
         {/* Nodes */}
         {NODES.map((node, i) => {
@@ -83,7 +83,7 @@ export default function LoopDiagram({ goals = 0, tasks = 0, actionItems = 0, rev
             <g key={node.key} transform={`translate(${pos.x},${pos.y})`}>
               <circle r="32" fill={`${node.color}15`} stroke={node.color} strokeWidth="1.5" />
               <text textAnchor="middle" y="-6" fontSize="18">{node.emoji}</text>
-              <text textAnchor="middle" y="10" fill="rgba(255,255,255,0.7)" fontSize="9">{node.label}</text>
+              <text textAnchor="middle" y="10" fill="var(--text-overlay)" fontSize="9">{node.label}</text>
               <text textAnchor="middle" y="23" fill={node.color} fontSize="11" fontWeight="bold">{counts[node.key]}</text>
             </g>
           );

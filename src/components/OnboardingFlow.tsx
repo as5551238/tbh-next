@@ -199,7 +199,7 @@ export default function OnboardingFlow() {
                   value={goalTitle}
                   onChange={(e) => setGoalTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleCreateGoal(); }}
-                  className="w-full rounded-lg border border-border-2 bg-surface-deep px-4 py-2.5 text-sm text-text placeholder-[#4a4d5a] outline-none focus:border-brand-accent transition-colors"
+                  className="w-full rounded-lg border border-border-2 bg-surface-deep px-4 py-2.5 text-sm text-text outline-none focus:border-brand-accent transition-colors placeholder:text-text-tertiary"
                 />
                 <input
                   type="date"
@@ -225,7 +225,7 @@ export default function OnboardingFlow() {
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTask(); }}
-                  className="w-full rounded-lg border border-border-2 bg-surface-deep px-4 py-2.5 text-sm text-text placeholder-[#4a4d5a] outline-none focus:border-brand-accent transition-colors"
+                  className="w-full rounded-lg border border-border-2 bg-surface-deep px-4 py-2.5 text-sm text-text outline-none focus:border-brand-accent transition-colors placeholder:text-text-tertiary"
                 />
                 <div className="rounded-lg border border-accent/20 bg-accent/5 px-4 py-2 text-xs text-accent">
                   {t('onboarding.linkedGoal', { title: goalTitle })}
@@ -288,7 +288,7 @@ export default function OnboardingFlow() {
             <div className="flex gap-2">
               <button
                 onClick={handleFinishEmpty}
-                className="rounded-lg border border-border-2 px-4 py-2 text-xs text-text-muted hover:text-text transition-all hover:border-[#4a4d5a]"
+                className="rounded-lg border border-border-2 px-4 py-2 text-xs text-text-muted hover:text-text transition-all hover:border-border-default"
               >
                 {t('onboarding.skipSampleData')}
               </button>

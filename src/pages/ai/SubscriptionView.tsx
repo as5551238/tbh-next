@@ -139,8 +139,8 @@ export default function SubscriptionView() {
             <div className="space-y-4">
               <UsageMeter icon={<Bot size={14} />} label="AI 查询" current={usage.aiQueries} limit={usage.aiQueriesLimit} color='var(--brand-accent)' />
               <UsageMeter icon={<Users size={14} />} label="团队成员" current={usage.teamMembers} limit={usage.teamMembersLimit} color='var(--status-success)' />
-              <UsageMeter icon={<Bot size={14} />} label="Agent" current={usage.agents} limit={usage.agentsLimit} color="#ffc44d" />
-              <UsageMeter icon={<FolderKanban size={14} />} label="项目" current={usage.projects} limit={usage.projectsLimit} color="#ff5c6a" />
+              <UsageMeter icon={<Bot size={14} />} label="Agent" current={usage.agents} limit={usage.agentsLimit} color="var(--color-warn)" />
+              <UsageMeter icon={<FolderKanban size={14} />} label="项目" current={usage.projects} limit={usage.projectsLimit} color="var(--color-danger)" />
               <UsageMeter icon={<FileText size={14} />} label="文档" current={usage.docs} limit={usage.docsLimit} color='var(--brand-accent)' />
             </div>
           </div>

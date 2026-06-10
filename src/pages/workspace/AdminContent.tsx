@@ -136,7 +136,7 @@ export default function AdminContent() {
       title: '外观',
       items: [
         { icon: <Palette size={15} />, label: '主题', value: '深色科技风', status: 'ok' },
-        { icon: <Palette size={15} />, label: '品牌色', value: '#7b6cf0', status: 'ok' },
+        { icon: <Palette size={15} />, label: '品牌色', value: 'var(--brand-accent)', status: 'ok' },
       ],
     },
   ];
@@ -166,7 +166,7 @@ export default function AdminContent() {
       '会话超时': [{ label: '超时时间', value: '24小时' }, { label: '刷新策略', value: '自动续期' }],
       '数据备份': [{ label: '备份频率', value: '每日' }, { label: '保留天数', value: '30天' }, { label: '最近备份', value: '今日 03:00' }],
       '主题': [{ label: '当前主题', value: '深色科技风' }, { label: '模式', value: 'Dark' }],
-      '品牌色': [{ label: '主色', value: '#7b6cf0' }, { label: '辅色', value: '#5b4cc0' }],
+      '品牌色': [{ label: '主色', value: '--brand-accent' }, { label: '辅色', value: '--brand-accent-hover' }],
     };
 
     const fields = fieldMap[item.label];

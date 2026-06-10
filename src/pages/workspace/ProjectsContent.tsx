@@ -5,12 +5,13 @@ import { useState, useCallback } from 'react';
 import { useProjects } from '@/hooks/useMatrix';
 import type { ProjectRow } from '@/lib/dataLayer';
 import { cn } from '@/lib/utils';
-import { FolderKanban, Plus } from 'lucide-react';
+import { FolderKanban, Plus, Sparkles } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import PageHeader from '@/components/PageHeader';
 import { exportToCSV, exportToJSON } from '@/lib/export';
 import { usePermission } from '@/hooks/usePermission';
+import { chatCompletion } from '@/lib/aiService';
 
 export default function ProjectsContent() {
   const { projects, loading, addProject, editProject, removeProject } = useProjects();
@@ -21,6 +22,8 @@ export default function ProjectsContent() {
   const [form, setForm] = useState({ title: '', status: 'planned', end_date: '', members: 0 });
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const [projExportOpen, setProjExportOpen] = useState(false);
+  const [aiHealthInsight, setAiHealthInsight] = useState<string | null>(null);
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
 
   const projectFields: FieldDef[] = [
     { key: 'title', label: '项目名称', type: 'text' },
@@ -72,9 +75,27 @@ export default function ProjectsContent() {
     exportToJSON(rows, 'projects');
   }, [projects]);
 
+  const handleAiHealthCheck = useCallback(async () => {
+    if (aiAnalyzing || projects.length === 0) return;
+    setAiAnalyzing(true);
+    setAiHealthInsight(null);
+    try {
+      const summary = projects.map((p) => `「${p.title}」状态=${p.status} 进度=${p.progress}% 截止=${p.end_date ?? '未设'}`).join('\n');
+      const res = await chatCompletion([{ role: 'user', content: `分析以下项目组合的健康状态，指出风险和改进建议（200字内）：\n${summary}` }]);
+      setAiHealthInsight(res?.text ?? 'AI暂无建议');
+    } catch {
+      setAiHealthInsight('AI健康检查暂不可用，请稍后再试。');
+    } finally {
+      setAiAnalyzing(false);
+    }
+  }, [projects, aiAnalyzing]);
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <PageHeader icon={<FolderKanban size={16} />} title="项目管理" badge={`${projects.length} 个项目`}>
+        {can('ai:chat') && (
+        <button className="flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1 text-[11px] font-semibold text-accent hover:bg-accent/20 disabled:opacity-50" onClick={handleAiHealthCheck} disabled={aiAnalyzing}><Sparkles size={12} />{aiAnalyzing ? '分析中...' : 'AI健康检查'}</button>
+        )}
         {can('projects:write') && (
         <button className="rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={handleOpen}><Plus size={12} className="mr-1 inline" />新建项目</button>
         )}
@@ -91,6 +112,15 @@ export default function ProjectsContent() {
         </div>
         )}
       </PageHeader>
+      {aiHealthInsight && (
+        <div className="mx-3 md:mx-4 mt-2 rounded-lg border border-accent/20 bg-accent/5 p-3 text-xs text-text-2">
+          <div className="flex items-start justify-between gap-2">
+            <Sparkles size={12} className="mt-0.5 shrink-0 text-accent" />
+            <span className="flex-1 whitespace-pre-wrap">{aiHealthInsight}</span>
+          </div>
+          <button className="mt-1 text-[9px] text-text-3 hover:text-text" onClick={() => setAiHealthInsight(null)}>关闭</button>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
       {loading ? (
         <CardSkeleton />

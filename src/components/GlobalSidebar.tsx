@@ -191,7 +191,7 @@ export default function GlobalSidebar() {
   const themeLabel = theme === 'system' ? '自动' : theme === 'dark' ? '暗色' : '亮色';
 
   return (
-    <nav aria-label="主导航" className="flex w-16 flex-col items-center border-r border-border bg-surface py-3 z-50 shrink-0">
+    <nav aria-label="主导航" className="flex w-14 md:w-16 flex-col items-center border-r border-border bg-surface py-3 z-50 shrink-0">
       {/* Logo */}
       <Tooltip label="TBH Next">
         <button onClick={() => navigate(navigateTo('workspace', 'overview'))} aria-label={t('nav.home')} className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-extrabold text-white cursor-pointer hover:scale-110 transition-transform">
@@ -207,7 +207,7 @@ export default function GlobalSidebar() {
               onClick={() => handleInterfaceSwitch(item.id)}
               aria-label={t(item.labelKey)}
               className={cn(
-                'relative flex h-11 w-11 items-center justify-center rounded-xl text-lg transition-all',
+                'relative flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-xl text-lg transition-all',
                 iface === item.id
                   ? 'bg-primary/10 text-primary-2 shadow-[0_0_12px_rgba(123,108,240,0.15)]'
                   : 'text-text-3 hover:bg-surface-2 hover:text-text-2'
@@ -228,7 +228,7 @@ export default function GlobalSidebar() {
             <button
               onClick={() => handleQuickNav(item)}
               aria-label={t(item.labelKey)}
-              className="flex h-11 w-11 items-center justify-center rounded-xl text-lg text-text-3 transition-all hover:bg-surface-2 hover:text-text-2 hover:scale-105"
+              className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-xl text-lg text-text-3 transition-all hover:bg-surface-2 hover:text-text-2 hover:scale-105"
             >
               {item.icon}
             </button>
@@ -243,7 +243,7 @@ export default function GlobalSidebar() {
           <button
             onClick={toggleCtxPanel}
             aria-label={t('nav.aiUnderstanding')}
-            className="flex h-11 w-11 items-center justify-center rounded-xl text-lg text-text-3 transition-all hover:bg-surface-2 hover:text-text-2 hover:scale-105"
+            className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-xl text-lg text-text-3 transition-all hover:bg-surface-2 hover:text-text-2 hover:scale-105"
           >
             🤖
           </button>

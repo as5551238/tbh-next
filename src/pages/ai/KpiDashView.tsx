@@ -227,13 +227,13 @@ export default function KpiDashView() {
                     {editingTarget === kpi.name ? (
                       <div className="flex flex-wrap items-center gap-2 flex-1">
                         <input className="rounded-lg border border-primary/50 bg-surface-2 px-2 py-1 text-sm text-text outline-none w-24" value={targetValue} onChange={(e) => setTargetValue(e.target.value)} autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveTarget(); if (e.key === 'Escape') setEditingTarget(null); }} />
-                        <button onClick={saveTarget} className="rounded-lg bg-success/10 p-1"><Check size={12} className="text-success" /></button>
-                        <button onClick={() => setEditingTarget(null)} className="rounded-lg bg-danger/10 p-1"><X size={12} className="text-danger" /></button>
+                        <button onClick={saveTarget} className="rounded-lg bg-success/10 p-1" aria-label="保存"><Check size={12} className="text-success" /></button>
+                        <button onClick={() => setEditingTarget(null)} className="rounded-lg bg-danger/10 p-1" aria-label="取消"><X size={12} className="text-danger" /></button>
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center gap-2 flex-1">
                         <span className="text-xs text-text-2">目标: {displayTarget}</span>
-                        <button onClick={(e) => { e.stopPropagation(); handleEditTarget(kpi.name, String(displayTarget)); }} className="rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80">
+                        <button onClick={(e) => { e.stopPropagation(); handleEditTarget(kpi.name, String(displayTarget)); }} className="rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80" aria-label="编辑目标值">
                           <Edit3 size={10} className="text-text-3" />
                         </button>
                       </div>

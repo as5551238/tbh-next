@@ -194,10 +194,13 @@ export default function App() {
   // Global keyboard shortcuts
   useGlobalShortcuts();
 
-  // Auto-collapse module sidebar on mobile
+  // Auto-collapse module sidebar on small screens
   useEffect(() => {
-    if (isMobile) {
-      useAppStore.getState().toggleModSidebar();
+    if (window.innerWidth <= 1024) {
+      const store = useAppStore.getState();
+      if (store.modSidebarOpen) {
+        store.toggleModSidebar();
+      }
     }
   }, []);
 

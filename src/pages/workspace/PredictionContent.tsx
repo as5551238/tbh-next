@@ -163,11 +163,11 @@ export default function PredictionContent() {
                   className="h-full rounded-full transition-all"
                   style={{
                     width: `${p.probability}%`,
-                    backgroundColor: p.impact === 'positive' ? '#22c984' : p.probability > 60 ? '#ff5c6a' : '#ffc44d',
+                    backgroundColor: p.impact === 'positive' ? 'var(--color-success)' : p.probability > 60 ? 'var(--color-danger)' : 'var(--color-warn)',
                   }}
                 />
               </div>
-              <span className="text-xs font-bold" style={{ color: p.impact === 'positive' ? '#22c984' : p.probability > 60 ? '#ff5c6a' : '#ffc44d' }}>
+              <span className="text-xs font-bold" style={{ color: p.impact === 'positive' ? 'var(--color-success)' : p.probability > 60 ? 'var(--color-danger)' : 'var(--color-warn)' }}>
                 {p.probability}%
               </span>
             </div>

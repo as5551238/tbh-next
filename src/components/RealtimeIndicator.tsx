@@ -2,7 +2,7 @@ import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 
 const STATUS_CONFIG = {
-  connected: { color: 'bg-[#00d4aa]', label: '实时已连接', pulse: false },
+  connected: { color: 'bg-[var(--color-realtime)]', label: '实时已连接', pulse: false },
   reconnecting: { color: 'bg-amber-400', label: '重连中...', pulse: true },
   degraded: { color: 'bg-amber-400', label: '降级模式(轮询)', pulse: true },
   disconnected: { color: 'bg-gray-500', label: '未连接', pulse: false },

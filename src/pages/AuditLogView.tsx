@@ -137,7 +137,7 @@ export default function AuditLogView() {
             </thead>
             <tbody>
               {filteredLogs.map((log) => (
-                <tr key={log.id} className="border-t border-[#1e2030] hover:bg-surface-deep">
+                <tr key={log.id} className="border-t hover:bg-surface-deep" style={{ borderColor: 'var(--border-default)' }}>
                   <td className="px-4 py-2 text-text-muted">
                     {new Date(log.created_at).toLocaleString('zh-CN')}
                   </td>
@@ -159,7 +159,7 @@ export default function AuditLogView() {
           </table>
 
           {hasMore && (
-            <div className="p-3 text-center border-t border-[#1e2030]">
+            <div className="p-3 text-center border-t" style={{ borderColor: 'var(--border-default)' }}>
               <button onClick={loadMore} className="text-brand-accent hover:underline text-sm">
                 加载更多
               </button>

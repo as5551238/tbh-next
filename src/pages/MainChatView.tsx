@@ -458,7 +458,7 @@ function MainChatView() {
            )}
           <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
             <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()} placeholder="问我任何关于你工作的事..." aria-label="AI聊天输入框" className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3" disabled={isTyping} />
-            <button onClick={handleSend} className="rounded-lg bg-primary p-1.5 text-white transition-opacity hover:opacity-80 disabled:opacity-50" disabled={isTyping || !chatInput.trim()}>
+            <button onClick={handleSend} className="rounded-lg bg-primary p-1.5 text-white transition-opacity hover:opacity-80 disabled:opacity-50" disabled={isTyping || !chatInput.trim()} aria-label="发送">
               <Send size={14} />
             </button>
           </div>

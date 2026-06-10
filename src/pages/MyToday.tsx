@@ -375,7 +375,7 @@ export default function MyToday() {
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-[#1e2030] rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--progress-track)' }}>
                       <div
                         className="h-full rounded-full transition-all"
                         style={{

@@ -190,11 +190,11 @@ export default function PenetrationView() {
           {/* Action buttons — visible on hover */}
           {!isVirtualNode && (
             <div className="flex flex-wrap items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-              <button onClick={(e) => { e.stopPropagation(); handleEditOpen(node); }} className="rounded p-0.5 hover:bg-surface-2/80" title="编辑">
+              <button onClick={(e) => { e.stopPropagation(); handleEditOpen(node); }} className="rounded p-0.5 hover:bg-surface-2/80" aria-label="编辑">
                 <Edit3 size={10} className="text-text-3" />
               </button>
               {node.type === 'task' && (
-                <button onClick={(e) => { e.stopPropagation(); handleLinkOpen(node.id, node.goalId); }} className="rounded p-0.5 hover:bg-surface-2/80" title="关联目标">
+                <button onClick={(e) => { e.stopPropagation(); handleLinkOpen(node.id, node.goalId); }} className="rounded p-0.5 hover:bg-surface-2/80" aria-label="关联目标">
                   <Link2 size={10} className="text-text-3" />
                 </button>
               )}
