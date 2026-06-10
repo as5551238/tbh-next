@@ -33,6 +33,30 @@ export interface TaskRow {
   done: boolean;
   goal_id: string | null;
   completed_at?: string | null;
+  /** Existing DB columns that may already have data */
+  project_id?: string | null;
+  owner_id?: string | null;
+  category?: string | null;
+  start_date?: string | null;
+  progress?: number;
+  parent_id?: string | null;          // DB FK to parent task — canonical field for hierarchy
+  subtasks?: string[] | unknown;      // DB JSONB — existing subtask data (legacy)
+  blocked_by?: string[] | unknown;    // DB JSONB — existing dependency data (legacy)
+  sprint_id?: string | null;
+  team_id?: string | null;
+  /** 8-field model extensions (Week 1 intent parser support)
+   *  NOTE: parent_task_id/dependency_ids/subtask_ids are NEW explicit columns
+   *  that supersede the legacy parent_id/subtasks/blocked_by fields.
+   *  Intent parser and UI should use the new fields.
+   *  The old fields remain for backward compatibility with existing data.
+   */
+  milestone?: string | null;
+  dependency_ids?: string[];          // replaces blocked_by (explicit UUID array)
+  subtask_ids?: string[];             // replaces subtasks (explicit UUID array)
+  description?: string | null;
+  tags?: string[];
+  estimated_hours?: number | null;
+  actual_hours?: number | null;
 }
 
 export interface ProjectRow {

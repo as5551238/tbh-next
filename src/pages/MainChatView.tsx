@@ -16,6 +16,8 @@ import { buildModuleContext } from '@/lib/moduleContext';
 import { auditStore } from '@/lib/agentHarness';
 import { createMessage, fetchMessages, type MessageRow } from '@/lib/dataLayer';
 import { executeToolCall } from '@/lib/aiTools';
+import { parseAndExecute, resolveNaturalDate, type ParsedIntent, type IntentType } from '@/lib/intentParser';
+import { IntentFallbackForm } from '@/components/IntentFallbackForm';
 import { fetchSubscription, fetchUsageToday, isActionAllowed, PLAN_LIMITS, type UsageSummary } from '@/lib/subscription';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
@@ -79,6 +81,9 @@ function MainChatView() {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
+  const [fallbackIntent, setFallbackIntent] = useState<IntentType>('unknown');
+  const [fallbackRawText, setFallbackRawText] = useState('');
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const [activeAgent, setActiveAgent] = useState<AgentDef | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -234,6 +239,52 @@ function MainChatView() {
     }
   }
 
+  /** Handle fallback form submission — execute the tool with manual params */
+  const handleFallbackSubmit = useCallback(async (intent: IntentType, params: Record<string, unknown>) => {
+    const now = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    // Resolve natural dates in params
+    if (params.due_date && typeof params.due_date === 'string') {
+      const resolved = resolveNaturalDate(params.due_date);
+      if (resolved) params.due_date = resolved;
+    }
+
+    const toolName = intent === 'create_task' ? 'create_task' : intent === 'update_task' ? 'update_task_status' : '';
+
+    if (!toolName) return;
+
+    const toolMsg: ChatMsg = {
+      id: Date.now(),
+      role: 'tool',
+      text: `正在执行: ${toolName}...`,
+      time: now,
+      toolName,
+    };
+    setMessages((prev) => [...prev, toolMsg]);
+    scrollToBottom();
+
+    try {
+      const result = await executeToolCall(toolName, params) as Record<string, unknown>[];
+      const resultText = formatToolResult(toolName, result);
+      const navModule = toolName === 'create_task' || toolName === 'update_task_status' ? 'tasks' : undefined;
+      const resultMsg: ChatMsg = {
+        id: Date.now() + 1,
+        role: 'ai',
+        text: resultText,
+        time: now,
+        agentIcon: '✅',
+        toolResult: result,
+        actions: navModule ? [{ label: '查看任务 →', module: navModule, iface: 'workspace' }] : undefined,
+      };
+      setMessages((prev) => [...prev, resultMsg]);
+      scrollToBottom();
+    } catch {
+      setMessages((prev) => [...prev, {
+        id: Date.now() + 1, role: 'ai', text: '操作失败，请稍后重试。', time: now, agentIcon: '⚠️',
+      }]);
+      scrollToBottom();
+    }
+  }, [scrollToBottom]);
+
   async function handleSend() {
     if (!chatInput.trim() || isTyping) return;
     // Check AI usage limits before sending
@@ -242,13 +293,9 @@ function MainChatView() {
     const input = chatInput.trim();
     const now = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
-    const matchedAgent = routeToAgent(input);
-    setActiveAgent(matchedAgent);
-
     const userMsg: ChatMsg = { id: Date.now(), role: 'user', text: input, time: now };
     setMessages((prev) => [...prev, userMsg]);
     setChatInput('');
-    setIsTyping(true);
 
     // Persist user message
     createMessage({
@@ -257,6 +304,75 @@ function MainChatView() {
       sender_type: 'user',
       sender_name: user?.name ?? '我',
     });
+
+    // === Intent Parser: try "对话即操作" first ===
+    try {
+      const intentResult = await parseAndExecute(input);
+
+      if (!intentResult.intent.fallback && intentResult.toolResult !== undefined) {
+        // Intent parsed successfully — tool was executed, show result
+        const parsed = intentResult.intent;
+        // Resolve natural dates for display
+        let resultText = formatToolResult(parsed.toolName, intentResult.toolResult as unknown[]);
+
+        // Add intent context to result
+        const intentLabel: Record<string, string> = {
+          create_task: '✅ 任务已创建',
+          update_task_status: '✅ 任务已更新',
+          query_progress: '📊 查询结果',
+          create_goal: '🎯 目标已创建',
+        };
+
+        const navModule = parsed.toolName === 'create_task' || parsed.toolName === 'update_task_status' ? 'tasks'
+          : parsed.toolName === 'get_goals' || parsed.toolName === 'update_goal_progress' ? 'goals'
+          : parsed.toolName === 'get_tasks' ? 'tasks'
+          : undefined;
+
+        const aiMsg: ChatMsg = {
+          id: Date.now() + 1,
+          role: 'ai',
+          text: `${intentLabel[parsed.intent] ?? '✅ 操作完成'}\n\n${resultText}`,
+          time: now,
+          agentIcon: '⚡',
+          toolName: parsed.toolName,
+          toolResult: intentResult.toolResult as Record<string, unknown>[],
+          actions: navModule ? [{ label: `查看详情 →`, module: navModule, iface: 'workspace' }] : undefined,
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+        scrollToBottom();
+
+        // Persist AI response
+        createMessage({
+          channel: AI_ASSISTANT_CHANNEL,
+          content: aiMsg.text,
+          sender_type: 'ai',
+          sender_name: '意图解析',
+        });
+        return; // Intent handled — skip regular chat
+      }
+
+      if (intentResult.intent.fallback && intentResult.intent.intent !== 'chitchat') {
+        // Parsing failed — show fallback form and also do regular chat
+        setFallbackIntent(intentResult.intent.intent);
+        setFallbackRawText(input);
+        setFallbackOpen(true);
+        // Fall through to regular chat below
+      }
+      // chitchat or low-confidence — fall through to regular chat
+
+      if (intentResult.intent.intent === 'chitchat') {
+        // chitchat — just do regular chat, no form
+      }
+    } catch (err) {
+      console.error('[MainChatView] Intent parse failed, falling back to chat:', err);
+      // Fall through to regular chat
+    }
+
+    // === Regular Chat: AI conversation ===
+    const matchedAgent = routeToAgent(input);
+    setActiveAgent(matchedAgent);
+
+    setIsTyping(true);
 
     const systemPrompt = matchedAgent
       ? matchedAgent.systemPrompt(cell, industry, dept)
@@ -525,6 +641,13 @@ function MainChatView() {
       </div>
 
       <PaywallModal open={mcShow} onClose={mcClose} reason={mcReason} feature={mcFeat} />
+      <IntentFallbackForm
+        open={fallbackOpen}
+        onClose={() => setFallbackOpen(false)}
+        guessedIntent={fallbackIntent}
+        rawText={fallbackRawText}
+        onSubmit={handleFallbackSubmit}
+      />
     </div>
   );
 }

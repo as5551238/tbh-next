@@ -64,14 +64,20 @@ const toolDefs: ToolDefinition[] = [
   },
   {
     name: 'create_task',
-    description: '创建新任务。可关联到某个目标。',
+    description: '创建新任务。可关联到某个目标，支持8字段完整模型。',
     parameters: {
       title: { type: 'string', description: '任务标题', required: true },
       priority: { type: 'string', description: '优先级', enum: ['urgent', 'high', 'medium', 'low'], required: false },
       goal_id: { type: 'string', description: '关联的目标ID', required: false },
       due_date: { type: 'string', description: '截止日期 (YYYY-MM-DD)', required: false },
+      description: { type: 'string', description: '任务描述', required: false },
+      milestone: { type: 'string', description: '所属里程碑', required: false },
+      tags: { type: 'string', description: '标签（逗号分隔）', required: false },
+      assignee_id: { type: 'string', description: '负责人ID', required: false },
     },
     handler: async (params) => {
+      const tagsStr = String(params.tags ?? '');
+      const tags = tagsStr ? tagsStr.split(/[,，]/).map((s: string) => s.trim()).filter(Boolean) : [];
       return await createTask({
         title: String(params.title),
         priority: String(params.priority ?? 'medium'),
@@ -79,8 +85,11 @@ const toolDefs: ToolDefinition[] = [
         done: false,
         goal_id: (params.goal_id as string) ?? null,
         due_date: (params.due_date as string) ?? null,
-        assignee_id: null,
+        assignee_id: (params.assignee_id as string) ?? null,
         leader_id: null,
+        description: (params.description as string) ?? null,
+        milestone: (params.milestone as string) ?? null,
+        tags,
       } as Omit<TaskRow, 'id'>);
     },
   },
