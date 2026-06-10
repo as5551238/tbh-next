@@ -10,10 +10,12 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import PageHeader from '@/components/PageHeader';
 import { exportToCSV, exportToJSON } from '@/lib/export';
+import { usePermission } from '@/hooks/usePermission';
 
 export default function ProjectsContent() {
   const { projects, loading, addProject, editProject, removeProject } = useProjects();
   const { showPaywall: ppShow, paywallReason: ppReason, paywallFeature: ppFeat, closePaywall: ppClose, requireLimit: ppLimit } = useGateCheck();
+  const { can } = usePermission();
   const modal = useModal();
   const editModal = useModal();
   const [form, setForm] = useState({ title: '', status: 'planned', end_date: '', members: 0 });
@@ -73,7 +75,10 @@ export default function ProjectsContent() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <PageHeader icon={<FolderKanban size={16} />} title="项目管理" badge={`${projects.length} 个项目`}>
+        {can('projects:write') && (
         <button className="rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={handleOpen}><Plus size={12} className="mr-1 inline" />新建项目</button>
+        )}
+        {can('reports:export') && (
         <div className="relative">
           <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setProjExportOpen((v) => !v)}>导出 ▾</button>
           {projExportOpen && (<>
@@ -84,6 +89,7 @@ export default function ProjectsContent() {
             </div>
           </>)}
         </div>
+        )}
       </PageHeader>
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
       {loading ? (
@@ -132,7 +138,7 @@ export default function ProjectsContent() {
       </Modal>
 
       <PaywallModal open={ppShow} onClose={ppClose} reason={ppReason} feature={ppFeat} />
-      <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title="编辑项目" fields={projectFields} data={editData} onSave={handleProjectSave} onDelete={() => { if (editData?.id) { removeProject(String(editData.id)); editModal.closeModal(); } }} commentTarget={editData?.id ? { type: 'project', id: String(editData.id) } : null} />
+      <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title="编辑项目" fields={projectFields} data={editData} onSave={handleProjectSave} onDelete={can('projects:delete') ? () => { if (editData?.id) { removeProject(String(editData.id)); editModal.closeModal(); } } : undefined} commentTarget={editData?.id ? { type: 'project', id: String(editData.id) } : null} />
       </div>
     </div>
   );

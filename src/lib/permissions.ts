@@ -117,12 +117,11 @@ const ADMIN_ROLES = new Set(['admin', 'owner']);
 
 /**
  * canAccess — synchronous permission check.
- * Returns true if the current user's role has the given permission.
+ * Uses the provided role string; if omitted, falls back to appStore.
  * Admin/owner always returns true.
  */
-export function canAccess(permission: PermissionKey): boolean {
-  const { authUser } = await_init_store();
-  const userRole = authUser?.role ?? 'member';
+export function canAccess(permission: PermissionKey, roleOverride?: string): boolean {
+  const userRole = roleOverride ?? getAppRole();
 
   // Admin bypass
   if (ADMIN_ROLES.has(userRole)) return true;
@@ -140,11 +139,17 @@ export function getRolePermissions(roleKey: string): Set<PermissionKey> {
   return ROLE_PERMISSIONS[roleKey] ?? new Set();
 }
 
-// Lazy store accessor to avoid circular imports
-function await_init_store() {
-  // Dynamic require to avoid circular dependency at module load time
-  const { useAppStore } = require('@/stores/appStore');
-  return { authUser: useAppStore.getState().authUser };
+// Lazily resolve role from appStore (only when no override is provided).
+// Uses dynamic import() to avoid circular dependency at module load time,
+// and caches the store reference after first resolution.
+let _storeRef: typeof import('@/stores/appStore') | null = null;
+
+function getAppRole(): string {
+  if (!_storeRef) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy store resolution to break circular dep
+    _storeRef = require('@/stores/appStore');
+  }
+  return _storeRef.useAppStore.getState().authUser?.role ?? 'member';
 }
 
 /**

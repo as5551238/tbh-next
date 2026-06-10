@@ -12,10 +12,12 @@ import CommentSection from '@/components/CommentSection';
 import { exportToCSV, exportToJSON, formatDateForExport } from '@/lib/export';
 import BulkActionBar from '@/components/BulkActionBar';
 import { t } from '@/lib/i18n';
+import { usePermission } from '@/hooks/usePermission';
 
 export default function GoalsContent() {
   const { goals, loading, addGoal, editGoal, removeGoal } = useGoals();
   const { showPaywall, paywallReason, paywallFeature, closePaywall, requireLimit } = useGateCheck();
+  const { can } = usePermission();
   const { tasks } = useTasks();
   const goalModal = useModal();
   const addGoalModal = useModal();
@@ -88,9 +90,12 @@ export default function GoalsContent() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <PageHeader icon={<Target size={16} />} title={t('goals.title')} badge={t('goals.inProgress', { count: goals.length })}>
+        {can('goals:write') && (
         <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, '免费版最多创建5个目标，升级Pro解锁更多')) return; setNewGoalForm({ title: '', status: 'on_track', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
           <Plus size={12} />{t('goals.newGoal')}
         </button>
+        )}
+        {can('reports:export') && (
         <div className="relative">
           <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setGoalExportOpen((v) => !v)}>导出 ▾</button>
           {goalExportOpen && (<>
@@ -101,6 +106,7 @@ export default function GoalsContent() {
             </div>
           </>)}
         </div>
+        )}
       </PageHeader>
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
       {loading ? (
@@ -166,7 +172,7 @@ export default function GoalsContent() {
       <Modal open={goalModal.open} onClose={goalModal.closeModal} title={t('goals.editGoal')}
         footer={
           <div className="flex flex-wrap gap-2">
-            <button className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10" onClick={() => { if (editGoalData) { removeGoal(editGoalData.id); goalModal.closeModal(); setEditGoalData(null); } }}>{t('goals.delete')}</button>
+            {can('goals:delete') && <button className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10" onClick={() => { if (editGoalData) { removeGoal(editGoalData.id); goalModal.closeModal(); setEditGoalData(null); } }}>{t('goals.delete')}</button>}
             <button className={btnSecondary} onClick={goalModal.closeModal}>{t('common.cancel')}</button>
             <button className={btnPrimary} onClick={handleEditGoalSave}>{t('common.save')}</button>
           </div>
