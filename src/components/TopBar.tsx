@@ -84,7 +84,8 @@ export default function TopBar() {
       {/* Hamburger — mobile only */}
       <button
         onClick={() => setMobileDrawerOpen(true)}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text md:hidden"
+        aria-label="打开导航菜单"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none md:hidden"
       >
         <Menu size={18} />
       </button>
@@ -103,7 +104,8 @@ export default function TopBar() {
       {/* Context Pill — full on md+, dot-only on mobile */}
       <button
         onClick={toggleCtxPanel}
-        className="hidden md:flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium transition-all hover:border-primary/50 hover:bg-primary/5 ml-2 shrink-0"
+        aria-label="切换上下文面板"
+        className="hidden md:flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium transition-all hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ml-2 shrink-0"
       >
         <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: indColor }} />
         <span className="text-text-2">{industry}</span>
@@ -112,7 +114,8 @@ export default function TopBar() {
       </button>
       <button
         onClick={toggleCtxPanel}
-        className="flex md:hidden items-center justify-center h-7 w-7 rounded-full border border-border transition-all hover:border-primary/50 shrink-0"
+        aria-label="切换上下文面板"
+        className="flex md:hidden items-center justify-center h-7 w-7 rounded-full border border-border transition-all hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none shrink-0"
       >
         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: indColor }} />
       </button>
@@ -129,14 +132,14 @@ export default function TopBar() {
         <div className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-2 py-1.5 w-44 md:w-48">
           <Search size={13} className="text-text-3 shrink-0" />
           <input ref={searchRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(searchQuery); if (e.key === 'Escape') setSearchOpen(false); }} placeholder="搜索模块..." className="bg-transparent text-xs text-text outline-none flex-1 min-w-0" />
-          <button onClick={() => { setSearchOpen(false); setSearchQuery(''); }} className="text-text-3 hover:text-text shrink-0"><X size={12} /></button>
+          <button onClick={() => { setSearchOpen(false); setSearchQuery(''); }} aria-label="关闭搜索" className="text-text-3 hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none shrink-0"><X size={12} /></button>
         </div>
       ) : (
         <>
-          <button onClick={() => setSearchOpen(true)} className="flex md:hidden items-center justify-center h-8 w-8 rounded-lg bg-surface-2 text-text-3 hover:bg-surface-2/80 transition-colors shrink-0">
+          <button onClick={() => setSearchOpen(true)} aria-label="搜索" className="flex md:hidden items-center justify-center h-8 w-8 rounded-lg bg-surface-2 text-text-3 hover:bg-surface-2/80 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none transition-colors shrink-0">
             <Search size={14} />
           </button>
-          <button onClick={() => setSearchOpen(true)} className="hidden md:flex items-center gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs text-text-3 w-44 hover:bg-surface-2/80 transition-colors shrink-0">
+          <button onClick={() => setSearchOpen(true)} className="hidden md:flex items-center gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs text-text-3 w-44 hover:bg-surface-2/80 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none transition-colors shrink-0">
             <Search size={13} />
             <span>搜索...</span>
           </button>
@@ -144,7 +147,7 @@ export default function TopBar() {
       )}
 
       {/* Notifications */}
-      <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text shrink-0" onClick={() => { navigate(navigateTo('workspace', 'notifications')); }}>
+      <button aria-label="通知" className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none shrink-0" onClick={() => { navigate(navigateTo('workspace', 'notifications')); }}>
         <Bell size={16} />
         {unreadCount > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
@@ -154,16 +157,17 @@ export default function TopBar() {
       </button>
 
       {/* Settings — hidden on mobile, accessible via mobile user menu */}
-      <button className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text shrink-0" onClick={() => { navigate(navigateTo('workspace', 'org')); }}>
+      <button aria-label="设置" className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none shrink-0" onClick={() => { navigate(navigateTo('workspace', 'org')); }}>
         <Settings size={16} />
       </button>
 
       {/* User menu toggle — mobile only */}
       <div className="relative md:hidden">
-        <button
-          onClick={(e) => { e.stopPropagation(); setMobileMenuOpen((v) => !v); }}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text shrink-0"
-        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setMobileMenuOpen((v) => !v); }}
+            aria-label="用户菜单"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none shrink-0"
+          >
           <User size={16} />
         </button>
         {mobileMenuOpen && (

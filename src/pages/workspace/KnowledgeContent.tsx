@@ -1,14 +1,12 @@
-import { hasFeature } from '@/lib/subscription'; // gate: Pro feature check
 import { useState, useCallback, useMemo } from 'react';
 import { useKnowledgeDocs } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { BookOpen, BarChart3, Lock } from 'lucide-react';
+import { BookOpen, BarChart3 } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import { CardSkeleton } from '@/components/Skeleton';
 
 export default function KnowledgeContent() {
-  const isPro = hasFeature('advancedAnalytics' as never);
   const { docs, loading, addDoc, editDoc, removeDoc } = useKnowledgeDocs();
   const modal = useModal();
   const editModal = useModal();
@@ -71,7 +69,7 @@ export default function KnowledgeContent() {
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <BookOpen size={18} className="text-primary-2" />
         <span className="text-sm font-bold">知识库</span>
-        <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={() => { if (!isPro) return; handleOpen(); }}>{isPro ? "+ 新建" : <><Lock size={10} className="inline mr-1" />Pro</>}</button>
+        <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={handleOpen}>+ 新建</button>
       </div>
       <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 mb-3">
         <BarChart3 size={14} className="text-text-3" />

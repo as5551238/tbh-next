@@ -97,6 +97,10 @@ interface AppState {
   setAuthUser: (user: { id: string; email: string; role: string; name: string } | null) => void;
   teamId: string;
 
+  // Theme (dark/light/system)
+  theme: 'dark' | 'light' | 'system';
+  setTheme: (theme: 'dark' | 'light' | 'system') => void;
+
   // Realtime connection status (updated by useRealtime hook)
   realtimeStatus: 'connected' | 'reconnecting' | 'degraded' | 'disconnected';
   setRealtimeStatus: (status: 'connected' | 'reconnecting' | 'degraded' | 'disconnected') => void;
@@ -159,4 +163,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   realtimeStatus: 'disconnected',
   setRealtimeStatus: (status) => set({ realtimeStatus: status }),
+
+  theme: ((typeof localStorage !== 'undefined' && localStorage.getItem('tbh-theme') as 'dark' | 'light' | 'system') || 'dark') as 'dark' | 'light' | 'system',
+  setTheme: (theme) => {
+    localStorage.setItem('tbh-theme', theme);
+    set({ theme });
+  },
 }));

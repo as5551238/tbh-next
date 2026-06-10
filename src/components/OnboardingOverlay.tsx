@@ -55,6 +55,8 @@ export default function OnboardingOverlay() {
     const store = useAppStore.getState();
     store.setContext(industry, dept);
     store.navigateTo('workspace', 'overview');
+    // Notify OnboardingFlow to appear
+    window.dispatchEvent(new CustomEvent('tbh-overlay-done'));
   }
 
   const departments = industry ? getDepartments(industry) : [];

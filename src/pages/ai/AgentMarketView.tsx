@@ -1,10 +1,11 @@
 import { useState, useEffect, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAgentDetails } from '@/hooks/useMatrix';
 import { fetchMarketplaceAgents, CATEGORIES, type MarketplaceAgent } from '@/lib/agentMarketplace';
 import { cn } from '@/lib/utils';
-import { Search, Download, Star, X, Check, Crown, Zap, Building2 } from 'lucide-react';
+import { Search, Download, Star, X, Check, Crown, Zap, Building2, Loader2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
@@ -21,9 +22,12 @@ const PRICE_ICONS: Record<string, ReactNode> = {
 export default function AgentMarketView() {
   const [showPaywall, setShowPaywall] = useState(false);
   const industry = useAppStore((s) => s.industry);
+  const navigateTo = useAppStore((s) => s.navigateTo);
+  const navigate = useNavigate();
   const { addAgent, removeAgent } = useAgentDetails();
   const [agents, setAgents] = useState<MarketplaceAgent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [installing, setInstalling] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [selectedAgent, setSelectedAgent] = useState<MarketplaceAgent | null>(null);
@@ -52,6 +56,33 @@ export default function AgentMarketView() {
 
   const installed = agents.filter((a) => a.isInstalled);
   const available = filtered.filter((a) => !a.isInstalled);
+
+  async function handleQuickInstall(agent: MarketplaceAgent, e: React.MouseEvent) {
+    e.stopPropagation();
+    setInstalling(agent.id);
+    try {
+      await addAgent({
+        name: agent.name,
+        model: 'gpt-4o',
+        description: agent.description,
+        status: 'idle',
+        enabled: true,
+        tasks_completed: 0,
+        uptime: '0%',
+        capabilities: agent.capabilities,
+      });
+      const newIds = new Set(installedAgentIds);
+      newIds.add(agent.id);
+      saveInstalledAgentIds(newIds);
+      setAgents((prev) => prev.map((a) => a.id === agent.id ? { ...a, isInstalled: true } : a));
+      success(`Agent"${agent.name}"已安装`);
+      navigate(navigateTo('ai', 'agentList'));
+    } catch {
+      error(`安装失败`);
+    } finally {
+      setInstalling(null);
+    }
+  }
 
   async function toggleInstall() {
     if (!selectedAgent) return;
@@ -128,6 +159,11 @@ export default function AgentMarketView() {
                     <span className="flex flex-wrap items-center gap-0.5"><Download size={9} />{agent.downloads}</span>
                     {agent.isInstalled && <span className="flex flex-wrap items-center gap-0.5 text-success"><Check size={9} />已安装</span>}
                   </div>
+                  {!agent.isInstalled && (
+                    <button onClick={(e) => handleQuickInstall(agent, e)} className="mt-2 w-full rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 disabled:opacity-50" disabled={installing === agent.id}>
+                      {installing === agent.id ? <Loader2 size={10} className="animate-spin inline mr-1" /> : '安装'}
+                    </button>
+                  )}
                 </button>
               ))}
             </div>

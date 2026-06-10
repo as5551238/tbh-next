@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { FolderKanban } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
+import { exportToCSV, exportToJSON } from '@/lib/export';
 
 export default function ProjectsContent() {
   const { projects, loading, addProject, editProject, removeProject } = useProjects();
@@ -16,6 +17,7 @@ export default function ProjectsContent() {
   const editModal = useModal();
   const [form, setForm] = useState({ title: '', status: 'planned', end_date: '', members: 0 });
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
+  const [projExportOpen, setProjExportOpen] = useState(false);
 
   const projectFields: FieldDef[] = [
     { key: 'title', label: '项目名称', type: 'text' },
@@ -57,12 +59,32 @@ export default function ProjectsContent() {
     });
   }, [editProject]);
 
+  const projExportHeaders = ['名称', '描述', '状态', '进度', '负责人', '开始日期', '截止日期'];
+  const handleExportProjectsCSV = useCallback(() => {
+    const rows = projects.map((p) => ({ '名称': String(p.title ?? ''), '描述': '', '状态': String(p.status ?? ''), '进度': String(p.progress ?? ''), '负责人': '', '开始日期': '', '截止日期': String(p.end_date ?? '') }));
+    exportToCSV(projExportHeaders, rows, 'projects');
+  }, [projects]);
+  const handleExportProjectsJSON = useCallback(() => {
+    const rows = projects.map((p) => ({ '名称': String(p.title ?? ''), '描述': '', '状态': String(p.status ?? ''), '进度': String(p.progress ?? ''), '负责人': '', '开始日期': '', '截止日期': String(p.end_date ?? '') }));
+    exportToJSON(rows, 'projects');
+  }, [projects]);
+
   return (
     <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <FolderKanban size={18} className="text-primary-2" />
         <span className="text-sm font-bold">项目管理</span>
         <button className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20" onClick={handleOpen}>+ 新建项目</button>
+        <div className="relative">
+          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setProjExportOpen((v) => !v)}>导出 ▾</button>
+          {projExportOpen && (<>
+            <div className="fixed inset-0 z-40" onClick={() => setProjExportOpen(false)} />
+            <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setProjExportOpen(false); handleExportProjectsCSV(); }}>导出 CSV</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setProjExportOpen(false); handleExportProjectsJSON(); }}>导出 JSON</button>
+            </div>
+          </>)}
+        </div>
       </div>
       {loading ? (
         <CardSkeleton />

@@ -7,9 +7,11 @@ import { initSentry } from '@/lib/sentry';
 initSentry();
 
 // Use HashRouter on GitHub Pages (sub-directory hosting), BrowserRouter for local dev
-const Router = window.location.hostname === 'localhost' ? BrowserRouter : HashRouter;
-// Basename for BrowserRouter: extract from <base> or use import.meta.env.BASE_URL
-const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
+const isGHPages = window.location.hostname !== 'localhost';
+const Router = isGHPages ? HashRouter : BrowserRouter;
+// basename is only needed for BrowserRouter (sub-directory hosting on GitHub Pages).
+// HashRouter handles paths inside the hash — no basename needed.
+const routerBasename = isGHPages ? undefined : (import.meta.env.BASE_URL.replace(/\/$/, '') || undefined);
 import App from './App';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
@@ -19,8 +21,12 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import AuditLogView from './pages/AuditLogView';
 import RequireAuth from './lib/auth';
+import { initTheme } from '@/hooks/useTheme';
 import './index.css';
 import '@/lib/i18n';
+
+// Initialize theme from localStorage before first render
+initTheme();
 
 // Register Service Worker for PWA
 // Use BASE_URL for correct path on GitHub Pages sub-directory hosting
@@ -31,6 +37,12 @@ if ('serviceWorker' in navigator) {
       // SW registration failed - non-critical, continue without PWA
     });
   });
+}
+
+// HashRouter redirect: when users visit the page without a hash fragment,
+// the HashRouter has no path to match. Redirect to #/ to ensure routing works.
+if (isGHPages && !window.location.hash) {
+  window.location.replace(window.location.pathname + '#/');
 }
 
 createRoot(document.getElementById('root')!).render(

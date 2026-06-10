@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, BarChart3, Target, Edit3, ChevronDown, ChevronUp, Check, X, Lock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, BarChart3, Target, Edit3, ChevronDown, ChevronUp, Check, X, Lock, RefreshCw, AlertTriangle } from 'lucide-react';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 
@@ -12,12 +12,13 @@ export default function KpiDashView() {
   const indColor = useIndustryColor();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
-  const { cell, loading } = useMatrixCell();
+  const { cell, loading, refetch, isDemoData } = useMatrixCell();
   const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
   const [editingTarget, setEditingTarget] = useState<string | null>(null);
   const [targetValue, setTargetValue] = useState('');
   const [localTargets, setLocalTargets] = useState<Record<string, string>>({});
   const [showPaywall, setShowPaywall] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const goodCount = cell.kpis.filter((k) => k.status === 'good').length;
   const warnCount = cell.kpis.filter((k) => k.status === 'warn').length;
@@ -56,6 +57,13 @@ export default function KpiDashView() {
   if (!advancedAllowed) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
+        {isDemoData && (
+          <div className="flex items-center gap-2 bg-warn/10 px-4 py-2 text-[11px] text-warn">
+            <AlertTriangle size={14} />
+            <span className="font-semibold">演示数据</span>
+            <span className="text-text-2">— 当前指标来自矩阵单元格默认值</span>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <BarChart3 size={16} className="text-primary-2" />
           <span className="text-sm font-bold">KPI 仪表盘</span>
@@ -93,12 +101,31 @@ export default function KpiDashView() {
     setEditingTarget(null);
   };
 
+  const handleRefresh = () => {
+    setRefreshing(true);
+    refetch();
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
+      {isDemoData && (
+        <div className="flex items-center gap-2 bg-warn/10 px-4 py-2 text-[11px] text-warn">
+          <AlertTriangle size={14} />
+          <span className="font-semibold">演示数据</span>
+          <span className="text-text-2">— 当前指标来自矩阵单元格默认值，非实时计算结果</span>
+          <button className="ml-auto flex items-center gap-1 rounded-lg bg-warn/10 px-2 py-1 text-[10px] font-semibold text-warn hover:bg-warn/20" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />刷新指标
+          </button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <BarChart3 size={16} className="text-primary-2" />
         <span className="text-sm font-bold">KPI 仪表盘</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
+        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />刷新指标
+        </button>
       </div>
 
       {/* Health Score */}

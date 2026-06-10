@@ -360,6 +360,14 @@ export async function updateFeatureFlag(id: string, updates: Partial<FeatureFlag
   return data as FeatureFlagRow;
 }
 
+export async function createFeatureFlag(data: Omit<FeatureFlagRow, 'id' | 'created_at' | 'updated_at'>): Promise<FeatureFlagRow> {
+  if (!isSupabaseConfigured() || !supabase) return { id: `ff_local_${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...data } as FeatureFlagRow;
+  const filtered = filterColumns('feature_flags', data as Record<string, unknown>);
+  const { data: result, error } = await supabase.from('feature_flags').insert(filtered).select().single();
+  if (error) throw new Error(`createFeatureFlag: ${error.message}`);
+  return result as FeatureFlagRow;
+}
+
 // ======== Saved Views ========
 
 export async function fetchSavedViews(): Promise<SavedViewRow[]> {

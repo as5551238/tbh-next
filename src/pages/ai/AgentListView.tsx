@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAgentDetails, useIndustryColor } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Plus, Check } from 'lucide-react';
+import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Plus, Check, Edit3 } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
@@ -18,6 +18,8 @@ export default function AgentListView() {
   const [formName, setFormName] = useState('');
   const [formModel, setFormModel] = useState('gpt-4o');
   const [formDesc, setFormDesc] = useState('');
+  const [formSystemPrompt, setFormSystemPrompt] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
 
   function showToast(msg: string) {
@@ -36,21 +38,38 @@ export default function AgentListView() {
 
   async function handleRegister() {
     if (!formName.trim()) return;
-    const row = await addAgent({
-      name: formName.trim(),
-      model: formModel,
-      description: formDesc.trim() || '自定义Agent',
-      status: 'idle',
-      enabled: true,
-      tasks_completed: 0,
-      uptime: '0%',
-      capabilities: ['自定义'],
-    });
+    if (editingId) {
+      await editAgent(editingId, { name: formName.trim(), description: formDesc.trim() || '自定义Agent', system_prompt: formSystemPrompt });
+      setEditingId(null);
+      showToast(`Agent"${formName.trim()}"已更新`);
+    } else {
+      const row = await addAgent({
+        name: formName.trim(),
+        model: formModel,
+        description: formDesc.trim() || '自定义Agent',
+        status: 'idle',
+        enabled: true,
+        tasks_completed: 0,
+        uptime: '0%',
+        capabilities: ['自定义'],
+        system_prompt: formSystemPrompt,
+      });
+      showToast(`Agent"${row.name}"已注册`);
+    }
     setFormName('');
     setFormModel('gpt-4o');
     setFormDesc('');
+    setFormSystemPrompt('');
     registerModal.closeModal();
-    showToast(`Agent"${row.name}"已注册`);
+  }
+
+  function handleEditOpen(agent: typeof agents[0]) {
+    setEditingId(agent.id);
+    setFormName(agent.name);
+    setFormModel(agent.model ?? 'gpt-4o');
+    setFormDesc(agent.description ?? '');
+    setFormSystemPrompt((agent as Record<string, unknown>).system_prompt as string ?? '');
+    registerModal.openModal();
   }
 
   const runningCount = agents.filter((a) => a.enabled && a.status === 'running').length;
@@ -71,7 +90,7 @@ export default function AgentListView() {
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <span className="text-sm font-bold">Agent 列表</span>
         <span className="text-[10px] text-text-3">{runningCount} 运行中 · {agents.length} 总计</span>
-        <button onClick={registerModal.openModal} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 注册Agent</button>
+        <button onClick={registerModal.openModal} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 新建Agent</button>
       </div>
 
       {/* Stats Bar */}
@@ -111,6 +130,9 @@ export default function AgentListView() {
                 </div>
                 <div className="text-[11px] text-text-3 mt-0.5">{agent.description}</div>
               </div>
+              <button onClick={() => handleEditOpen(agent)} className="shrink-0 rounded-lg p-1 text-text-3 hover:bg-surface-2 hover:text-primary-2">
+                <Edit3 size={14} />
+              </button>
               <button onClick={() => toggleAgent(agent.id)} className="shrink-0">
                 {agent.enabled ? <ToggleRight size={28} className="text-primary-2" /> : <ToggleLeft size={28} className="text-text-3" />}
               </button>
@@ -128,11 +150,11 @@ export default function AgentListView() {
         ))}
       </div>
 
-      <Modal open={registerModal.open} onClose={registerModal.closeModal} title="注册Agent"
+      <Modal open={registerModal.open} onClose={() => { setEditingId(null); registerModal.closeModal(); }} title={editingId ? '编辑Agent' : '新建Agent'}
         footer={
           <>
-            <button onClick={registerModal.closeModal} className={btnSecondary}>取消</button>
-            <button onClick={handleRegister} className={btnPrimary} disabled={!formName.trim()}>注册</button>
+            <button onClick={() => { setEditingId(null); registerModal.closeModal(); }} className={btnSecondary}>取消</button>
+            <button onClick={handleRegister} className={btnPrimary} disabled={!formName.trim()}>{editingId ? '保存' : '创建'}</button>
           </>
         }>
         <ModalField label="Agent名称">
@@ -147,6 +169,9 @@ export default function AgentListView() {
         </ModalField>
         <ModalField label="描述">
           <input className={inputCls} value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="输入Agent描述" />
+        </ModalField>
+        <ModalField label="System Prompt">
+          <textarea className={inputCls} rows={4} value={formSystemPrompt} onChange={(e) => setFormSystemPrompt(e.target.value)} placeholder="定义Agent的行为指令..." />
         </ModalField>
       </Modal>
     

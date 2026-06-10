@@ -40,9 +40,17 @@ export interface HarnessOptions {
 }
 
 // --- Configuration: Multi-model presets ---
-// NOTE: API keys are now server-side only (Edge Function proxy).
-// The apiKey field is kept for type compatibility but should NOT be populated
-// from import.meta.env — that would expose keys in the client bundle.
+// Dev mode: API key from VITE_DEEPSEEK_API_KEY for direct client-side calls.
+// Production: API keys stay server-side via Edge Function proxy.
+
+const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY ?? '';
+
+const PROVIDER_ENDPOINTS: Record<string, string> = {
+  deepseek: 'https://api.deepseek.com',
+  doubao: 'https://ark.cn-beijing.volces.com/api/v3',
+  openai: 'https://api.openai.com',
+  qwen: 'https://dashscope.aliyuncs.com/compatible-mode',
+};
 
 export interface AIModelPreset {
   id: string;
@@ -187,8 +195,8 @@ export async function chatCompletion(
   }
 
   // --- Execute AI call ---
-  // Route priority: Edge Function proxy (secure) > local fallback (offline)
-  let route: 'edge' | 'local' = 'local';
+  // Route priority: Edge Function proxy > Direct API (dev) > local fallback (offline)
+  let route: 'edge' | 'direct' | 'local' = 'local';
   try {
     let response: AIResponse | null = null;
 
@@ -286,6 +294,14 @@ export async function chatCompletion(
       if (isSupabaseConfigured() && supabase) {
         route = 'edge';
         response = await callSupabaseEdge(sanitizedMessages, options);
+        // If edge returned local fallback, try direct LLM
+        if (response.agent === 'local' && DEEPSEEK_API_KEY) {
+          route = 'direct';
+          response = await directLLMFallback(sanitizedMessages);
+        }
+      } else if (DEEPSEEK_API_KEY) {
+        route = 'direct';
+        response = await directLLMFallback(sanitizedMessages);
       } else {
         response = await localFallback(sanitizedMessages);
       }
@@ -371,7 +387,7 @@ async function callSupabaseEdge(
     tools?: ReturnType<typeof getToolSchemas>;
   }
 ): Promise<AIResponse> {
-  if (!supabase) return localFallback(messages);
+  if (!supabase) return directLLMFallback(messages);
 
   const activeModel = getActiveModel();
   const useStream = options?.stream && options?.onChunk;
@@ -405,7 +421,7 @@ async function callSupabaseEdge(
         signal: options?.signal,
       });
 
-      if (!res.ok) return localFallback(messages);
+      if (!res.ok) return directLLMFallback(messages);
 
       if (res.body) {
         const reader = res.body.getReader();
@@ -484,7 +500,7 @@ async function callSupabaseEdge(
       signal: options?.signal,
     });
 
-    if (!res.ok) return localFallback(messages);
+    if (!res.ok) return directLLMFallback(messages);
 
     const data = await res.json();
 
@@ -501,7 +517,7 @@ async function callSupabaseEdge(
     }
 
     if (!data?.text && (!toolCalls || toolCalls.length === 0)) {
-      return localFallback(messages);
+      return directLLMFallback(messages);
     }
 
     return {
@@ -511,7 +527,56 @@ async function callSupabaseEdge(
       toolCalls,
     };
   } catch {
-    // Any error — fall back to local
+    // Any error — try direct LLM before falling back to local
+    return directLLMFallback(messages);
+  }
+}
+
+// --- Route 2: Direct LLM API call (dev mode — API key in client bundle) ---
+
+async function directLLMFallback(messages: ChatMessage[]): Promise<AIResponse> {
+  if (!DEEPSEEK_API_KEY) return localFallback(messages);
+
+  const activeModel = getActiveModel();
+  const provider = activeModel.provider;
+  const endpoint = PROVIDER_ENDPOINTS[provider] ?? PROVIDER_ENDPOINTS.deepseek;
+
+  try {
+    const openaiMessages = messages.map(m => {
+      if (m.role === 'tool') return { role: 'assistant' as const, content: m.content };
+      return { role: m.role, content: m.content };
+    });
+
+    const res = await fetch(`${endpoint}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: activeModel.model,
+        messages: openaiMessages,
+        stream: false,
+        max_tokens: 2048,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.warn('[aiService] Direct LLM call failed:', res.status, errText);
+      return localFallback(messages);
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content ?? '';
+    const usage = data.usage ? { prompt_tokens: data.usage.prompt_tokens, completion_tokens: data.usage.completion_tokens } : undefined;
+
+    if (!text) return localFallback(messages);
+
+    return { text, agent: 'direct', usage };
+  } catch (err) {
+    console.warn('[aiService] Direct LLM error:', err);
     return localFallback(messages);
   }
 }

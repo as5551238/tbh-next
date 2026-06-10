@@ -3,16 +3,36 @@
  */
 import { useState, useMemo } from 'react';
 import { useFeatureFlags } from '@/hooks/useMatrix';
-import { ToggleLeft, Shield, Users, Lock } from 'lucide-react';
+import { ToggleLeft, Shield, Users, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { setFeatureFlagOverride, FLAG_KEY_TO_FEATURE, type PlanLimits, hasFeature } from '@/lib/subscription';
 import { CardSkeleton } from '@/components/Skeleton';
+import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { createFeatureFlag } from '@/lib/dataLayer';
 
 const PLAN_LABELS: Record<string, string> = { free: '免费版', pro: '专业版', enterprise: '企业版' };
 
 export default function FeatureFlagsContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
-  const { flags, loading, toggleFlag } = useFeatureFlags();
+  const { flags, loading, toggleFlag, setFlags } = useFeatureFlags();
+  const createModal = useModal();
+  const [createForm, setCreateForm] = useState({ key: '', name: '', description: '', default_value: false });
+
+  const handleCreate = async () => {
+    if (!createForm.key.trim() || !createForm.name.trim()) return;
+    const row = await createFeatureFlag({
+      key: createForm.key,
+      name: createForm.name,
+      description: createForm.description,
+      enabled: createForm.default_value,
+      rollout_percentage: 0,
+      target_plan: 'free',
+      team_id: '',
+    });
+    setFlags((prev) => [...prev, row]);
+    createModal.closeModal();
+    setCreateForm({ key: '', name: '', description: '', default_value: false });
+  };
 
   const handleToggle = (id: string, key: string, enabled: boolean) => {
     toggleFlag(id, enabled);
@@ -35,6 +55,9 @@ export default function FeatureFlagsContent() {
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <ToggleLeft size={18} className="text-primary-2" />
         <span className="text-sm font-bold">功能开关</span>
+        <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={createModal.openModal}>
+          <Plus size={12} />新建功能标志
+        </button>
       </div>
 
       {/* Stats */}
@@ -93,6 +116,30 @@ export default function FeatureFlagsContent() {
           ))}
         </div>
       )}
+
+      <Modal open={createModal.open} onClose={createModal.closeModal} title="新建功能标志"
+        footer={
+          <div className="flex flex-wrap gap-2">
+            <button className={btnSecondary} onClick={createModal.closeModal}>取消</button>
+            <button className={btnPrimary} onClick={handleCreate} disabled={!createForm.key.trim() || !createForm.name.trim()}>创建</button>
+          </div>
+        }>
+        <ModalField label="Key（标识符）">
+          <input className={inputCls} placeholder="如：new_dashboard" value={createForm.key} onChange={(e) => setCreateForm((p) => ({ ...p, key: e.target.value }))} />
+        </ModalField>
+        <ModalField label="名称">
+          <input className={inputCls} placeholder="功能名称" value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
+        </ModalField>
+        <ModalField label="描述">
+          <textarea className={inputCls} rows={2} placeholder="功能描述" value={createForm.description} onChange={(e) => setCreateForm((p) => ({ ...p, description: e.target.value }))} />
+        </ModalField>
+        <ModalField label="默认值">
+          <select className={inputCls} value={createForm.default_value ? 'true' : 'false'} onChange={(e) => setCreateForm((p) => ({ ...p, default_value: e.target.value === 'true' }))}>
+            <option value="false">关闭</option>
+            <option value="true">开启</option>
+          </select>
+        </ModalField>
+      </Modal>
     </div>
   );
 }

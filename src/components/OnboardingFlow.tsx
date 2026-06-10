@@ -33,17 +33,22 @@ export default function OnboardingFlow() {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     function checkVisibility() {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      setVisible(!stored);
+      // Only show after OnboardingOverlay (industry/dept picker) is done
+      const overlayDone = !!localStorage.getItem('tbh-onboarded-overlay');
+      const flowDone = !!localStorage.getItem(STORAGE_KEY);
+      setVisible(overlayDone && !flowDone);
     }
     checkVisibility();
     const onStorage = () => checkVisibility();
-    const onCustom = (e: Event) => { if ((e as CustomEvent).detail?.type === 'reset-onboarding') checkVisibility(); };
+    const onCustom = () => checkVisibility();
     window.addEventListener('storage', onStorage);
     window.addEventListener('tbh-onboarding-reset', onCustom);
+    // Also listen for overlay completion to appear immediately
+    window.addEventListener('tbh-overlay-done', onCustom);
     return () => {
       window.removeEventListener('storage', onStorage);
       window.removeEventListener('tbh-onboarding-reset', onCustom);
+      window.removeEventListener('tbh-overlay-done', onCustom);
     };
   }, []);
 

@@ -97,7 +97,7 @@ export {
   fetchComments, createComment, deleteComment,
   fetchTags, createTag, deleteTag,
   fetchCategories, createCategory, deleteCategory,
-  fetchFeatureFlags, updateFeatureFlag,
+  fetchFeatureFlags, updateFeatureFlag, createFeatureFlag,
   fetchSavedViews, createSavedView, deleteSavedView,
   fetchAutomationRules, createAutomationRule, updateAutomationRule, deleteAutomationRule,
   fetchStatusFlowRules, createStatusFlowRule, deleteStatusFlowRule,

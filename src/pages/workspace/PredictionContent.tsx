@@ -1,13 +1,14 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
-import { hasFeature } from '@/lib/subscription'; // gate: Pro feature check
+import { hasFeature } from '@/lib/subscription';
 import { useState, useCallback, useEffect } from 'react';
 import { usePredictions, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
-import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight, Plus } from 'lucide-react';
+import { Brain, TrendingUp, AlertTriangle, Sparkles, ArrowUpRight, Plus, Loader2 } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { CardSkeleton } from '@/components/Skeleton';
+import { chatCompletion, type ChatMessage } from '@/lib/aiService';
 
 export default function PredictionContent() {
   const { showPaywall: pdShow, paywallReason: pdReason, paywallFeature: pdFeat, closePaywall: pdClose, requireFeature: pdRequire } = useGateCheck();
@@ -18,6 +19,7 @@ export default function PredictionContent() {
   const editModal = useModal();
   const [selectedPred, setSelectedPred] = useState<(typeof predictions)[number] | null>(null);
   const [form, setForm] = useState({ title: '', impact: 'medium' as 'positive' | 'high' | 'medium', probability: 50, reason: '', suggestion: '' });
+  const [aiLoading, setAiLoading] = useState(false);
   const { toasts, success } = useToast();
   const PRED_STORAGE = 'tbh-predictions';
 
@@ -53,6 +55,40 @@ export default function PredictionContent() {
     success(`预测"${form.title}"已创建`);
   }, [form, modal.closeModal, addPrediction]);
 
+  async function handleAiPredict() {
+    setAiLoading(true);
+    try {
+      const kpiSummary = cell.kpis.map((k) => `${k.name}: ${k.value} (${k.trend})`).join('、');
+      const messages: ChatMessage[] = [
+        { role: 'system', content: '你是一个团队业务分析专家。根据提供的团队KPI数据，预测未来1-2周可能出现的关键趋势和风险。每个预测请用JSON数组返回，每个元素包含title、impact(positive/high/medium)、probability(0-100)、reason、suggestion字段。' },
+        { role: 'user', content: `基于当前团队数据，预测以下维度的趋势：${kpiSummary || '暂无KPI数据'}。请给出3-5个预测。只返回JSON数组，不要其他文字。` },
+      ];
+      const res = await chatCompletion(messages);
+      const text = res.text ?? '';
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const preds = JSON.parse(jsonMatch[0]) as Array<{ title: string; impact: string; probability: number; reason: string; suggestion: string }>;
+        for (const p of preds.slice(0, 5)) {
+          await addPrediction({
+            title: p.title || 'AI预测',
+            impact: (['positive', 'high', 'medium'].includes(p.impact) ? p.impact : 'medium') as 'positive' | 'high' | 'medium',
+            probability: Math.min(100, Math.max(0, p.probability || 50)),
+            trend: 'flat',
+            reason: p.reason || 'AI分析',
+            suggestion: p.suggestion || '待补充建议',
+          });
+        }
+        success(`AI已生成${Math.min(preds.length, 5)}个预测`);
+      } else {
+        success('AI未能返回结构化预测，请手动添加');
+      }
+    } catch {
+      success('AI预测生成失败，请手动添加');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   if (loading) {
     return (
       <CardSkeleton />
@@ -75,6 +111,9 @@ export default function PredictionContent() {
         <span className="text-[10px] text-text-3">基于 {cell.kpis.length} 个指标 · 每日更新</span>
         <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!pdRequire('advancedAnalytics', 'AI预测需要专业版或企业版')) return; handleOpen(); }}>
           <Plus size={12} />自定义预测
+        </button>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-gradient-to-r from-primary to-accent px-3 py-1 text-[11px] font-bold text-white hover:shadow-lg disabled:opacity-50" onClick={() => { if (!pdRequire('advancedAnalytics', 'AI预测需要专业版或企业版')) return; handleAiPredict(); }} disabled={aiLoading}>
+          {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}AI 预测
         </button>
       </div>
 

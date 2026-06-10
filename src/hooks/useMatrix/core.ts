@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { getMatrixCell, getDepartments, IND_COLORS, INDUSTRIES } from '@/matrix/data';
 import { fetchMatrixCell, fetchDepartments, fetchIndustries } from '@/lib/dataLayer';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import type { MatrixCell } from '@/matrix/data';
 
-export function useMatrixCell(): { cell: MatrixCell; loading: boolean } {
+export function useMatrixCell(): { cell: MatrixCell; loading: boolean; refetch: () => void; isDemoData: boolean } {
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
 
   const [cell, setCell] = useState<MatrixCell>(() => getMatrixCell(industry, dept));
   const [loading, setLoading] = useState(false);
+  const [fetchKey, setFetchKey] = useState(0);
+
+  const refetch = useCallback(() => setFetchKey((k) => k + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -20,9 +24,11 @@ export function useMatrixCell(): { cell: MatrixCell; loading: boolean } {
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [industry, dept]);
+  }, [industry, dept, fetchKey]);
 
-  return { cell, loading };
+  const isDemoData = !isSupabaseConfigured();
+
+  return { cell, loading, refetch, isDemoData };
 }
 
 export function useAsyncMatrixCell() {

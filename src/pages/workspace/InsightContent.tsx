@@ -3,17 +3,10 @@ import { useMatrixCell, useIndustryColor, useInsights } from '@/hooks/useMatrix'
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, Lightbulb, ArrowUpRight, ArrowDownRight, Plus, Trash2, Lock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Lightbulb, ArrowUpRight, ArrowDownRight, Plus, Trash2, Lock, RefreshCw } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
-
-const DEFAULT_INSIGHTS = [
-  { title: '需求交付周期趋势', description: '近4周维持在13-14天，稳定在目标范围内', impact: 'positive', kpi: '需求交付周期' },
-  { title: '功能使用率异常', description: '导出功能使用率从25%骤降至12%，与上次UI改版时间吻合', impact: 'negative', kpi: '功能使用率' },
-  { title: 'PRD评审效率提升', description: '引入标准化模板后，PRD一次性通过率从65%提升至82%', impact: 'positive', kpi: 'PRD通过率' },
-  { title: 'NPS下降预警', description: '连续2周低于目标线，主要集中在Onboarding环节', impact: 'negative', kpi: 'NPS' },
-];
 
 const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
 
@@ -27,11 +20,19 @@ export default function InsightContent() {
   const [form, setForm] = useState({ title: '', description: '', impact: 'positive' as 'positive' | 'negative', kpi: '' });
   const [editForm, setEditForm] = useState({ title: '', description: '', impact: 'positive' as string, kpi: '' });
   const [showPaywall, setShowPaywall] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { toasts, success } = useToast();
 
-  const displayInsights = insights.length > 0 ? insights : DEFAULT_INSIGHTS.map((d, i) => ({
-    id: `default-${i}`, ...d, team_id: 'default', created_at: '', updated_at: '',
-  }));
+  const displayInsights = insights;
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { fetchInsights } = await import('@/lib/dataLayer');
+      await fetchInsights();
+    } catch { /* no-op */ }
+    setTimeout(() => setRefreshing(false), 500);
+  }, []);
 
   const handleOpen = useCallback(() => {
     setForm({ title: '', description: '', impact: 'positive', kpi: '' });
@@ -46,6 +47,7 @@ export default function InsightContent() {
   }, [form, addInsight, modal, success]);
 
   const handleEditOpen = useCallback((insight: typeof displayInsights[0]) => {
+    if (insight.id.startsWith('default-')) return;
     setEditId(insight.id);
     setEditForm({ title: insight.title, description: insight.description, impact: insight.impact, kpi: insight.kpi });
     editModal.openModal();
@@ -81,30 +83,41 @@ export default function InsightContent() {
         <p className="text-[11px] text-text-2 leading-relaxed">
           {displayInsights.length > 0
             ? `当前共 ${displayInsights.length} 条洞察：${displayInsights.filter((i) => i.impact === 'negative').length} 个需关注项，${displayInsights.filter((i) => i.impact === 'positive').length} 个正向趋势。建议优先处理负面指标。`
-            : '暂无洞察数据，点击"新建洞察"添加。'}
+            : '暂无洞察数据，将在使用过程中自动生成'}
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
-        {displayInsights.map((insight) => (
-          <div key={insight.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:shadow-lg cursor-pointer" onClick={() => handleEditOpen(insight)}>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
-                insight.impact === 'positive' ? 'bg-success/10' : 'bg-danger/10'
-              )}>
-                {insight.impact === 'positive' ? <ArrowUpRight size={14} className="text-success" /> : <ArrowDownRight size={14} className="text-danger" />}
-              </div>
-              <span className="text-sm font-semibold text-text">{insight.title}</span>
-              <span className={cn('ml-auto rounded-full px-2 py-0.5 text-[8px] font-bold',
-                insight.impact === 'positive' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
-              )}>
-                {insight.impact === 'positive' ? '正向' : '需关注'}
-              </span>
-            </div>
-            <p className="text-xs text-text-2 leading-relaxed mb-2">{insight.description}</p>
-            <div className="text-[9px] text-text-3">关联指标: {insight.kpi}</div>
+        {displayInsights.length === 0 ? (
+          <div className="text-center py-12">
+            <Lightbulb size={32} className="mx-auto text-text-3 mb-3" />
+            <p className="text-sm text-text-2 font-semibold">暂无洞察数据</p>
+            <p className="text-xs text-text-3 mt-1">将在使用过程中自动生成</p>
+            <button onClick={handleRefresh} className="mt-3 inline-flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" disabled={refreshing}>
+              <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />刷新
+            </button>
           </div>
-        ))}
+        ) : (
+          <>
+          {displayInsights.map((insight) => (
+            <div key={insight.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:shadow-lg cursor-pointer" onClick={() => handleEditOpen(insight)}>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
+                  insight.impact === 'positive' ? 'bg-success/10' : 'bg-danger/10'
+                )}>
+                  {insight.impact === 'positive' ? <ArrowUpRight size={14} className="text-success" /> : <ArrowDownRight size={14} className="text-danger" />}
+                </div>
+                <span className="text-sm font-semibold text-text">{insight.title}</span>
+                <span className={cn('ml-auto rounded-full px-2 py-0.5 text-[8px] font-bold',
+                  insight.impact === 'positive' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
+                )}>
+                  {insight.impact === 'positive' ? '正向' : '需关注'}
+                </span>
+              </div>
+              <p className="text-xs text-text-2 leading-relaxed mb-2">{insight.description}</p>
+              <div className="text-[9px] text-text-3">关联指标: {insight.kpi}</div>
+            </div>
+          ))}
 
         {hasFeature('advancedAnalytics') ? (
           <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
@@ -136,6 +149,8 @@ export default function InsightContent() {
             </button>
           </div>
         )}
+          </>
+        )}
       </div>
 
       <Modal open={modal.open} onClose={modal.closeModal} title="新建洞察"
@@ -165,7 +180,7 @@ export default function InsightContent() {
       <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑洞察"
         footer={
           <div className="flex flex-wrap gap-2">
-            {editId && !editId.startsWith('default-') && (
+            {editId && (
               <button className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={() => handleDelete(editId)}>
                 <Trash2 size={10} />删除
               </button>

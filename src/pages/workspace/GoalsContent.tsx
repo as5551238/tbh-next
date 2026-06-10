@@ -8,6 +8,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { CardSkeleton } from '@/components/Skeleton';
 import { computeAutoProgress } from '@/lib/reviewEngine';
 import CommentSection from '@/components/CommentSection';
+import { exportToCSV, exportToJSON, formatDateForExport } from '@/lib/export';
 import BulkActionBar from '@/components/BulkActionBar';
 import { t } from '@/lib/i18n';
 
@@ -20,6 +21,7 @@ export default function GoalsContent() {
   const [editGoalData, setEditGoalData] = useState<{ id: string; title: string; status: string; progress: number; key_results: string[] } | null>(null);
   const [newGoalForm, setNewGoalForm] = useState({ title: '', status: 'on_track', progress: 0, end_date: '', start_date: '' });
   const [selectedGoalIds, setSelectedGoalIds] = useState<Set<string>>(new Set());
+  const [goalExportOpen, setGoalExportOpen] = useState(false);
 
   const autoProgressMap = useMemo(() => {
     const map: Record<string, number> = {};
@@ -72,6 +74,16 @@ export default function GoalsContent() {
     setEditGoalData((prev) => prev ? { ...prev, key_results: prev.key_results.filter((_, i) => i !== idx) } : null);
   }, []);
 
+  const goalExportHeaders = ['名称', '描述', '进度', '状态', '负责人', '截止日期', '关键结果数'];
+  const handleExportGoalsCSV = useCallback(() => {
+    const rows = goals.map((g) => ({ '名称': String(g.title ?? ''), '描述': '', '进度': String(g.progress ?? ''), '状态': String(g.status ?? ''), '负责人': String(g.owner_id ?? ''), '截止日期': formatDateForExport(g.end_date ?? undefined), '关键结果数': String(g.key_results?.length ?? 0) }));
+    exportToCSV(goalExportHeaders, rows, 'goals');
+  }, [goals]);
+  const handleExportGoalsJSON = useCallback(() => {
+    const rows = goals.map((g) => ({ '名称': String(g.title ?? ''), '描述': '', '进度': String(g.progress ?? ''), '状态': String(g.status ?? ''), '负责人': String(g.owner_id ?? ''), '截止日期': formatDateForExport(g.end_date ?? undefined), '关键结果数': String(g.key_results?.length ?? 0) }));
+    exportToJSON(rows, 'goals');
+  }, [goals]);
+
   return (
     <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -81,6 +93,16 @@ export default function GoalsContent() {
         <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, '免费版最多创建5个目标，升级Pro解锁更多')) return; setNewGoalForm({ title: '', status: 'on_track', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
           <Plus size={12} />{t('goals.newGoal')}
         </button>
+        <div className="relative">
+          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setGoalExportOpen((v) => !v)}>导出 ▾</button>
+          {goalExportOpen && (<>
+            <div className="fixed inset-0 z-40" onClick={() => setGoalExportOpen(false)} />
+            <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setGoalExportOpen(false); handleExportGoalsCSV(); }}>导出 CSV</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setGoalExportOpen(false); handleExportGoalsJSON(); }}>导出 JSON</button>
+            </div>
+          </>)}
+        </div>
       </div>
       {loading ? (
         <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}</div>

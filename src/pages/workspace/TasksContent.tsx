@@ -11,6 +11,7 @@ import { TableRowSkeleton } from '@/components/Skeleton';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import BulkActionBar from '@/components/BulkActionBar';
 import { t } from '@/lib/i18n';
+import { exportToCSV, exportToJSON } from '@/lib/export';
 
 export default function TasksContent() {
   const { tasks, loading, addTask, editTask, removeTask } = useTasks();
@@ -20,6 +21,7 @@ export default function TasksContent() {
   const addTaskModal = useModal();
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [taskExportOpen, setTaskExportOpen] = useState(false);
   const [newTaskForm, setNewTaskForm] = useState({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '' });
   const priorityStyle: Record<string, string> = { urgent: 'bg-danger/10 text-danger', high: 'bg-warn/10 text-warn', medium: 'bg-primary/10 text-primary-2', low: 'bg-surface-2 text-text-3' };
   const priorityLabel: Record<string, string> = { urgent: t('tasks.priorityUrgent'), high: t('tasks.priorityHigh'), medium: t('tasks.priorityMedium'), low: t('tasks.priorityLow') };
@@ -76,6 +78,16 @@ export default function TasksContent() {
     setSelectedIds(new Set());
   }, [selectedIds, editTask]);
 
+  const taskExportHeaders = ['名称', '描述', '状态', '优先级', '负责人', '截止日期', '标签'];
+  const handleExportTasksCSV = useCallback(() => {
+    const rows = tasks.map((task) => ({ '名称': String(task.title ?? ''), '描述': '', '状态': String(task.status ?? ''), '优先级': String(task.priority ?? ''), '负责人': String(task.assignee_id ?? ''), '截止日期': String(task.due_date ?? ''), '标签': '' }));
+    exportToCSV(taskExportHeaders, rows, 'tasks');
+  }, [tasks]);
+  const handleExportTasksJSON = useCallback(() => {
+    const rows = tasks.map((task) => ({ '名称': String(task.title ?? ''), '描述': '', '状态': String(task.status ?? ''), '优先级': String(task.priority ?? ''), '负责人': String(task.assignee_id ?? ''), '截止日期': String(task.due_date ?? ''), '标签': '' }));
+    exportToJSON(rows, 'tasks');
+  }, [tasks]);
+
   return (
     <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
       <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -85,6 +97,16 @@ export default function TasksContent() {
         <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!tpLimit('maxTasks', tasks.length, '免费版最多创建20个任务，升级Pro解锁更多')) return; setNewTaskForm({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '' }); addTaskModal.openModal(); }}>
           <Plus size={12} />{t('tasks.newTask')}
         </button>
+        <div className="relative">
+          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setTaskExportOpen((v) => !v)}>导出 ▾</button>
+          {taskExportOpen && (<>
+            <div className="fixed inset-0 z-40" onClick={() => setTaskExportOpen(false)} />
+            <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setTaskExportOpen(false); handleExportTasksCSV(); }}>导出 CSV</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setTaskExportOpen(false); handleExportTasksJSON(); }}>导出 JSON</button>
+            </div>
+          </>)}
+        </div>
       </div>
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)}</div>

@@ -9,6 +9,7 @@ import { AI_MODEL_PRESETS } from '@/lib/aiService';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { PresenceIndicator } from '@/components/PresenceIndicator';
 import { useLocale } from '@/lib/i18n';
+import { useTheme } from '@/hooks/useTheme';
 import type { Locale } from '@/lib/i18n';
 
 const NAV_ITEMS = [
@@ -166,6 +167,7 @@ export default function GlobalSidebar() {
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { locale, setLocale, t } = useLocale();
+  const { theme, setTheme, resolved } = useTheme();
 
   function handleInterfaceSwitch(id: string) {
     navigate(navigateTo(id));
@@ -178,6 +180,15 @@ export default function GlobalSidebar() {
   function toggleLocale() {
     setLocale(locale === 'zh' ? 'en' : 'zh');
   }
+
+  function cycleTheme() {
+    const order: Array<'dark' | 'light' | 'system'> = ['dark', 'light', 'system'];
+    const idx = order.indexOf(theme);
+    setTheme(order[(idx + 1) % order.length]);
+  }
+
+  const themeIcon = resolved === 'dark' ? '🌙' : '☀️';
+  const themeLabel = theme === 'system' ? '自动' : theme === 'dark' ? '暗色' : '亮色';
 
   return (
     <nav aria-label="主导航" className="flex w-16 flex-col items-center border-r border-border bg-surface py-3 z-50 shrink-0">
@@ -235,6 +246,15 @@ export default function GlobalSidebar() {
             className="flex h-11 w-11 items-center justify-center rounded-xl text-lg text-text-3 transition-all hover:bg-surface-2 hover:text-text-2 hover:scale-105"
           >
             🤖
+          </button>
+        </Tooltip>
+        <Tooltip label={`${themeLabel} (点击切换)`}>
+          <button
+            onClick={cycleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-sm transition-all hover:bg-surface-2 hover:text-text-2 hover:scale-105"
+            aria-label={`主题: ${themeLabel}`}
+          >
+            {themeIcon}
           </button>
         </Tooltip>
         <Tooltip label={locale === 'zh' ? 'EN' : '中文'}>

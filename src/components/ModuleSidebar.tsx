@@ -143,13 +143,15 @@ export default function ModuleSidebar() {
   if (!modSidebarOpen) {
     return (
       <div className="flex w-10 flex-col items-center border-r border-border bg-surface py-2 shrink-0 gap-1">
-        <button onClick={toggleModSidebar} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text transition-colors text-xs">
+        <button onClick={toggleModSidebar} aria-label="展开侧边栏" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text transition-colors text-xs">
           ▶
         </button>
         {groups.flatMap((g) => g.items).slice(0, 8).map((item) => (
           <button
             key={item.id}
             onClick={() => handleModuleClick(item.id)}
+            aria-label={item.name}
+            aria-current={activeModule === item.id ? 'page' : undefined}
             className={cn(
               'flex h-7 w-7 items-center justify-center rounded-lg text-xs transition-colors',
               activeModule === item.id ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2'
@@ -167,7 +169,7 @@ export default function ModuleSidebar() {
     <div className="flex w-[220px] flex-col border-r border-border bg-surface shrink-0 overflow-hidden">
       <div className="flex items-center justify-between border-b border-border px-3.5 py-2.5">
         <span className="text-xs font-bold">{title}</span>
-        <button onClick={toggleModSidebar} className="flex h-6 w-6 items-center justify-center rounded text-text-3 hover:bg-surface-2 hover:text-text transition-colors text-xs">
+        <button onClick={toggleModSidebar} aria-label="收起侧边栏" className="flex h-6 w-6 items-center justify-center rounded text-text-3 hover:bg-surface-2 hover:text-text transition-colors text-xs">
           ◀
         </button>
       </div>
@@ -181,6 +183,7 @@ export default function ModuleSidebar() {
               <button
                 key={item.id}
                 onClick={() => handleModuleClick(item.id)}
+                aria-current={activeModule === item.id ? 'page' : undefined}
                 className={cn(
                   'flex w-full items-center gap-2 px-3.5 py-1.5 text-xs transition-colors',
                   activeModule === item.id

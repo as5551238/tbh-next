@@ -7,6 +7,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { hasFeature } from '@/lib/subscription';
 import { Users, Plus, Lock, Search, MoreHorizontal, Mail, Phone, Trash2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
+import { exportToCSV, exportToJSON } from '@/lib/export';
 
 export default function MembersContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
@@ -18,6 +19,7 @@ export default function MembersContent() {
   const [editingMember, setEditingMember] = useState<{ id: string; name: string; department: string; email: string; role: string; phone: string } | null>(null);
   const [form, setForm] = useState({ name: '', department: '', email: '', role: 'member', phone: '' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [memberExportOpen, setMemberExportOpen] = useState(false);
 
   const roleMap: Record<string, { label: string; cls: string }> = {
     admin: { label: '管理员', cls: 'bg-danger/10 text-danger' },
@@ -52,6 +54,16 @@ export default function MembersContent() {
 
   const selectCls = inputCls.replace('text-text', 'text-text bg-surface-2');
 
+  const memberExportHeaders = ['姓名', '邮箱', '角色', '部门', '状态'];
+  function handleExportMembersCSV() {
+    const rows = members.map((m) => ({ '姓名': String(m.name ?? ''), '邮箱': String(m.email ?? ''), '角色': String(m.role ?? ''), '部门': String(m.department ?? ''), '状态': String(m.status ?? '') }));
+    exportToCSV(memberExportHeaders, rows, 'members');
+  }
+  function handleExportMembersJSON() {
+    const rows = members.map((m) => ({ '姓名': String(m.name ?? ''), '邮箱': String(m.email ?? ''), '角色': String(m.role ?? ''), '部门': String(m.department ?? ''), '状态': String(m.status ?? '') }));
+    exportToJSON(rows, 'members');
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -62,6 +74,16 @@ export default function MembersContent() {
           <Plus size={12} />
           邀请成员
         </button>
+        <div className="relative">
+          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setMemberExportOpen((v) => !v)}>导出 ▾</button>
+          {memberExportOpen && (<>
+            <div className="fixed inset-0 z-40" onClick={() => setMemberExportOpen(false)} />
+            <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setMemberExportOpen(false); handleExportMembersCSV(); }}>导出 CSV</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setMemberExportOpen(false); handleExportMembersJSON(); }}>导出 JSON</button>
+            </div>
+          </>)}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">

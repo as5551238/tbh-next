@@ -12,6 +12,7 @@ import ContextPanel from '@/components/ContextPanel';
 import PageErrorBoundary from '@/components/PageErrorBoundary';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import OnboardingFlow from '@/components/OnboardingFlow';
+import ShortcutHelp from '@/components/ShortcutHelp';
 import { cn } from '@/lib/utils';
 import { retryLazy } from '@/lib/retryLazy';
 
@@ -89,11 +90,13 @@ function MobileTabBar() {
   }
 
   return (
-    <div className="flex items-center justify-around border-t border-border bg-surface h-14 shrink-0 safe-area-bottom">
+    <div role="tablist" className="flex items-center justify-around border-t border-border bg-surface h-14 shrink-0 safe-area-bottom">
       {tabs.map((t) => (
         <button
           key={t.id}
           onClick={() => handleTab(t.id)}
+          role="tab"
+          aria-selected={iface === t.id}
           className={cn(
             'flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors',
             iface === t.id && String(t.id) !== 'menu' ? 'text-primary-2' : 'text-text-3'
@@ -213,6 +216,7 @@ export default function App() {
         </div>
         {ctxPanelOpen && <ContextPanel />}
         <MobileTabBar />
+        <ShortcutHelp />
       </div>
     );
   }
@@ -236,6 +240,7 @@ export default function App() {
       {ctxPanelOpen && <ContextPanel />}
       <OnboardingOverlay />
       <OnboardingFlow />
+      <ShortcutHelp />
     </div>
   );
 }

@@ -17,6 +17,8 @@ vi.mock('@/stores/appStore', () => ({
 describe('OnboardingFlow', () => {
   beforeEach(() => {
     localStorage.clear();
+    // OnboardingFlow now requires OnboardingOverlay to be completed first
+    localStorage.setItem('tbh-onboarded-overlay', 'done');
     vi.clearAllMocks();
   });
   afterEach(() => cleanup());

@@ -1,17 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useExperiences, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
+import { useState, useCallback } from 'react';
+import { useExperiences, useIndustryColor } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
-import { BookOpen, Sparkles, Tag, Plus, Lock } from 'lucide-react';
+import { BookOpen, Sparkles, Tag, Plus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
-import { hasFeature } from '@/lib/subscription';
 import type { ExperienceInput } from '@/contracts/dataContracts';
 import { CardSkeleton } from '@/components/Skeleton';
 
 export default function ExperienceContent() {
-  const isPro = hasFeature('advancedAnalytics' as never);
-  const { cell, loading: cellLoading } = useMatrixCell();
   const indColor = useIndustryColor();
   const { experiences, addExperience, editExperience, removeExperience, loading } = useExperiences();
   const modal = useModal();
@@ -21,25 +18,6 @@ export default function ExperienceContent() {
   const [searchFilter, setSearchFilter] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const { toasts, success } = useToast();
-
-  const EXP_STORAGE = 'tbh-experiences';
-  const [localExperiences, setLocalExperiences] = useState<typeof experiences extends never[] ? never[] : typeof experiences>(() => {
-    try { const s = localStorage.getItem(EXP_STORAGE); return s ? JSON.parse(s) : []; } catch { return []; }
-  });
-
-  useEffect(() => {
-    try { localStorage.setItem(EXP_STORAGE, JSON.stringify(localExperiences)); } catch {}
-  }, [localExperiences]);
-
-  // Migrate localStorage items to DB on first load
-  useEffect(() => {
-    if (loading || localExperiences.length === 0) return;
-    localExperiences.forEach((item) => {
-      addExperience(item as ExperienceInput);
-    });
-    setLocalExperiences([]);
-    try { localStorage.removeItem(EXP_STORAGE); } catch {}
-  }, [loading]);
 
   const handleOpen = useCallback(() => {
     setForm({ title: '', content: '', author: '', tags: '' });
@@ -65,7 +43,7 @@ export default function ExperienceContent() {
     );
   }
 
-  const allExperiences = [...localExperiences, ...experiences];
+  const allExperiences = experiences;
 
   const filteredExperiences = allExperiences.filter((e) => {
     if (searchFilter && !e.title.includes(searchFilter) && !(e.content ?? '').includes(searchFilter) && !(e.author ?? '').includes(searchFilter)) return false;
@@ -79,13 +57,13 @@ export default function ExperienceContent() {
         <BookOpen size={18} style={{ color: indColor }} />
         <span className="text-sm font-bold">经验库</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>知识沉淀</span>
-        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!isPro) return; handleOpen(); }}>
-          {isPro ? <Plus size={12} /> : <Lock size={12} />}
+        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleOpen}>
+          <Plus size={12} />
           提炼经验
         </button>
       </div>
 
-      <div className="rounded-xl border border-border p-3 relative overflow-hidden cursor-pointer hover:border-primary/40 transition-colors" style={{ background: `linear-gradient(135deg, ${indColor}06 0%, transparent 100%)` }} onClick={() => { if (!isPro) return; handleOpen(); }}>
+      <div className="rounded-xl border border-border p-3 relative overflow-hidden cursor-pointer hover:border-primary/40 transition-colors" style={{ background: `linear-gradient(135deg, ${indColor}06 0%, transparent 100%)` }} onClick={handleOpen}>
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <Sparkles size={14} style={{ color: indColor }} />
           <span className="font-semibold text-text">经验库快捷入口</span>
@@ -175,22 +153,10 @@ export default function ExperienceContent() {
         onSave={(updated) => {
           const id = updated.id as string;
           const tags = typeof updated.tags === 'string' ? (updated.tags as string).split(/[,，]/).map((t: string) => t.trim()).filter(Boolean) : updated.tags;
-          const processed = { ...updated, tags };
-          if (id.startsWith('exp-')) {
-            addExperience(processed as ExperienceInput);
-            setLocalExperiences(prev => prev.filter(e => e.id !== id));
-          } else {
-            editExperience(id, processed as Record<string, unknown>);
-          }
+          editExperience(id, { ...updated, tags } as Record<string, unknown>);
         }}
         onDelete={() => {
-          if (selectedExp) {
-            if (selectedExp.id.startsWith('exp-')) {
-              setLocalExperiences(prev => prev.filter(e => e.id !== selectedExp.id));
-            } else {
-              removeExperience(selectedExp.id);
-            }
-          }
+          if (selectedExp) removeExperience(selectedExp.id);
         }}
       />
     </div>

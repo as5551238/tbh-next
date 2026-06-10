@@ -58,7 +58,7 @@ export function useToast() {
 export function ToastOverlay({ toasts }: { toasts: ToastMsg[] }) {
   if (toasts.length === 0) return null;
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+    <div role="alert" aria-live="polite" className="fixed top-4 right-4 z-50 flex flex-col gap-2">
       {toasts.map((t) => (
         <div key={t.id} className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-white shadow-xl transition-all ${t.type === 'error' ? 'bg-danger/90' : 'bg-success/90'}`}>
           <span className="text-sm">{t.type === 'error' ? '✕' : '✓'}</span>

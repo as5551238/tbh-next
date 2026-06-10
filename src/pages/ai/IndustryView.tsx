@@ -1,14 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, Factory, BarChart3, Users, Target, Edit3, Check, X, Sparkles, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Factory, BarChart3, Target, Edit3, Check, Sparkles, ChevronRight } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { fetchInsights, createInsight, updateInsight } from '@/lib/dataLayer';
+import type { InsightRow } from '@/lib/dataLayer';
 
 const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
 
-const DEFAULT_PERSPECTIVES: Record<string, { focus: string; trends: string[]; benchmarks: { label: string; met: boolean }[] }> = {
+interface PerspectiveValue {
+  focus: string;
+  trends: string[];
+  benchmarks: { label: string; met: boolean }[];
+}
+
+type PerspectivesMap = Record<string, PerspectiveValue>;
+
+const DEFAULT_PERSPECTIVES: PerspectivesMap = {
   'IT业': {
     focus: '需求交付效率与产品市场匹配',
     trends: ['AI原生功能成为标配', '低代码平台渗透加速', 'SaaS向PaaS演进'],
@@ -61,23 +71,49 @@ export default function IndustryView() {
   const [editIdx, setEditIdx] = useState(0);
   const [editValue, setEditValue] = useState('');
 
-  const STORAGE_KEY = 'tbh-perspectives';
-  const [perspectives, setPerspectives] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? { ...DEFAULT_PERSPECTIVES, ...JSON.parse(saved) } : DEFAULT_PERSPECTIVES;
-    } catch { return DEFAULT_PERSPECTIVES; }
-  });
+  const [perspectives, setPerspectives] = useState<PerspectivesMap>(DEFAULT_PERSPECTIVES);
+  const [insightsLoaded, setInsightsLoaded] = useState(false);
 
-  const persistPerspectives = (next: typeof perspectives) => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
-  };
+  useEffect(() => {
+    let cancelled = false;
+    fetchInsights().then((rows: InsightRow[]) => {
+      if (cancelled) return;
+      if (rows.length === 0) { setInsightsLoaded(true); return; }
+      const mapped = { ...DEFAULT_PERSPECTIVES };
+      for (const row of rows) {
+        const ind = row.kpi || 'IT业';
+        if (!mapped[ind]) continue;
+        try {
+          const payload = JSON.parse(row.description || '{}');
+          if (payload.focus) mapped[ind] = { ...mapped[ind], focus: payload.focus };
+          if (payload.trends) mapped[ind] = { ...mapped[ind], trends: payload.trends };
+          if (payload.benchmarks) mapped[ind] = { ...mapped[ind], benchmarks: payload.benchmarks };
+        } catch {}
+      }
+      setPerspectives(mapped);
+      setInsightsLoaded(true);
+    }).catch(() => setInsightsLoaded(true));
+    return () => { cancelled = true; };
+  }, []);
+
+  const persistToSupabase = useCallback(async (next: typeof perspectives, ind: string) => {
+    const p = next[ind] ?? next['IT业'];
+    const payload = JSON.stringify({ focus: p.focus, trends: p.trends, benchmarks: p.benchmarks });
+    const existing = await fetchInsights();
+    const match = existing.find((r) => r.kpi === ind);
+    if (match) {
+      await updateInsight(match.id, { summary: payload } as Record<string, unknown> as Parameters<typeof updateInsight>[1]);
+    } else {
+      await createInsight({ title: `${ind}行业洞察`, type: 'industry_perspective', summary: payload, team_id: '' });
+    }
+  }, []);
+
   const perspective = perspectives[industry] ?? perspectives['IT业'];
 
   // Auto-check benchmarks against current KPI values
   const checkedBenchmarks = useMemo(() => {
-    return perspective.benchmarks.map((bm: Record<string, unknown>) => {
-      const bmLabel = String(bm.label ?? '');
+    return perspective.benchmarks.map((bm) => {
+      const bmLabel = bm.label;
       const matchingKpi = cell.kpis.find((kpi) => {
         const bmLower = bmLabel.toLowerCase();
         const kpiLower = kpi.name.toLowerCase();
@@ -85,7 +121,7 @@ export default function IndustryView() {
       });
       if (matchingKpi) {
         const progress = Number(matchingKpi.target) > 0 ? (Number(matchingKpi.value) / Number(matchingKpi.target)) * 100 : 0;
-        return { ...(bm as Record<string, unknown>), met: progress >= 100 };
+        return { ...bm, met: progress >= 100 };
       }
       return bm;
     });
@@ -112,13 +148,12 @@ export default function IndustryView() {
   };
 
   const handleToggleBenchmark = (idx: number) => {
-    setPerspectives((prev: Record<string, unknown>) => {
-      const current = (prev[industry] ?? prev['IT业']) as Record<string, unknown>;
-      const benchmarks = current.benchmarks as Record<string, unknown>[];
-      const newBenchmarks = [...benchmarks];
-      newBenchmarks[idx] = { ...(newBenchmarks[idx] as Record<string, unknown>), met: !(newBenchmarks[idx] as Record<string, unknown>).met };
+    setPerspectives((prev) => {
+      const current = prev[industry] ?? prev['IT业'];
+      const newBenchmarks = [...current.benchmarks];
+      newBenchmarks[idx] = { ...newBenchmarks[idx], met: !newBenchmarks[idx].met };
       const next = { ...prev, [industry]: { ...current, benchmarks: newBenchmarks } };
-      persistPerspectives(next);
+      persistToSupabase(next, industry);
       return next;
     });
   };
@@ -138,23 +173,23 @@ export default function IndustryView() {
   };
 
   const handleSave = () => {
-    setPerspectives((prev: Record<string, unknown>) => {
-      const current = (prev[industry] ?? prev['IT业']) as Record<string, unknown>;
-      let next: typeof prev;
+    setPerspectives((prev) => {
+      const current = prev[industry] ?? prev['IT业'];
+      let next: PerspectivesMap;
       if (editField === 'focus') {
         next = { ...prev, [industry]: { ...current, focus: editValue } };
       } else if (editField === 'trend') {
-        const newTrends = [...(current.trends as string[])];
+        const newTrends = [...current.trends];
         if (editIdx === -1) newTrends.push(editValue);
         else newTrends[editIdx] = editValue;
         next = { ...prev, [industry]: { ...current, trends: newTrends } };
       } else {
-        const newBm = [...(current.benchmarks as Record<string, unknown>[])];
+        const newBm = [...current.benchmarks];
         if (editIdx === -1) newBm.push({ label: editValue, met: false });
-        else newBm[editIdx] = { ...(newBm[editIdx] as Record<string, unknown>), label: editValue };
+        else newBm[editIdx] = { ...newBm[editIdx], label: editValue };
         next = { ...prev, [industry]: { ...current, benchmarks: newBm } };
       }
-      persistPerspectives(next);
+      persistToSupabase(next, industry);
       return next;
     });
     editModal.closeModal();
@@ -228,12 +263,12 @@ export default function IndustryView() {
             <button onClick={handleAddTrend} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ 添加</button>
           </div>
           <div className="space-y-2">
-            {perspective.trends.map((trend: Record<string, unknown>, i: number) => (
+            {perspective.trends.map((trend, i) => (
               <div key={i} className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-3 group">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                   <TrendingUp size={14} className="text-primary-2" />
                 </div>
-                <span className="text-xs text-text flex-1">{String(trend)}</span>
+                <span className="text-xs text-text flex-1">{trend}</span>
                 <button onClick={() => handleEditTrend(i)} className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Edit3 size={10} className="text-text-3" />
                 </button>
@@ -249,7 +284,7 @@ export default function IndustryView() {
             <button onClick={handleAddBenchmark} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ 添加</button>
           </div>
           <div className="space-y-1.5">
-            {checkedBenchmarks.map((bm: Record<string, unknown>, i: number) => (
+            {checkedBenchmarks.map((bm, i) => (
               <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-2.5 group">
                 <button
                   onClick={() => handleToggleBenchmark(i)}
@@ -259,7 +294,7 @@ export default function IndustryView() {
                 >
                   {bm.met ? <Check size={12} className="text-white" /> : null}
                 </button>
-                <span className={cn('text-[11px] flex-1', bm.met ? 'text-success line-through' : 'text-text-2')}>{String(bm.label)}</span>
+                <span className={cn('text-[11px] flex-1', bm.met ? 'text-success line-through' : 'text-text-2')}>{bm.label}</span>
                 <button onClick={() => handleEditBenchmark(i)} className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Edit3 size={10} className="text-text-3" />
                 </button>

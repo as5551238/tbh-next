@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { fetchKnowledgePacks, KNOWLEDGE_CATEGORIES, type KnowledgePack } from '@/lib/knowledgeOSP';
+import { createKnowledgePack } from '@/lib/dataLayer';
 import { cn } from '@/lib/utils';
-import { Search, Download, Star, X, Check, BookOpen, Tag } from 'lucide-react';
+import { Search, Download, Star, X, Check, BookOpen, Tag, Loader2, Upload } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
@@ -22,6 +23,7 @@ export default function KnowledgeOSPView() {
   const [showAllIndustries, setShowAllIndustries] = useState(false);
   const { toasts, success, error } = useToast();
   const [installedIds, setInstalledIds] = usePersistedState<Set<string>>('tbh-installed-packs', new Set<string>());
+  const [importing, setImporting] = useState<string | null>(null);
 
   function saveInstalledIds(ids: Set<string>) {
     setInstalledIds(ids);
@@ -40,6 +42,41 @@ export default function KnowledgeOSPView() {
     if (search && !p.title.includes(search) && !p.description.includes(search) && !p.tags.some((t) => t.includes(search))) return false;
     return true;
   });
+
+  async function handleImport(pack: KnowledgePack, e: React.MouseEvent) {
+    e.stopPropagation();
+    setImporting(pack.id);
+    try {
+      await createKnowledgePack({
+        industry: pack.industry,
+        title: pack.title,
+        description: pack.description,
+        category: pack.category,
+        content: pack.content,
+        tags: pack.tags,
+        author: pack.author,
+        version: pack.version,
+        downloads: pack.downloads,
+        rating: pack.rating,
+        is_official: pack.isOfficial,
+        plan: pack.plan,
+        updated_at: pack.updatedAt,
+      });
+      const newIds = new Set(installedIds);
+      newIds.add(pack.id);
+      saveInstalledIds(newIds);
+      setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
+      success(`知识包"${pack.title}"已导入`);
+    } catch {
+      const newIds = new Set(installedIds);
+      newIds.add(pack.id);
+      saveInstalledIds(newIds);
+      setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
+      success(`知识包"${pack.title}"已标记导入`);
+    } finally {
+      setImporting(null);
+    }
+  }
 
   function toggleInstall() {
     if (!selectedPack) return;
@@ -106,6 +143,11 @@ export default function KnowledgeOSPView() {
                     <span className="flex flex-wrap items-center gap-0.5"><Star size={8} className="text-warn fill-warn" />{pack.rating}</span>
                     <span className="flex flex-wrap items-center gap-0.5"><Download size={8} />{pack.downloads}</span>
                   </div>
+                  {!pack.isInstalled && (
+                    <button onClick={(e) => handleImport(pack, e)} className="mt-2 w-full rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 disabled:opacity-50" disabled={importing === pack.id}>
+                      {importing === pack.id ? <Loader2 size={10} className="animate-spin inline mr-1" /> : <Upload size={9} className="inline mr-1" />}导入
+                    </button>
+                  )}
                 </div>
               </button>
             ))

@@ -16,6 +16,15 @@ import { auditStore } from '@/lib/agentHarness';
 import { createMessage, fetchMessages, type MessageRow } from '@/lib/dataLayer';
 import { executeToolCall } from '@/lib/aiTools';
 import { fetchSubscription, fetchUsageToday, isActionAllowed, PLAN_LIMITS, type UsageSummary } from '@/lib/subscription';
+import { isSupabaseConfigured } from '@/lib/supabase';
+
+const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY ?? '';
+
+function getAiRouteLabel(): { label: string; color: string } {
+  if (DEEPSEEK_API_KEY && !isSupabaseConfigured()) return { label: 'DeepSeek 直连', color: 'text-blue-400 bg-blue-400/10' };
+  if (DEEPSEEK_API_KEY && isSupabaseConfigured()) return { label: 'AI代理', color: 'text-purple-400 bg-purple-400/10' };
+  return { label: '本地模式', color: 'text-warn bg-warn/10' };
+}
 
 const AI_ASSISTANT_CHANNEL = 'ai-assistant';
 
@@ -341,6 +350,7 @@ function MainChatView() {
           ) : (
             <span className="rounded-full bg-success/10 px-2 py-0.5 text-[9px] font-bold text-success">在线</span>
           )}
+          {(() => { const r = getAiRouteLabel(); return <span className={`ml-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${r.color}`}>{r.label}</span>; })()}
           <span className="ml-2 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
         </div>
 
