@@ -27,7 +27,7 @@ function MainChatView() {
   const { alerts: deviationAlerts } = useDeviationAlerts(true);
   const [chatInput, setChatInput] = useState('');
 
-  const { messages, setMessages, scrollRef, scrollToBottom, cell, navTo, AI_ASSISTANT_CHANNEL } = useChatMessages();
+  const { messages, setMessages, scrollRef, scrollToBottom, cell, navTo, AI_ASSISTANT_CHANNEL, startNewSession: handleNewSession } = useChatMessages();
   const {
     isTyping, activeAgent, setActiveAgent,
     fallbackOpen, setFallbackOpen, fallbackIntent, fallbackRawText,
@@ -68,6 +68,7 @@ function MainChatView() {
           )}
           {(() => { const r = getAiRouteLabel(); return <span className={`ml-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${r.color}`}>{r.label}</span>; })()}
           <span className="ml-2 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
+          <button onClick={() => { handleNewSession(); setMessages([]); }} className="ml-auto rounded-md bg-surface-3 px-2 py-0.5 text-[9px] font-semibold text-text-2 hover:bg-surface-3/80 transition-colors" aria-label="新对话">+ 新对话</button>
         </div>
 
         {/* Messages */}
