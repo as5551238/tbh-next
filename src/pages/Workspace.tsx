@@ -37,6 +37,7 @@ const FeatureFlagsContent = lazy(retryLazy(() => import('@/pages/workspace/Featu
 const SavedViewsContent = lazy(retryLazy(() => import('@/pages/workspace/SavedViewsContent')));
 const AutomationContent = lazy(retryLazy(() => import('@/pages/workspace/AutomationContent')));
 const StatusFlowContent = lazy(retryLazy(() => import('@/pages/workspace/StatusFlowContent')));
+const MyWorkView = lazy(retryLazy(() => import('@/pages/MyWorkView')));
 
 // Modules that require admin/owner/leader role to access
 const ADMIN_ONLY_MODULES = new Set(['admin', 'roles', 'featureFlags']);
@@ -78,6 +79,7 @@ const WORKSPACE_MODULES: Record<string, LazyExoticComponent<FC>> = {
   savedViews: SavedViewsContent,
   automation: AutomationContent,
   statusFlow: StatusFlowContent,
+  mywork: MyWorkView as LazyExoticComponent<FC>,
 };
 
 export default function Workspace() {

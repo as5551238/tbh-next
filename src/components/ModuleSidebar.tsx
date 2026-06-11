@@ -1,5 +1,6 @@
 import { useAppStore } from '@/stores/appStore';
 import { useDepartments } from '@/hooks/useMatrix';
+import { canAccess } from '@/lib/permissions';
 import { cn } from '@/lib/utils';interface ModuleItem {
   icon: string;
   name: string;
@@ -13,9 +14,9 @@ interface ModuleGroup {
   items: ModuleItem[];
 }
 
-function getModules(iface: string, industry: string, dept: string, deviationAlertCount: number): ModuleGroup[] {
+function getModules(iface: string, industry: string, dept: string, deviationAlertCount: number, viewMode: 'cockpit' | 'simple'): ModuleGroup[] {
   if (iface === 'workspace') {
-    return [
+    const allGroups: ModuleGroup[] = [
       { group: '我的', items: [
         { icon: '🏠', name: '工作台首页', id: 'overview' },
         { icon: '📅', name: '日程', id: 'schedule' },
@@ -63,6 +64,28 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
         { icon: '🔀', name: '状态流转', id: 'statusFlow' },
       ]},
     ];
+
+    // Simple view: dedicated simple layout with "我的工作" as top entry
+    if (viewMode === 'simple') {
+      return [
+        { group: '我的', items: [
+          { icon: '🏠', name: '我的工作', id: 'mywork' },
+          { icon: '📅', name: '日程', id: 'schedule' },
+          { icon: '🔔', name: '通知', id: 'notifications', badge: '3' },
+        ]},
+        { group: '核心业务', items: [
+          { icon: '🎯', name: '目标 OKR', id: 'goals' },
+          { icon: '✅', name: '任务中心', id: 'tasks', badge: '5' },
+          { icon: '⚡', name: '行动项', id: 'actionItems' },
+        ]},
+        { group: '知识', items: [
+          { icon: '📚', name: '知识库', id: 'knowledge' },
+          { icon: '📝', name: '文档协作', id: 'docs' },
+          { icon: '🗒️', name: '便签', id: 'notes' },
+        ]},
+      ];
+    }
+    return allGroups;
   }
   if (iface === 'collab') {
     return [
@@ -129,11 +152,12 @@ export default function ModuleSidebar() {
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const deviationAlertCount = useAppStore((s) => s.deviationAlertCount);
+  const viewMode = useAppStore((s) => s.viewMode);
   const modSidebarOpen = useAppStore((s) => s.modSidebarOpen);
   const toggleModSidebar = useAppStore((s) => s.toggleModSidebar);
   const navigateTo = useAppStore((s) => s.navigateTo);
 
-  const groups = getModules(iface, industry, dept, deviationAlertCount);
+  const groups = getModules(iface, industry, dept, deviationAlertCount, viewMode);
   const title = { workspace: '模块', collab: '协作', ai: 'AI' }[iface];
 
   function handleModuleClick(id: string) {

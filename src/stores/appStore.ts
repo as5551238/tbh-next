@@ -14,6 +14,13 @@ export const DEFAULT_MODULES: Record<string, string> = {
   ai: 'main',
 };
 
+/** interface → 简视图默认 module (member/viewer 用户落地页) */
+export const SIMPLE_DEFAULT_MODULES: Record<string, string> = {
+  workspace: 'mywork',
+  collab: 'channels',
+  ai: 'main',
+};
+
 /** module → interface 的反向映射（从各页面的 MODULE_MAP 反向生成） */
 export const MODULE_TO_INTERFACE: Record<string, string> = {
   // workspace modules
@@ -28,6 +35,7 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
   templates: 'workspace', bookmarks: 'workspace',
   tags: 'workspace', categories: 'workspace', featureFlags: 'workspace',
   savedViews: 'workspace', automation: 'workspace', statusFlow: 'workspace',
+  mywork: 'workspace',
   // collab modules
   channels: 'collab', teamCal: 'collab', approvals: 'collab',
   announcements: 'collab', collabDocs: 'collab', meetings: 'collab',
@@ -42,6 +50,17 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
 /** 根据 module 名推断其所属 interface */
 export function getInterfaceForModule(mod: string): string {
   return MODULE_TO_INTERFACE[mod] ?? 'workspace';
+}
+
+/** 根据 role 推导默认 viewMode — admin/owner/leader/manager → cockpit, 其他 → simple */
+export function getViewModeForRole(role: string | undefined): 'cockpit' | 'simple' {
+  if (!role) return 'simple';
+  return ['admin', 'owner', 'leader', 'manager'].includes(role) ? 'cockpit' : 'simple';
+}
+
+/** 根据 viewMode 推导默认落地 module — cockpit→overview, simple→tasks */
+export function getDefaultModuleForViewMode(viewMode: 'cockpit' | 'simple'): string {
+  return viewMode === 'cockpit' ? 'overview' : 'tasks';
 }
 
 /** 验证 interface + activeModule 的一致性（L3: 运行时不变量） */
@@ -97,6 +116,10 @@ interface AppState {
   setAuthUser: (user: { id: string; email: string; role: string; name: string } | null) => void;
   teamId: string;
 
+  // View mode (derived from role, toggle-able for admin users)
+  viewMode: 'cockpit' | 'simple';
+  setViewMode: (mode: 'cockpit' | 'simple') => void;
+
   // Theme (dark/light/system)
   theme: 'dark' | 'light' | 'system';
   setTheme: (theme: 'dark' | 'light' | 'system') => void;
@@ -120,7 +143,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   /** 统一导航入口：设置 interface + activeModule，返回应 navigate 到的路径 */
   navigateTo: (iface, module) => {
-    const mod = module ?? DEFAULT_MODULES[iface] ?? 'overview';
+    const state = get();
+    const defaults = state.viewMode === 'simple' ? SIMPLE_DEFAULT_MODULES : DEFAULT_MODULES;
+    const mod = module ?? defaults[iface] ?? 'overview';
     // L3: 运行时不变量检查
     if (import.meta.env.DEV && !isInterfaceModuleConsistent(iface, mod)) {
       console.warn(
@@ -158,8 +183,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   setDeviationAlertCount: (n) => set({ deviationAlertCount: n }),
 
   authUser: null,
-  setAuthUser: (user) => set({ authUser: user }),
+  setAuthUser: (user) => set((s) => {
+    const viewMode = getViewModeForRole(user?.role);
+    return {
+      authUser: user,
+      // Auto-switch viewMode when role changes (e.g., login/logout)
+      viewMode: s.viewMode !== viewMode ? viewMode : s.viewMode,
+    };
+  }),
   teamId: '__default__',
+
+  viewMode: 'simple',
+  setViewMode: (mode) => set({ viewMode: mode }),
 
   realtimeStatus: 'disconnected',
   setRealtimeStatus: (status) => set({ realtimeStatus: status }),

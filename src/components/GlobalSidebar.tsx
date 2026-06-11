@@ -11,6 +11,7 @@ import { PresenceIndicator } from '@/components/PresenceIndicator';
 import { useLocale } from '@/lib/i18n';
 import { useTheme } from '@/hooks/useTheme';
 import type { Locale } from '@/lib/i18n';
+import { getViewModeForRole } from '@/stores/appStore';
 
 const NAV_ITEMS = [
   { id: 'workspace', icon: '📊', labelKey: 'nav.workspace' },
@@ -25,6 +26,13 @@ const QUICK_ITEMS = [
   { icon: '💡', labelKey: 'nav.insight', module: 'insight', iface: 'workspace' },
   { icon: '📚', labelKey: 'nav.knowledge', module: 'knowledge', iface: 'workspace' },
   { icon: '⚙️', labelKey: 'nav.admin', module: 'admin', iface: 'workspace' },
+];
+
+/** Simple-view quick items — only personal + core work items */
+const QUICK_ITEMS_SIMPLE = [
+  { icon: '✅', labelKey: 'nav.tasks', module: 'tasks', iface: 'workspace' },
+  { icon: '🎯', labelKey: 'nav.goals', module: 'goals', iface: 'workspace' },
+  { icon: '⚡', labelKey: 'nav.actionItems', module: 'actionItems', iface: 'workspace' },
 ];
 
 function Tooltip({ children, label }: { children: ReactNode; label: string }) {
@@ -164,10 +172,18 @@ export default function GlobalSidebar() {
   const navigateTo = useAppStore((s) => s.navigateTo);
   const toggleCtxPanel = useAppStore((s) => s.toggleCtxPanel);
   const authUser = useAppStore((s) => s.authUser);
+  const viewMode = useAppStore((s) => s.viewMode);
+  const setViewMode = useAppStore((s) => s.setViewMode);
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { locale, setLocale, t } = useLocale();
   const { theme, setTheme, resolved } = useTheme();
+
+  const isSimple = viewMode === 'simple';
+
+  // In simple view, only show workspace nav item
+  const visibleNavItems = isSimple ? NAV_ITEMS.slice(0, 1) : NAV_ITEMS;
+  const visibleQuickItems = isSimple ? QUICK_ITEMS_SIMPLE : QUICK_ITEMS;
 
   function handleInterfaceSwitch(id: string) {
     navigate(navigateTo(id));
@@ -175,6 +191,13 @@ export default function GlobalSidebar() {
 
   function handleQuickNav(item: typeof QUICK_ITEMS[number]) {
     navigate(navigateTo(item.iface, item.module));
+  }
+
+  function toggleViewMode() {
+    const newMode = viewMode === 'cockpit' ? 'simple' : 'cockpit';
+    setViewMode(newMode);
+    // Navigate to the appropriate default module for the new view mode
+    navigate(navigateTo('workspace', newMode === 'cockpit' ? 'overview' : 'mywork'));
   }
 
   function toggleLocale() {
@@ -189,19 +212,21 @@ export default function GlobalSidebar() {
 
   const themeIcon = resolved === 'dark' ? '🌙' : '☀️';
   const themeLabel = theme === 'system' ? '自动' : theme === 'dark' ? '暗色' : '亮色';
+  const viewModeIcon = isSimple ? '🎯' : '📊';
+  const viewModeLabel = isSimple ? '切换管理视图' : '切换简视图';
 
   return (
     <nav aria-label="主导航" className="flex w-14 md:w-16 flex-col items-center border-r border-border bg-surface py-3 z-50 shrink-0">
       {/* Logo */}
       <Tooltip label="TBH Next">
-        <button onClick={() => navigate(navigateTo('workspace', 'overview'))} aria-label={t('nav.home')} className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-extrabold text-white cursor-pointer hover:scale-110 transition-transform">
+        <button onClick={() => navigate(navigateTo('workspace', isSimple ? 'mywork' : 'overview'))} aria-label={t('nav.home')} className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-extrabold text-white cursor-pointer hover:scale-110 transition-transform">
           T
         </button>
       </Tooltip>
 
       {/* Main nav */}
       <div className="flex flex-1 flex-col items-center gap-1">
-        {NAV_ITEMS.map((item) => (
+        {visibleNavItems.map((item) => (
           <Tooltip key={item.id} label={t(item.labelKey)}>
             <button
               onClick={() => handleInterfaceSwitch(item.id)}
@@ -223,7 +248,7 @@ export default function GlobalSidebar() {
 
         <div className="my-2 h-px w-6 bg-border" />
 
-        {QUICK_ITEMS.map((item) => (
+        {visibleQuickItems.map((item) => (
           <Tooltip key={item.labelKey} label={t(item.labelKey)}>
             <button
               onClick={() => handleQuickNav(item)}
@@ -239,6 +264,18 @@ export default function GlobalSidebar() {
       {/* Bottom */}
       <div className="flex flex-col items-center gap-1 relative">
         <PresenceIndicator userId={authUser?.id || 'demo'} />
+        {/* View mode toggle — only for admin/manager roles */}
+        {['admin', 'owner', 'leader', 'manager'].includes(authUser?.role ?? '') && (
+          <Tooltip label={viewModeLabel}>
+            <button
+              onClick={toggleViewMode}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-sm transition-all hover:bg-surface-2 hover:text-text-2 hover:scale-105"
+              aria-label={viewModeLabel}
+            >
+              {viewModeIcon}
+            </button>
+          </Tooltip>
+        )}
         <Tooltip label={t('nav.aiUnderstanding')}>
           <button
             onClick={toggleCtxPanel}
