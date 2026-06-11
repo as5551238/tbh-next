@@ -11,7 +11,8 @@ const AnnouncementsView = lazy(retryLazy(() => import('@/pages/collab/Announceme
 const TeamCalView = lazy(retryLazy(() => import('@/pages/collab/TeamCalView')));
 const CollabDocsView = lazy(retryLazy(() => import('@/pages/collab/CollabDocsView')));
 const MeetingsView = lazy(retryLazy(() => import('@/pages/collab/MeetingsView')));
-const FilesView = lazy(retryLazy(() => import('@/pages/collab/FilesView')));
+// DEPRECATED modules removed from routes (W9):
+// FilesView — no file storage infrastructure; see .temp/w8-stub-disposition.md
 const DirectoryView = lazy(retryLazy(() => import('@/pages/collab/DirectoryView')));
 const AiAgentsView = lazy(retryLazy(() => import('@/pages/collab/AiAgentsView')));
 
@@ -23,7 +24,6 @@ const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
   announcements: AnnouncementsView,
   collabDocs: CollabDocsView,
   meetings: MeetingsView,
-  files: FilesView,
   directory: DirectoryView,
   aiAgents: AiAgentsView,
 };

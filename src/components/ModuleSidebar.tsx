@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAppStore, ADMIN_ONLY_MODULES } from '@/stores/appStore';
 import { useDepartments } from '@/hooks/useMatrix';
 import { canAccess } from '@/lib/permissions';
@@ -14,7 +15,21 @@ interface ModuleItem {
 interface ModuleGroup {
   group: string;
   items: ModuleItem[];
+  collapsed?: boolean; // if true, items are hidden behind "更多" toggle
 }
+
+/** Primary module IDs shown as first-level entries per interface.
+ *  All other modules are accessible via "更多模块" expandable section. */
+const PRIMARY_MODULES: Record<string, Set<string>> = {
+  workspace: new Set([
+    'overview', 'goals', 'tasks', 'projects', 'schedule',
+    'insight', 'review', 'knowledge', 'members', 'admin',
+  ]),
+  // simple view keeps its own set (already compact)
+  simple: new Set(['mywork', 'schedule', 'notifications', 'goals', 'tasks', 'actionItems', 'knowledge', 'docs', 'notes']),
+  collab: new Set(['channels', 'teamCal', 'approvals']),
+  ai: new Set(['main', 'morning', 'risk', 'agentList']),
+};
 
 function getModules(iface: string, industry: string, dept: string, deviationAlertCount: number, viewMode: 'cockpit' | 'simple'): ModuleGroup[] {
   if (iface === 'workspace') {
@@ -61,14 +76,11 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
       { group: '配置中心', items: [
         { icon: '🏷️', name: '标签管理', id: 'tags' },
         { icon: '📂', name: '分类管理', id: 'categories' },
-        { icon: '🚩', name: '功能开关', id: 'featureFlags' },
-        { icon: '👁️', name: '保存视图', id: 'savedViews' },
-        { icon: '⚡', name: '自动化规则', id: 'automation' },
         { icon: '🔀', name: '状态流转', id: 'statusFlow' },
       ]},
     ];
 
-    // Simple view: dedicated simple layout with "我的工作" as top entry
+    // Simple view: dedicated simple layout (unchanged — already compact)
     if (viewMode === 'simple') {
       return [
         { group: '我的', items: [
@@ -88,10 +100,23 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
         ]},
       ];
     }
-    return allGroups;
+
+    // Cockpit view: split into primary (shown) and secondary (collapsed behind "更多")
+    const primarySet = PRIMARY_MODULES.workspace;
+    const primaryItems: ModuleItem[] = [];
+    const secondaryItems: ModuleItem[] = [];
+    for (const g of allGroups) {
+      for (const item of g.items) {
+        (primarySet.has(item.id) ? primaryItems : secondaryItems).push(item);
+      }
+    }
+    return [
+      { group: '核心', items: primaryItems },
+      { group: '更多模块', items: secondaryItems, collapsed: true },
+    ];
   }
   if (iface === 'collab') {
-    return [
+    const allGroups: ModuleGroup[] = [
       { group: `${industry} · ${dept}`, items: [
         { icon: '#', name: '频道列表', id: 'channels' },
         { icon: '📅', name: '团队日历', id: 'teamCal' },
@@ -101,16 +126,27 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
       { group: '协作', items: [
         { icon: '📄', name: '协作文档', id: 'collabDocs' },
         { icon: '🎥', name: '会议', id: 'meetings' },
-        { icon: '📎', name: '文件共享', id: 'files' },
       ]},
       { group: '管理', items: [
         { icon: '👤', name: '通讯录', id: 'directory' },
         { icon: '🤖', name: 'AI同事', id: 'aiAgents', ai: true },
       ]},
     ];
+    const primarySet = PRIMARY_MODULES.collab;
+    const primaryItems: ModuleItem[] = [];
+    const secondaryItems: ModuleItem[] = [];
+    for (const g of allGroups) {
+      for (const item of g.items) {
+        (primarySet.has(item.id) ? primaryItems : secondaryItems).push(item);
+      }
+    }
+    return [
+      { group: '核心', items: primaryItems },
+      { group: '更多模块', items: secondaryItems, collapsed: true },
+    ];
   }
   // AI
-  return [
+  const allAiGroups: ModuleGroup[] = [
     { group: 'AI对话', items: [
       { icon: '🧠', name: '工作助手', id: 'main' },
       { icon: '☀️', name: '晨间聚焦', id: 'morning', ai: true },
@@ -119,7 +155,6 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
     { group: 'AI同事', items: [
       { icon: '🤖', name: 'Agent列表', id: 'agentList', ai: true },
       { icon: '🔧', name: 'Agent配置', id: 'agentConfig' },
-      { icon: '🏪', name: 'Agent市场', id: 'agentMarket', ai: true },
     ]},
     { group: '行业视角', items: [
       { icon: '🏭', name: '行业视图', id: 'industryView', ai: true },
@@ -133,10 +168,21 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
       { icon: '📊', name: '行为追踪', id: 'behaviorTracker' },
       { icon: '🏆', name: 'DSTE赛季', id: 'dste' },
       { icon: '🧙', name: '模板向导', id: 'templateWizard' },
-      { icon: '🔗', name: '跨部门自动化', id: 'crossDeptAutomation' },
       { icon: '🛡️', name: '用量预警', id: 'usageAlerts' },
       { icon: '📊', name: '系统监控', id: 'systemMonitor' },
     ]},
+  ];
+  const primarySet = PRIMARY_MODULES.ai;
+  const aiPrimaryItems: ModuleItem[] = [];
+  const aiSecondaryItems: ModuleItem[] = [];
+  for (const g of allAiGroups) {
+    for (const item of g.items) {
+      (primarySet.has(item.id) ? aiPrimaryItems : aiSecondaryItems).push(item);
+    }
+  }
+  return [
+    { group: '核心', items: aiPrimaryItems },
+    { group: '更多模块', items: aiSecondaryItems, collapsed: true },
   ];
 }
 
@@ -165,6 +211,7 @@ export default function ModuleSidebar() {
   const modSidebarOpen = useAppStore((s) => s.modSidebarOpen);
   const toggleModSidebar = useAppStore((s) => s.toggleModSidebar);
   const navigateTo = useAppStore((s) => s.navigateTo);
+  const [moreExpanded, setMoreExpanded] = useState(false);
 
   const groups = getModules(iface, industry, dept, deviationAlertCount, viewMode);
   const title = { workspace: '模块', collab: '协作', ai: 'AI' }[iface];
@@ -177,13 +224,18 @@ export default function ModuleSidebar() {
     navigateTo(iface, id);
   }
 
+  /** Flatten visible items: primary groups + expanded "更多" items */
+  const visibleItems = groups.flatMap((g) =>
+    g.collapsed && !moreExpanded ? [] : g.items
+  );
+
   if (!modSidebarOpen) {
     return (
       <div className="flex w-10 flex-col items-center border-r border-border bg-surface py-2 shrink-0 gap-1">
         <button onClick={toggleModSidebar} aria-label="展开侧边栏" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text transition-colors text-xs">
           ▶
         </button>
-        {groups.flatMap((g) => g.items).slice(0, 8).map((item) => (
+        {visibleItems.slice(0, 8).map((item) => (
           <button
             key={item.id}
             onClick={() => handleModuleClick(item.id)}
@@ -198,6 +250,16 @@ export default function ModuleSidebar() {
             {item.icon}
           </button>
         ))}
+        {!moreExpanded && groups.some((g) => g.collapsed) && (
+          <button
+            onClick={() => setMoreExpanded(true)}
+            aria-label="显示更多模块"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[9px] text-text-3 hover:bg-surface-2 hover:text-text transition-colors"
+            title="更多模块"
+          >
+            ···
+          </button>
+        )}
       </div>
     );
   }
@@ -211,39 +273,102 @@ export default function ModuleSidebar() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto py-1.5">
-        {groups.map((g) => (
-          <div key={g.group}>
-            <div className="px-3.5 py-1.5 text-[9px] font-bold uppercase tracking-wider text-text-3">
-              {g.group}
+        {groups.map((g) => {
+          if (g.collapsed && !moreExpanded) {
+            // Render collapsed "更多模块" toggle button
+            return (
+              <div key={g.group} className="px-3.5 py-2">
+                <button
+                  onClick={() => setMoreExpanded(true)}
+                  className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border px-3 py-1.5 text-[10px] text-text-3 hover:bg-surface-2 hover:text-text transition-colors"
+                >
+                  <span>{g.group}</span>
+                  <span className="text-[8px]">({g.items.length})</span>
+                  <span>▸</span>
+                </button>
+              </div>
+            );
+          }
+          if (g.collapsed && moreExpanded) {
+            // Render expanded "更多模块" section with collapse toggle
+            return (
+              <div key={g.group}>
+                <div className="flex items-center justify-between px-3.5 py-1.5">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-text-3">
+                    {g.group}
+                  </span>
+                  <button
+                    onClick={() => setMoreExpanded(false)}
+                    className="flex h-4 items-center gap-0.5 text-[8px] text-text-3 hover:text-text transition-colors"
+                  >
+                    <span>收起</span>
+                    <span>▾</span>
+                  </button>
+                </div>
+                {g.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleModuleClick(item.id)}
+                    aria-current={activeModule === item.id ? 'page' : undefined}
+                    className={cn(
+                      'flex w-full items-center gap-2 px-3.5 py-1.5 text-xs transition-colors',
+                      activeModule === item.id
+                        ? 'bg-primary/10 font-semibold text-primary-2'
+                        : 'text-text-2 hover:bg-surface-2 hover:text-text'
+                    )}
+                  >
+                    <span className="w-[18px] text-center text-sm">{item.icon}</span>
+                    <span>{item.name}</span>
+                    {item.ai && (
+                      <span className="ml-1 rounded bg-accent/10 px-1 py-[1px] text-[7px] font-bold uppercase tracking-wider text-accent">
+                        AI
+                      </span>
+                    )}
+                    {item.badge && (
+                      <span className={cn('ml-auto rounded px-1.5 py-[1px] text-[9px] font-semibold', getBadgeStyle(item.badge))}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            );
+          }
+          // Regular (non-collapsed) group
+          return (
+            <div key={g.group}>
+              <div className="px-3.5 py-1.5 text-[9px] font-bold uppercase tracking-wider text-text-3">
+                {g.group}
+              </div>
+              {g.items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleModuleClick(item.id)}
+                  aria-current={activeModule === item.id ? 'page' : undefined}
+                  className={cn(
+                    'flex w-full items-center gap-2 px-3.5 py-1.5 text-xs transition-colors',
+                    activeModule === item.id
+                      ? 'bg-primary/10 font-semibold text-primary-2'
+                      : 'text-text-2 hover:bg-surface-2 hover:text-text'
+                  )}
+                >
+                  <span className="w-[18px] text-center text-sm">{item.icon}</span>
+                  <span>{item.name}</span>
+                  {item.ai && (
+                    <span className="ml-1 rounded bg-accent/10 px-1 py-[1px] text-[7px] font-bold uppercase tracking-wider text-accent">
+                      AI
+                    </span>
+                  )}
+                  {item.badge && (
+                    <span className={cn('ml-auto rounded px-1.5 py-[1px] text-[9px] font-semibold', getBadgeStyle(item.badge))}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
-            {g.items.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleModuleClick(item.id)}
-                aria-current={activeModule === item.id ? 'page' : undefined}
-                className={cn(
-                  'flex w-full items-center gap-2 px-3.5 py-1.5 text-xs transition-colors',
-                  activeModule === item.id
-                    ? 'bg-primary/10 font-semibold text-primary-2'
-                    : 'text-text-2 hover:bg-surface-2 hover:text-text'
-                )}
-              >
-                <span className="w-[18px] text-center text-sm">{item.icon}</span>
-                <span>{item.name}</span>
-                {item.ai && (
-                  <span className="ml-1 rounded bg-accent/10 px-1 py-[1px] text-[7px] font-bold uppercase tracking-wider text-accent">
-                    AI
-                  </span>
-                )}
-                {item.badge && (
-                  <span className={cn('ml-auto rounded px-1.5 py-[1px] text-[9px] font-semibold', getBadgeStyle(item.badge))}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

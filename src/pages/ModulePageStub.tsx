@@ -1,3 +1,13 @@
+/**
+ * ModulePageStub — Placeholder for modules not yet implemented.
+ *
+ * @deprecated This component is being phased out in favor of real implementations.
+ * W8 decision: Each stub module is classified as either:
+ *   - "implement" (core functionality, to be built in W9-W10)
+ *   - "deprecated" (low-priority, marked for removal in Phase A)
+ * See .temp/w7-retrospective-and-evolution-plan.md W8-T7 for the full disposition.
+ */
+
 import { useState } from 'react';
 import { useMatrixCell } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';

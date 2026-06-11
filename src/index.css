@@ -2,7 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Design Token System (经验教训L6转化) ===== */
+/* ===== Design Token System v2 — 3-Layer Architecture ===== */
+/* L1: Raw Tokens (color, spacing, typography primitives) */
+/* L2: Semantic Tokens (purpose-based, theme-aware) */
+/* L3: Component Patterns (reusable component-level styles) */
 :root {
   /* Brand */
   --brand-50: #eef2ff;
@@ -213,4 +216,120 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ===== L3: Component Patterns ===== */
+/* Reusable component-level styles that compose L2 semantic tokens */
+
+@layer components {
+  /* Card — unified card component pattern */
+  .tbh-card {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    transition: border-color var(--transition-fast);
+  }
+  .tbh-card:hover {
+    border-color: var(--border-default);
+  }
+
+  /* Badge — status/label badge pattern */
+  .tbh-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    border-radius: 9999px;
+    font-size: var(--font-xs);
+    font-weight: 600;
+    line-height: 1;
+  }
+  .tbh-badge-success { background: rgba(64,192,87,0.15); color: var(--status-success); }
+  .tbh-badge-warning { background: rgba(250,176,5,0.15); color: var(--status-warning); }
+  .tbh-badge-danger { background: rgba(250,82,82,0.15); color: var(--status-danger); }
+  .tbh-badge-info { background: rgba(51,154,240,0.15); color: var(--status-info); }
+  .tbh-badge-brand { background: rgba(123,108,240,0.15); color: var(--brand-accent); }
+
+  /* Button variants — consistent button patterns */
+  .tbh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .tbh-btn-primary {
+    background: var(--brand-accent);
+    color: white;
+  }
+  .tbh-btn-primary:hover { background: var(--brand-accent-hover); }
+  .tbh-btn-secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-default);
+  }
+  .tbh-btn-secondary:hover { background: var(--surface-muted); }
+  .tbh-btn-danger {
+    background: transparent;
+    color: var(--status-danger);
+    border-color: var(--status-danger);
+  }
+  .tbh-btn-danger:hover { background: rgba(250,82,82,0.1); }
+  .tbh-btn-sm {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-xs);
+  }
+
+  /* Input — form input pattern */
+  .tbh-input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    transition: border-color var(--transition-fast);
+  }
+  .tbh-input:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 2px rgba(123,108,240,0.2);
+  }
+  .tbh-input::placeholder { color: var(--placeholder-muted); }
+
+  /* Section header — module page header pattern */
+  .tbh-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: var(--space-4);
+  }
+  .tbh-section-title {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  /* Empty state — no-data placeholder */
+  .tbh-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8) var(--space-4);
+    text-align: center;
+  }
+  .tbh-empty-icon { font-size: 2rem; margin-bottom: var(--space-3); opacity: 0.5; }
+  .tbh-empty-text { color: var(--text-tertiary); font-size: var(--font-sm); }
+  .tbh-empty-action { margin-top: var(--space-3); }
 }

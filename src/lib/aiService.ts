@@ -3,17 +3,18 @@
  *
  * Strategy:
  * 1. If Supabase is configured, use Supabase Edge Function proxy.
- * 2. If VITE_DEEPSEEK_API_KEY available, call direct LLM API.
- * 3. Otherwise, fall back to intelligent local generation using matrix cell context.
+ * 2. If Edge fails, try Supabase RPC proxy.
+ * 3. Otherwise, fall back to intelligent local generation.
+ * 
+ * Direct LLM API calls removed for security (API key exposure in client bundle).
  */
 
 import { createHarness } from '@/lib/agentHarness';
 import { sanitizeInput, validateAIOutput, recordInjectionCheck } from '@/lib/aiSecurity';
 import type { MatrixCell } from '@/matrix/data';
 import { getToolSchemas, executeToolCall } from '@/lib/aiTools';
-import { DEEPSEEK_API_KEY } from '@/lib/aiPresets';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { callSupabaseEdge, callRpcProxy, directLLMFallback } from '@/lib/aiRoutes';
+import { callSupabaseEdge, callRpcProxy, localFallback } from '@/lib/aiRoutes';
 import { recordApiCall, recordError } from '@/lib/monitoring';
 
 // --- Types ---
@@ -103,7 +104,7 @@ export async function chatCompletion(
   }
 
   // --- Execute AI call ---
-  let route: 'edge' | 'direct' | 'local' = 'local';
+  let route: 'edge' | 'rpc' | 'local' = 'local';
   try {
     let response: AIResponse | null = null;
 
@@ -193,21 +194,15 @@ export async function chatCompletion(
       if (isSupabaseConfigured()) {
         route = 'edge';
         response = await callSupabaseEdge(sanitizedMessages, options);
-        // Edge fell through to local → try RPC proxy before direct
+        // Edge fell through to local → try RPC proxy
         if (response.agent === 'local') {
           route = 'rpc';
           response = await callRpcProxy(sanitizedMessages);
         }
-        // RPC also fell through → try direct as last resort
-        if (response.agent === 'local' && DEEPSEEK_API_KEY) {
-          route = 'direct';
-          response = await directLLMFallback(sanitizedMessages);
-        }
-      } else if (DEEPSEEK_API_KEY) {
-        route = 'direct';
-        response = await directLLMFallback(sanitizedMessages);
+        // RPC also fell through → local fallback
       } else {
-        response = await directLLMFallback(sanitizedMessages);
+        route = 'local';
+        response = await localFallback(sanitizedMessages);
       }
     }
 

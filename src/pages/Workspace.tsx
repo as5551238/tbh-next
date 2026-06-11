@@ -34,15 +34,14 @@ const TemplatesContent = lazy(retryLazy(() => import('@/pages/workspace/Template
 const BookmarksContent = lazy(retryLazy(() => import('@/pages/workspace/BookmarksContent')));
 const TagsContent = lazy(retryLazy(() => import('@/pages/workspace/TagsContent')));
 const CategoriesContent = lazy(retryLazy(() => import('@/pages/workspace/CategoriesContent')));
-const FeatureFlagsContent = lazy(retryLazy(() => import('@/pages/workspace/FeatureFlagsContent')));
-const SavedViewsContent = lazy(retryLazy(() => import('@/pages/workspace/SavedViewsContent')));
-const AutomationContent = lazy(retryLazy(() => import('@/pages/workspace/AutomationContent')));
+// DEPRECATED modules removed from routes (W9):
+// FeatureFlagsContent, SavedViewsContent, AutomationContent — see .temp/w8-stub-disposition.md
 const StatusFlowContent = lazy(retryLazy(() => import('@/pages/workspace/StatusFlowContent')));
 const MyWorkView = lazy(retryLazy(() => import('@/pages/MyWorkView')));
 const CommandCenterView = lazy(retryLazy(() => import('@/pages/workspace/CommandCenterView')));
 
 // Modules that require admin/owner/leader role to access
-const ADMIN_ONLY_MODULES = new Set(['admin', 'roles', 'featureFlags']);
+const ADMIN_ONLY_MODULES = new Set(['admin', 'roles']);
 
 const LazyWrap = ({ children, name }: { children: ReactNode; name?: string }) => (
   <ModuleErrorBoundary moduleName={name}>
@@ -79,9 +78,6 @@ const WORKSPACE_MODULES: Record<string, LazyExoticComponent<FC>> = {
   bookmarks: BookmarksContent,
   tags: TagsContent,
   categories: CategoriesContent,
-  featureFlags: FeatureFlagsContent,
-  savedViews: SavedViewsContent,
-  automation: AutomationContent,
   statusFlow: StatusFlowContent,
   mywork: MyWorkView as LazyExoticComponent<FC>,
   commandCenter: CommandCenterView,

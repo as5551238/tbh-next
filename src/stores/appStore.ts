@@ -34,21 +34,20 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
   actionItems: 'workspace',
   activities: 'workspace', notes: 'workspace', sprints: 'workspace',
   templates: 'workspace', bookmarks: 'workspace',
-  tags: 'workspace', categories: 'workspace', featureFlags: 'workspace',
-  savedViews: 'workspace', automation: 'workspace', statusFlow: 'workspace',
+  tags: 'workspace', categories: 'workspace', statusFlow: 'workspace',
   mywork: 'workspace',
   commandCenter: 'workspace',
   // collab modules
   channels: 'collab', teamCal: 'collab', approvals: 'collab',
   announcements: 'collab', collabDocs: 'collab', meetings: 'collab',
-  files: 'collab', directory: 'collab', aiAgents: 'collab',
+  directory: 'collab', aiAgents: 'collab',
   // ai modules
   main: 'ai', morning: 'ai', risk: 'ai',
   agentList: 'ai', agentConfig: 'ai', industryView: 'ai',
   workflows: 'ai', kpiDash: 'ai', subscription: 'ai',
-  agentMarket: 'ai', knowledgeOSP: 'ai', mcpA2a: 'ai',
+  knowledgeOSP: 'ai', mcpA2a: 'ai',
   behaviorTracker: 'ai', dste: 'ai', templateWizard: 'ai',
-  crossDeptAutomation: 'ai', usageAlerts: 'ai', systemMonitor: 'ai',
+  usageAlerts: 'ai', systemMonitor: 'ai',
 };
 
 /** 根据 module 名推断其所属 interface */
@@ -59,9 +58,7 @@ export function getInterfaceForModule(mod: string): string {
 /** Modules restricted to cockpit viewMode (admin/manager only)
  *  Only truly admin-level modules; DSTE/goals/insight etc. are available to all roles */
 export const ADMIN_ONLY_MODULES = new Set([
-  'admin', 'roles', 'org', 'featureFlags', 'statusFlow',
-  'crossDeptAutomation', 'systemMonitor', 'behaviorTracker',
-  'subscription',
+  'admin', 'roles', 'org', 'statusFlow',
 ]);
 
 /** 根据 role 推导默认 viewMode — admin/owner/leader/manager → cockpit, 其他 → simple */

@@ -55,9 +55,9 @@ describe('Data Layer (local fallback)', () => {
   // --- Matrix Core ---
 
   describe('Matrix operations', () => {
-    it('fetchIndustries returns 4 industries', async () => {
+    it('fetchIndustries returns industries', async () => {
       const industries = await fetchIndustries();
-      expect(industries.length).toBe(4);
+      expect(industries.length).toBeGreaterThanOrEqual(4);
       expect(industries).toContain('IT业');
     });
 

@@ -1,8 +1,10 @@
 /**
  * AI Model Presets — Multi-provider model configuration.
  *
- * Dev mode: API key from VITE_DEEPSEEK_API_KEY for direct client-side calls.
- * Production: API keys stay server-side via Edge Function proxy.
+ * SECURITY: API keys are NEVER exposed to the client bundle.
+ * All LLM calls go through Supabase Edge Function or RPC proxy,
+ * keeping API keys server-side only. Local fallback is used when
+ * no server-side route is available.
  */
 
 export interface AIModelPreset {
@@ -21,15 +23,6 @@ export const AI_MODEL_PRESETS: AIModelPreset[] = [
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', model: 'gpt-4o-mini' },
   { id: 'qwen-plus', name: '通义千问 Plus', provider: 'qwen', model: 'qwen-plus' },
 ];
-
-export const PROVIDER_ENDPOINTS: Record<string, string> = {
-  deepseek: 'https://api.deepseek.com',
-  doubao: 'https://ark.cn-beijing.volces.com/api/v3',
-  openai: 'https://api.openai.com',
-  qwen: 'https://dashscope.aliyuncs.com/compatible-mode',
-};
-
-export const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY ?? '';
 
 const DEFAULT_MODEL_ID = 'deepseek-chat';
 

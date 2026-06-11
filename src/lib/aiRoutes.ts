@@ -1,14 +1,16 @@
 /**
- * AI Routes — Four fallback routes for LLM calls.
+ * AI Routes — Three fallback routes for LLM calls.
  *
  * Route 1: Supabase Edge Function (secure — API keys stay server-side)
  * Route 1.5: Supabase RPC proxy (call_llm_proxy — server-side, no Edge deploy needed)
- * Route 2: Direct LLM API call (dev mode — API key in client bundle)
  * Route 3: Local intelligent fallback (offline — no API needed)
+ *
+ * Route 2 (Direct LLM API call) was removed for security:
+ * it exposed the API key in the client bundle.
  */
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { getActiveModel, DEEPSEEK_API_KEY, PROVIDER_ENDPOINTS } from '@/lib/aiPresets';
+import { getActiveModel } from '@/lib/aiPresets';
 import type { ChatMessage } from '@/lib/aiService';
 import type { AIResponse, StreamCallback } from '@/lib/aiService';
 import { getToolSchemas } from '@/lib/aiTools';
@@ -26,7 +28,7 @@ export async function callSupabaseEdge(
     tools?: ReturnType<typeof getToolSchemas>;
   }
 ): Promise<AIResponse> {
-  if (!supabase) return directLLMFallback(messages);
+  if (!supabase) return localFallback(messages);
 
   const activeModel = getActiveModel();
   const useStream = options?.stream && options?.onChunk;
@@ -54,7 +56,7 @@ export async function callSupabaseEdge(
         signal: options?.signal,
       });
 
-      if (!res.ok) return directLLMFallback(messages);
+      if (!res.ok) return callRpcProxy(messages);
 
       if (res.body) {
         const reader = res.body.getReader();
@@ -123,7 +125,7 @@ export async function callSupabaseEdge(
       signal: options?.signal,
     });
 
-    if (!res.ok) return directLLMFallback(messages);
+    if (!res.ok) return callRpcProxy(messages);
 
     const data = await res.json();
 
@@ -139,7 +141,7 @@ export async function callSupabaseEdge(
     }
 
     if (!data?.text && (!toolCalls || toolCalls.length === 0)) {
-      return directLLMFallback(messages);
+      return callRpcProxy(messages);
     }
 
     return { text: data.text ?? '', agent: 'edge', usage: data.usage, toolCalls };
@@ -157,7 +159,7 @@ export async function callSupabaseEdge(
  * Requires: DB function `call_llm_proxy(messages jsonb, model text)` deployed in Supabase.
  */
 export async function callRpcProxy(messages: ChatMessage[]): Promise<AIResponse> {
-  if (!supabase || !isSupabaseConfigured()) return directLLMFallback(messages);
+  if (!supabase || !isSupabaseConfigured()) return localFallback(messages);
 
   const activeModel = getActiveModel();
   const rpcMessages = messages.map((m) => ({
@@ -174,14 +176,14 @@ export async function callRpcProxy(messages: ChatMessage[]): Promise<AIResponse>
     if (error) {
       console.warn('[aiRoutes] RPC proxy error:', error.message);
       recordError('ai_rpc', error.message);
-      return directLLMFallback(messages);
+      return localFallback(messages);
     }
 
     // RPC returns { text, usage? }
     const text = data?.text ?? data?.choices?.[0]?.message?.content ?? '';
     if (!text) {
       console.warn('[aiRoutes] RPC proxy returned empty text');
-      return directLLMFallback(messages);
+      return localFallback(messages);
     }
 
     const usage = data?.usage
@@ -192,62 +194,13 @@ export async function callRpcProxy(messages: ChatMessage[]): Promise<AIResponse>
   } catch (err) {
     console.warn('[aiRoutes] RPC proxy exception:', err);
     recordError('ai_rpc', (err as Error)?.message ?? String(err));
-    return directLLMFallback(messages);
-  }
-}
-
-// --- Route 2: Direct LLM API call (dev mode) ---
-
-export async function directLLMFallback(messages: ChatMessage[]): Promise<AIResponse> {
-  if (!DEEPSEEK_API_KEY) return localFallback(messages);
-
-  const activeModel = getActiveModel();
-  const provider = activeModel.provider;
-  const endpoint = PROVIDER_ENDPOINTS[provider] ?? PROVIDER_ENDPOINTS.deepseek;
-
-  try {
-    const openaiMessages = messages.map(m => {
-      if (m.role === 'tool') return { role: 'assistant' as const, content: m.content };
-      return { role: m.role, content: m.content };
-    });
-
-    const res = await fetch(`${endpoint}/v1/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
-      body: JSON.stringify({
-        model: activeModel.model,
-        messages: openaiMessages,
-        stream: false,
-        max_tokens: 2048,
-        temperature: 0.7,
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      console.warn('[aiService] Direct LLM call failed:', res.status, errText);
-      recordApiCall('ai_direct', 0, false);
-      recordError('ai_direct', `HTTP ${res.status}: ${errText.slice(0, 100)}`);
-      return localFallback(messages);
-    }
-
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content ?? '';
-    const usage = data.usage ? { prompt_tokens: data.usage.prompt_tokens, completion_tokens: data.usage.completion_tokens } : undefined;
-
-    if (!text) return localFallback(messages);
-
-    return { text, agent: 'direct', usage };
-  } catch (err) {
-    console.warn('[aiService] Direct LLM error:', err);
-    recordError('ai_direct', (err as Error)?.message ?? String(err));
     return localFallback(messages);
   }
 }
 
 // --- Route 3: Local intelligent fallback ---
 
-async function localFallback(messages: ChatMessage[]): Promise<AIResponse> {
+export async function localFallback(messages: ChatMessage[]): Promise<AIResponse> {
   const systemMsg = messages.find((m) => m.role === 'system')?.content ?? '';
   const userMsgs = messages.filter((m) => m.role === 'user');
   const lastUserMsg = userMsgs[userMsgs.length - 1]?.content ?? '';

@@ -14,13 +14,14 @@ const IndustryView = lazy(retryLazy(() => import('@/pages/ai/IndustryView')));
 const WorkflowsView = lazy(retryLazy(() => import('@/pages/ai/WorkflowsView')));
 const KpiDashView = lazy(retryLazy(() => import('@/pages/ai/KpiDashView')));
 const SubscriptionView = lazy(retryLazy(() => import('@/pages/ai/SubscriptionView')));
-const AgentMarketView = lazy(retryLazy(() => import('@/pages/ai/AgentMarketView')));
 const KnowledgeOSPView = lazy(retryLazy(() => import('@/pages/ai/KnowledgeOSPView')));
+// DEPRECATED modules removed from routes (W9):
+// AgentMarketView — needs ecosystem, no value for single-user; see .temp/w8-stub-disposition.md
+// CrossDeptAutomationView — duplicates AutomationContent; see .temp/w8-stub-disposition.md
 const MCPA2AView = lazy(retryLazy(() => import('@/pages/ai/MCPA2AView')));
 const BehaviorTrackerView = lazy(retryLazy(() => import('@/pages/ai/BehaviorTrackerView')));
 const DSTEView = lazy(retryLazy(() => import('@/pages/ai/DSTEView')));
 const TemplateWizardView = lazy(retryLazy(() => import('@/pages/ai/TemplateWizardView')));
-const CrossDeptAutomationView = lazy(retryLazy(() => import('@/pages/ai/CrossDeptAutomationView')));
 const UsageAlertsView = lazy(retryLazy(() => import('@/pages/ai/UsageAlertsView')));
 const SystemMonitorView = lazy(retryLazy(() => import('@/pages/ai/SystemMonitorView')));
 
@@ -38,13 +39,11 @@ const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
   workflows: WorkflowsView,
   kpiDash: KpiDashView,
   subscription: SubscriptionView,
-  agentMarket: AgentMarketView,
   knowledgeOSP: KnowledgeOSPView,
   mcpA2a: MCPA2AView,
   behaviorTracker: BehaviorTrackerView,
   dste: DSTEView,
   templateWizard: TemplateWizardView,
-  crossDeptAutomation: CrossDeptAutomationView,
   usageAlerts: UsageAlertsView,
   systemMonitor: SystemMonitorView,
 };

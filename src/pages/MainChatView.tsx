@@ -18,16 +18,15 @@ import { auditStore } from '@/lib/agentHarness';
 import { createMessage, fetchMessages, type MessageRow } from '@/lib/dataLayer';
 import { executeToolCall } from '@/lib/aiTools';
 import { parseAndExecute, resolveNaturalDate, type ParsedIntent, type IntentType, type ConversationTurn } from '@/lib/intentParser';
+import { agentPlan, agentExecute, undoOperation, type AgentLoopResult, type AgentLoopPhase } from '@/lib/agentLoop';
 import { IntentFallbackForm } from '@/components/IntentFallbackForm';
 import { fetchSubscription, fetchUsageToday, isActionAllowed, PLAN_LIMITS, type UsageSummary } from '@/lib/subscription';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { recordApiCall, recordError, recordRender } from '@/lib/monitoring';
 
-const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY ?? '';
-
 function getAiRouteLabel(): { label: string; color: string } {
-  if (DEEPSEEK_API_KEY && !isSupabaseConfigured()) return { label: 'DeepSeek 直连', color: 'text-blue-400 bg-blue-400/10' };
-  if (DEEPSEEK_API_KEY && isSupabaseConfigured()) return { label: 'AI代理', color: 'text-purple-400 bg-purple-400/10' };
+  // SECURITY: API key is never in client bundle; AI routes go through Supabase proxy
+  if (isSupabaseConfigured()) return { label: 'AI代理', color: 'text-purple-400 bg-purple-400/10' };
   return { label: '本地模式', color: 'text-warn bg-warn/10' };
 }
 
@@ -97,6 +96,8 @@ function MainChatView() {
   const [activeAgent, setActiveAgent] = useState<AgentDef | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Agent Loop: confirmation state for write operations
+  const [pendingConfirmation, setPendingConfirmation] = useState<{ result: AgentLoopResult; chatHistory: ConversationTurn[] } | null>(null);
 
   // ── Monitor: record mount/render timing ────────────────────────────
   useEffect(() => {
@@ -304,6 +305,63 @@ function MainChatView() {
     }
   }, [scrollToBottom]);
 
+  /** Handle user confirmation of a write operation */
+  const handleConfirmExecution = useCallback(async () => {
+    if (!pendingConfirmation) return;
+    const { result } = pendingConfirmation;
+    setPendingConfirmation(null);
+    const now = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+    const execResult = await agentExecute(result.intent, true);
+
+    if (execResult.toolResult !== undefined) {
+      const resultText = formatToolResult(result.intent.toolName, execResult.toolResult as unknown[]);
+      const navModule = result.intent.toolName === 'create_task' || result.intent.toolName === 'update_task_status' ? 'tasks'
+        : result.intent.toolName === 'get_goals' || result.intent.toolName === 'update_goal_progress' ? 'goals' : undefined;
+      const aiMsg: ChatMsg = {
+        id: Date.now() + 1,
+        role: 'ai',
+        text: `✅ 已执行\n\n${resultText}${execResult.undoToken ? '\n\n💬 说"撤销"可回退此操作' : ''}`,
+        time: now,
+        agentIcon: '⚡',
+        toolName: result.intent.toolName,
+        toolResult: execResult.toolResult as Record<string, unknown>[],
+        actions: navModule ? [{ label: `查看详情 →`, module: navModule, iface: 'workspace' }] : undefined,
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+    } else if (execResult.error) {
+      setMessages((prev) => [...prev, {
+        id: Date.now() + 1, role: 'ai', text: `❌ 执行失败: ${execResult.error}`, time: now, agentIcon: '⚠️',
+      }]);
+    }
+    scrollToBottom();
+  }, [pendingConfirmation, scrollToBottom]);
+
+  /** Handle user rejection of a write operation */
+  const handleRejectExecution = useCallback(() => {
+    if (!pendingConfirmation) return;
+    setPendingConfirmation(null);
+    const now = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    setMessages((prev) => [...prev, {
+      id: Date.now() + 1, role: 'ai', text: '👌 已取消操作。', time: now, agentIcon: '🚫',
+    }]);
+    scrollToBottom();
+  }, [pendingConfirmation, scrollToBottom]);
+
+  /** Handle undo request via chat */
+  const handleUndoRequest = useCallback(async () => {
+    const now = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    const result = await undoOperation();
+    setMessages((prev) => [...prev, {
+      id: Date.now() + 1,
+      role: 'ai',
+      text: result.success ? `🔄 ${result.detail}` : `❌ ${result.detail}`,
+      time: now,
+      agentIcon: result.success ? '🔄' : '⚠️',
+    }]);
+    scrollToBottom();
+  }, [scrollToBottom]);
+
   async function handleSend() {
     if (!chatInput.trim() || isTyping) return;
     // Check AI usage limits before sending
@@ -311,6 +369,15 @@ function MainChatView() {
     if (!allowed) return;
     const input = chatInput.trim();
     const now = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+    // Special: Handle undo request
+    if (/^撤销$|^undo$|^撤回$/i.test(input)) {
+      const userMsg: ChatMsg = { id: Date.now(), role: 'user', text: input, time: now };
+      setMessages((prev) => [...prev, userMsg]);
+      setChatInput('');
+      await handleUndoRequest();
+      return;
+    }
 
     const userMsg: ChatMsg = { id: Date.now(), role: 'user', text: input, time: now };
     setMessages((prev) => [...prev, userMsg]);
@@ -327,8 +394,7 @@ function MainChatView() {
       sender_name: user?.name ?? '我',
     });
 
-    // === Intent Parser: try "对话即操作" first ===
-    // Build recent conversation context for multi-turn support
+    // === Agent Loop: 理解 → 规划 → 确认 → 执行 → 反馈 ===
     const recentHistory: ConversationTurn[] = messages
       .slice(-6)
       .filter((m) => m.role === 'user' || m.role === 'ai')
@@ -341,17 +407,31 @@ function MainChatView() {
 
     const intentStartTime = Date.now();
     try {
-      const intentResult = await parseAndExecute(input, recentHistory);
+      const loopResult = await agentPlan(input, recentHistory);
       recordApiCall('intent_parse', Date.now() - intentStartTime, true);
 
-      if (!intentResult.intent.fallback && intentResult.toolResult !== undefined) {
-        // Intent parsed successfully — tool was executed, show result
-        const parsed = intentResult.intent;
-        trackEvent('ai_tool_call', { intent: parsed.intent, tool: parsed.toolName });
-        // Resolve natural dates for display
-        let resultText = formatToolResult(parsed.toolName, intentResult.toolResult as unknown[]);
+      if (loopResult.requiresConfirmation) {
+        // Write operation — show preview and ask user to confirm
+        const confirmMsg: ChatMsg = {
+          id: Date.now() + 1,
+          role: 'ai',
+          text: `🔍 操作预览\n\n${loopResult.preview}\n\n确认执行？`,
+          time: now,
+          agentIcon: '🔍',
+        };
+        setMessages((prev) => [...prev, confirmMsg]);
+        scrollToBottom();
+        // Store pending confirmation for user to accept/reject
+        setPendingConfirmation({ result: loopResult, chatHistory: recentHistory });
+        return; // Wait for user confirmation
+      }
 
-        // Add intent context to result
+      if (!loopResult.intent.fallback && loopResult.toolResult !== undefined) {
+        // Read operation already executed — show result
+        const parsed = loopResult.intent;
+        trackEvent('ai_tool_call', { intent: parsed.intent, tool: parsed.toolName });
+        let resultText = formatToolResult(parsed.toolName, loopResult.toolResult as unknown[]);
+
         const intentLabel: Record<string, string> = {
           create_task: '✅ 任务已创建',
           update_task_status: '✅ 任务已更新',
@@ -374,39 +454,30 @@ function MainChatView() {
           time: now,
           agentIcon: '⚡',
           toolName: parsed.toolName,
-          toolResult: intentResult.toolResult as Record<string, unknown>[],
+          toolResult: loopResult.toolResult as Record<string, unknown>[],
           actions: navModule ? [{ label: `查看详情 →`, module: navModule, iface: 'workspace' }] : undefined,
         };
         setMessages((prev) => [...prev, aiMsg]);
         scrollToBottom();
 
-        // Persist AI response
         createMessage({
           channel: AI_ASSISTANT_CHANNEL,
           content: aiMsg.text,
           sender_type: 'ai',
           sender_name: '意图解析',
         });
-        return; // Intent handled — skip regular chat
+        return;
       }
 
-      if (intentResult.intent.fallback && intentResult.intent.intent !== 'chitchat') {
-        // Parsing failed — show fallback form and also do regular chat
-        setFallbackIntent(intentResult.intent.intent);
+      if (loopResult.intent.fallback && loopResult.intent.intent !== 'chitchat') {
+        setFallbackIntent(loopResult.intent.intent);
         setFallbackRawText(input);
         setFallbackOpen(true);
-        // Fall through to regular chat below
-      }
-      // chitchat or low-confidence — fall through to regular chat
-
-      if (intentResult.intent.intent === 'chitchat') {
-        // chitchat — just do regular chat, no form
       }
     } catch (err) {
-      console.error('[MainChatView] Intent parse failed, falling back to chat:', err);
+      console.error('[MainChatView] Agent loop failed, falling back to chat:', err);
       recordApiCall('intent_parse', Date.now() - intentStartTime, false);
       recordError('intent_parse', (err as Error)?.message ?? String(err));
-      // Fall through to regular chat
     }
 
     // === Regular Chat: AI conversation ===
@@ -617,7 +688,16 @@ function MainChatView() {
            </button>
          </div>
 
-         {/* Input */}
+          {/* Agent Loop: Confirmation prompt for write operations */}
+          {pendingConfirmation && (
+            <div className="flex flex-wrap items-center gap-2 mx-4 my-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+              <span className="text-[10px] text-primary-2 font-semibold">确认执行？</span>
+              <button onClick={handleConfirmExecution} className="rounded-md bg-primary px-3 py-1 text-[10px] text-white font-semibold hover:bg-primary/80 transition-colors">确认</button>
+              <button onClick={handleRejectExecution} className="rounded-md bg-surface-3 px-3 py-1 text-[10px] text-text-2 font-semibold hover:bg-surface-3/80 transition-colors">取消</button>
+            </div>
+          )}
+
+          {/* Input */}
          <div className="border-t border-border px-4 py-3">
            {limitWarning && (
              <div className="mb-2 flex items-center justify-between rounded-lg bg-danger/10 px-3 py-2 text-[10px] text-danger">

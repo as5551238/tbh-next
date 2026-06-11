@@ -1,11 +1,14 @@
 /**
  * Agent Marketplace data types and services.
  *
- * In production, agents are stored in a marketplace registry.
- * For now, we use local mock data + Supabase table when configured.
+ * Agent catalog is driven by a JSON config file (data/marketplace-agents.json),
+ * making it easy to add/remove agents without changing code.
+ * When Supabase is configured and the `marketplace_agents` table has data,
+ * the DB version takes priority.
  */
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import defaultAgents from '@/data/marketplace-agents.json';
 
 // --- Types ---
 
