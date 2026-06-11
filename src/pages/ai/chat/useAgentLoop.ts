@@ -60,6 +60,7 @@ export function useAgentLoop(
   const [fallbackIntent, setFallbackIntent] = useState<IntentType>('unknown');
   const [fallbackRawText, setFallbackRawText] = useState('');
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [pendingConfirmation, setPendingConfirmation] = useState<{ result: AgentLoopResult; chatHistory: ConversationTurn[] } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -333,6 +334,12 @@ export function useAgentLoop(
         setMessages((prev) => prev.map((m) => m.id === aiMsgId ? { ...m, text: m.text + chunk } : m));
         scrollToBottom();
       },
+    }).then((response) => {
+      if (response?.agent === 'local') {
+        setIsOfflineMode(true);
+      } else {
+        setIsOfflineMode(false);
+      }
     }).catch((err) => {
       if (err?.name === 'AbortError') return;
       recordApiCall('ai_chat', Date.now() - callStartTime, false);
@@ -347,7 +354,7 @@ export function useAgentLoop(
   return {
     isTyping, activeAgent, setActiveAgent,
     fallbackOpen, setFallbackOpen, fallbackIntent, fallbackRawText,
-    limitWarning, pendingConfirmation,
+    limitWarning, isOfflineMode, pendingConfirmation,
     overdueTasks, atRiskGoals, openActionItems,
     handleToolAction, handleFallbackSubmit,
     handleConfirmExecution, handleRejectExecution,

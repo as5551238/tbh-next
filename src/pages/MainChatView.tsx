@@ -6,7 +6,7 @@ import { useIndustryColor, useDeviationAlerts } from '@/hooks/useMatrix';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { recordRender } from '@/lib/monitoring';
 import { IntentFallbackForm } from '@/components/IntentFallbackForm';
-import { Bot, Send } from 'lucide-react';
+import { Bot, Send, AlertTriangle } from 'lucide-react';
 import { useChatMessages, getPreviousSessions, startNewSession } from './ai/chat/useChatMessages';
 import { useAgentLoop } from './ai/chat/useAgentLoop';
 import { ChatMessageItem } from './ai/chat/ChatMessageItem';
@@ -31,7 +31,7 @@ function MainChatView() {
   const {
     isTyping, activeAgent, setActiveAgent,
     fallbackOpen, setFallbackOpen, fallbackIntent, fallbackRawText,
-    limitWarning, pendingConfirmation,
+    limitWarning, isOfflineMode, pendingConfirmation,
     overdueTasks, atRiskGoals, openActionItems,
     handleToolAction, handleFallbackSubmit,
     handleConfirmExecution, handleRejectExecution,
@@ -70,6 +70,15 @@ function MainChatView() {
           <span className="ml-2 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
           <button onClick={() => { handleNewSession(); setMessages([]); }} className="ml-auto rounded-md bg-surface-3 px-2 py-0.5 text-[9px] font-semibold text-text-2 hover:bg-surface-3/80 transition-colors" aria-label="新对话">+ 新对话</button>
         </div>
+
+        {/* Offline mode banner */}
+        {isOfflineMode && (
+          <div className="flex items-center gap-2 bg-warn/10 border-b border-warn/20 px-4 py-1.5 text-[10px] text-warn">
+            <AlertTriangle size={12} />
+            <span>AI服务不可用，当前为离线模式</span>
+            <button onClick={() => navTo('ai', 'subscription')} className="ml-auto rounded bg-warn/20 px-2 py-0.5 text-[9px] font-semibold hover:bg-warn/30">配置API Key</button>
+          </div>
+        )}
 
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">

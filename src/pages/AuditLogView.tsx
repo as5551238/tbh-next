@@ -99,15 +99,15 @@ export default function AuditLogView() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
-        <select value={filter.table} onChange={(e) => setFilter({ ...filter, table: e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm">
-          <option value="">全部表</option>
+        <select value={filter.table} onChange={(e) => setFilter({ ...filter, table: e.target.value === '__EMPTY__' ? '' : e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm">
+          <option value="__EMPTY__">全部表</option>
           {Object.entries(TABLE_LABELS).map(([key, label]) => (
             <option key={key} value={key}>{label}</option>
           ))}
         </select>
 
-        <select value={filter.action} onChange={(e) => setFilter({ ...filter, action: e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm">
-          <option value="">全部操作</option>
+        <select value={filter.action} onChange={(e) => setFilter({ ...filter, action: e.target.value === '__EMPTY__' ? '' : e.target.value })} className="bg-surface text-text border border-border-2 rounded-lg px-3 py-2 text-sm">
+          <option value="__EMPTY__">全部操作</option>
           <option value="INSERT">创建</option>
           <option value="UPDATE">更新</option>
           <option value="DELETE">删除</option>

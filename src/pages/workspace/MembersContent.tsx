@@ -141,8 +141,8 @@ export default function MembersContent() {
           <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="输入电话号码" className={inputCls} />
         </ModalField>
         <ModalField label="部门">
-          <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className={selectCls}>
-            <option value="">选择部门</option>
+          <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value === '__EMPTY__' ? '' : e.target.value })} className={selectCls}>
+            <option value="__EMPTY__">选择部门</option>
             {deptOptions.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </ModalField>
@@ -168,8 +168,8 @@ export default function MembersContent() {
           <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
         </ModalField>
         <ModalField label="部门">
-          <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className={selectCls}>
-            <option value="">选择部门</option>
+          <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value === '__EMPTY__' ? '' : e.target.value })} className={selectCls}>
+            <option value="__EMPTY__">选择部门</option>
             {deptOptions.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </ModalField>

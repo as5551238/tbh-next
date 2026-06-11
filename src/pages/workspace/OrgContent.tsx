@@ -362,8 +362,8 @@ export default function OrgContent() {
       <Modal open={addTeamModal.open} onClose={addTeamModal.closeModal} title="新建团队"
         footer={<><button onClick={addTeamModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleAddTeam} className={btnPrimary}>创建</button></>}>
         <ModalField label="所属部门">
-          <select value={teamForm.parentDept} onChange={(e) => setTeamForm({ ...teamForm, parentDept: e.target.value })} className={selectCls}>
-            <option value="">选择部门</option>
+          <select value={teamForm.parentDept} onChange={(e) => setTeamForm({ ...teamForm, parentDept: e.target.value === '__EMPTY__' ? '' : e.target.value })} className={selectCls}>
+            <option value="__EMPTY__">选择部门</option>
             {departments.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
           </select>
         </ModalField>
@@ -393,8 +393,8 @@ export default function OrgContent() {
           <input type="text" value={personForm.name} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} className={inputCls} />
         </ModalField>
         <ModalField label="部门">
-          <select value={personForm.department} onChange={(e) => setPersonForm({ ...personForm, department: e.target.value })} className={selectCls}>
-            <option value="">选择部门</option>
+          <select value={personForm.department} onChange={(e) => setPersonForm({ ...personForm, department: e.target.value === '__EMPTY__' ? '' : e.target.value })} className={selectCls}>
+            <option value="__EMPTY__">选择部门</option>
             {deptOptions.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </ModalField>

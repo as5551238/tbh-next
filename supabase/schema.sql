@@ -1,6 +1,6 @@
--- TBH Next Database Schema v4
+-- TBH Next Database Schema v5
 -- 61 tables + 1 view | RLS + audit logs + updated_at triggers + team multi-tenancy
--- Synced with live DB on 2026-06-08
+-- Synced with live DB on 2026-06-11 (goals/tasks columns verified against production)
 -- Run this in Supabase SQL Editor
 
 -- ============================================================
@@ -82,34 +82,82 @@ CREATE TABLE IF NOT EXISTS channels (
 );
 
 -- 7. Goals / OKR
+-- NOTE: Schema synced with live DB on 2026-06-11. Columns match TypeScript GoalRow.
 CREATE TABLE IF NOT EXISTS goals (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  id TEXT NOT NULL PRIMARY KEY,
   title TEXT NOT NULL,
-  progress INT DEFAULT 0,
-  status TEXT DEFAULT 'on_track',
+  description TEXT,
+  type TEXT NOT NULL DEFAULT 'default',
+  status TEXT NOT NULL DEFAULT 'on_track',
+  parent_id TEXT,
+  level INTEGER NOT NULL DEFAULT 0,
+  start_date TEXT NOT NULL DEFAULT '',
+  end_date TEXT NOT NULL DEFAULT '',
+  owner_id TEXT,
   key_results JSONB DEFAULT '[]',
-  owner TEXT DEFAULT '',
-  due_date DATE,
-  team_id TEXT DEFAULT '__default__',
-  created_by UUID REFERENCES auth.users(id),
+  progress INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  leader_id TEXT,
+  supporter_ids JSONB DEFAULT '[]',
+  canvas_x DOUBLE PRECISION,
+  canvas_y DOUBLE PRECISION,
+  priority TEXT NOT NULL DEFAULT 'medium',
+  tags TEXT[] DEFAULT '{}',
+  category TEXT NOT NULL DEFAULT '',
+  repeat_cycle TEXT NOT NULL DEFAULT '',
+  discussion_thread_id TEXT,
+  summary TEXT NOT NULL DEFAULT '',
+  tracking_records JSONB DEFAULT '[]',
+  attachments JSONB DEFAULT '[]',
+  selected_kr_ids JSONB DEFAULT '[]',
+  team_id TEXT DEFAULT '__default__',
+  deleted_at TIMESTAMPTZ,
+  app_type TEXT NOT NULL DEFAULT 'team'
 );
 
 -- 8. Tasks
+-- NOTE: Schema synced with live DB on 2026-06-11. Columns match TypeScript TaskRow.
 CREATE TABLE IF NOT EXISTS tasks (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  id TEXT NOT NULL PRIMARY KEY,
   title TEXT NOT NULL,
-  priority TEXT DEFAULT 'medium',
-  assignee TEXT DEFAULT '',
-  due TEXT DEFAULT '',
-  done BOOLEAN DEFAULT false,
-  progress INT DEFAULT 0,
-  goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,
-  team_id TEXT DEFAULT '__default__',
-  created_by UUID REFERENCES auth.users(id),
+  description TEXT,
+  project_id TEXT,
+  goal_id TEXT,
+  status TEXT NOT NULL DEFAULT 'todo',
+  priority TEXT NOT NULL DEFAULT 'medium',
+  assignee_id TEXT,
+  owner_id TEXT,
+  due_date TEXT,
+  reminder_date TEXT,
+  completed_at TIMESTAMPTZ,
+  subtasks JSONB DEFAULT '[]',
+  tags JSONB DEFAULT '[]',
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  leader_id TEXT,
+  supporter_ids JSONB DEFAULT '[]',
+  canvas_x DOUBLE PRECISION,
+  canvas_y DOUBLE PRECISION,
+  parent_id TEXT,
+  category TEXT NOT NULL DEFAULT '',
+  repeat_cycle TEXT NOT NULL DEFAULT '',
+  discussion_thread_id TEXT,
+  summary TEXT NOT NULL DEFAULT '',
+  tracking_records JSONB DEFAULT '[]',
+  attachments JSONB DEFAULT '[]',
+  start_date DATE,
+  blocked_by JSONB DEFAULT '[]',
+  sprint_id TEXT,
+  team_id TEXT DEFAULT '__default__',
+  deleted_at TIMESTAMPTZ,
+  progress INTEGER,
+  milestone TEXT,
+  dependency_ids UUID[] DEFAULT '{}',
+  subtask_ids UUID[] DEFAULT '{}',
+  estimated_hours NUMERIC,
+  actual_hours NUMERIC,
+  app_type TEXT NOT NULL DEFAULT 'team'
 );
 
 -- 9. Projects

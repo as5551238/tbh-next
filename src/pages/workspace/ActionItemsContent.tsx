@@ -358,8 +358,8 @@ export default function ActionItemsContent() {
           <textarea className={cn(inputCls, 'min-h-[60px]')} placeholder="详细描述（可选）" value={newItem.description} onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))} />
         </ModalField>
         <ModalField label="关联目标">
-          <select className={inputCls} value={newItem.goal_id} onChange={(e) => setNewItem((p) => ({ ...p, goal_id: e.target.value }))}>
-            <option value="">无关联目标</option>
+          <select className={inputCls} value={newItem.goal_id || '__EMPTY__'} onChange={(e) => setNewItem((p) => ({ ...p, goal_id: e.target.value === '__EMPTY__' ? '' : e.target.value }))}>
+            <option value="__EMPTY__">无关联目标</option>
             {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
           </select>
         </ModalField>

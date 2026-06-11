@@ -283,8 +283,8 @@ export default function PenetrationView() {
           </div>
         }>
         <ModalField label="选择目标">
-          <select className={inputCls} value={linkGoalId} onChange={(e) => setLinkGoalId(e.target.value)}>
-            <option value="">-- 无关联 --</option>
+          <select className={inputCls} value={linkGoalId || '__EMPTY__'} onChange={(e) => setLinkGoalId(e.target.value === '__EMPTY__' ? '' : e.target.value)}>
+            <option value="__EMPTY__">-- 无关联 --</option>
             {goals.map((g) => (
               <option key={g.id} value={g.id}>{g.title}</option>
             ))}

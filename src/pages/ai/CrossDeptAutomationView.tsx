@@ -412,8 +412,8 @@ export default function CrossDeptAutomationView() {
                 {ACTION_TYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
               </select>
               <input className={cn(inputCls, 'flex-1')} placeholder="步骤名称" value={s.label} onChange={(e) => updateStep('then', i, 'label', e.target.value)} />
-              <select className={cn(inputCls, 'w-16')} value={s.targetDept || ''} onChange={(e) => updateStep('then', i, 'targetDept', e.target.value)}>
-                <option value="">本部门</option>
+              <select className={cn(inputCls, 'w-16')} value={s.targetDept || '__EMPTY__'} onChange={(e) => updateStep('then', i, 'targetDept', e.target.value === '__EMPTY__' ? '' : e.target.value)}>
+                <option value="__EMPTY__">本部门</option>
                 {DEPT_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
               <button className="text-danger" onClick={() => removeStep('then', i)}><X size={10} /></button>
@@ -435,8 +435,8 @@ export default function CrossDeptAutomationView() {
                 {ACTION_TYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
               </select>
               <input className={cn(inputCls, 'flex-1')} placeholder="步骤名称" value={s.label} onChange={(e) => updateStep('else', i, 'label', e.target.value)} />
-              <select className={cn(inputCls, 'w-16')} value={s.targetDept || ''} onChange={(e) => updateStep('else', i, 'targetDept', e.target.value)}>
-                <option value="">本部门</option>
+              <select className={cn(inputCls, 'w-16')} value={s.targetDept || '__EMPTY__'} onChange={(e) => updateStep('else', i, 'targetDept', e.target.value === '__EMPTY__' ? '' : e.target.value)}>
+                <option value="__EMPTY__">本部门</option>
                 {DEPT_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
               <button className="text-danger" onClick={() => removeStep('else', i)}><X size={10} /></button>
