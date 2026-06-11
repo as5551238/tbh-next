@@ -22,6 +22,9 @@ const TemplateWizardView = lazy(retryLazy(() => import('@/pages/ai/TemplateWizar
 const CrossDeptAutomationView = lazy(retryLazy(() => import('@/pages/ai/CrossDeptAutomationView')));
 const UsageAlertsView = lazy(retryLazy(() => import('@/pages/ai/UsageAlertsView')));
 
+// Workspace lazy imports
+const CommandCenterView = lazy(retryLazy(() => import('@/pages/workspace/CommandCenterView')));
+
 // Lazy component lookup (must be outside render to avoid re-creation)
 const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
   main: MainChatView,

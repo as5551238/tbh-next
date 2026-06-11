@@ -36,6 +36,7 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
   tags: 'workspace', categories: 'workspace', featureFlags: 'workspace',
   savedViews: 'workspace', automation: 'workspace', statusFlow: 'workspace',
   mywork: 'workspace',
+  commandCenter: 'workspace',
   // collab modules
   channels: 'collab', teamCal: 'collab', approvals: 'collab',
   announcements: 'collab', collabDocs: 'collab', meetings: 'collab',

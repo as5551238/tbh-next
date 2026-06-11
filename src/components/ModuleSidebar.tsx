@@ -19,6 +19,7 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
     const allGroups: ModuleGroup[] = [
       { group: '我的', items: [
         { icon: '🏠', name: '工作台首页', id: 'overview' },
+        { icon: '📡', name: '全景指挥', id: 'commandCenter' },
         { icon: '📅', name: '日程', id: 'schedule' },
         { icon: '🔔', name: '通知', id: 'notifications', badge: '3' },
       ]},
