@@ -130,6 +130,8 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
       { icon: '📊', name: '行为追踪', id: 'behaviorTracker' },
       { icon: '🏆', name: 'DSTE赛季', id: 'dste' },
       { icon: '🧙', name: '模板向导', id: 'templateWizard' },
+      { icon: '🔗', name: '跨部门自动化', id: 'crossDeptAutomation' },
+      { icon: '🛡️', name: '用量预警', id: 'usageAlerts' },
     ]},
   ];
 }

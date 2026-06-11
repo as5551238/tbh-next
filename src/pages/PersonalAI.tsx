@@ -19,6 +19,8 @@ const MCPA2AView = lazy(retryLazy(() => import('@/pages/ai/MCPA2AView')));
 const BehaviorTrackerView = lazy(retryLazy(() => import('@/pages/ai/BehaviorTrackerView')));
 const DSTEView = lazy(retryLazy(() => import('@/pages/ai/DSTEView')));
 const TemplateWizardView = lazy(retryLazy(() => import('@/pages/ai/TemplateWizardView')));
+const CrossDeptAutomationView = lazy(retryLazy(() => import('@/pages/ai/CrossDeptAutomationView')));
+const UsageAlertsView = lazy(retryLazy(() => import('@/pages/ai/UsageAlertsView')));
 
 // Lazy component lookup (must be outside render to avoid re-creation)
 const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
@@ -37,6 +39,8 @@ const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
   behaviorTracker: BehaviorTrackerView,
   dste: DSTEView,
   templateWizard: TemplateWizardView,
+  crossDeptAutomation: CrossDeptAutomationView,
+  usageAlerts: UsageAlertsView,
 };
 
 export default function PersonalAI() {
