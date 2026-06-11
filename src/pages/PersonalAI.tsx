@@ -21,6 +21,7 @@ const DSTEView = lazy(retryLazy(() => import('@/pages/ai/DSTEView')));
 const TemplateWizardView = lazy(retryLazy(() => import('@/pages/ai/TemplateWizardView')));
 const CrossDeptAutomationView = lazy(retryLazy(() => import('@/pages/ai/CrossDeptAutomationView')));
 const UsageAlertsView = lazy(retryLazy(() => import('@/pages/ai/UsageAlertsView')));
+const SystemMonitorView = lazy(retryLazy(() => import('@/pages/ai/SystemMonitorView')));
 
 // Workspace lazy imports
 const CommandCenterView = lazy(retryLazy(() => import('@/pages/workspace/CommandCenterView')));
@@ -44,6 +45,7 @@ const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
   templateWizard: TemplateWizardView,
   crossDeptAutomation: CrossDeptAutomationView,
   usageAlerts: UsageAlertsView,
+  systemMonitor: SystemMonitorView,
 };
 
 export default function PersonalAI() {

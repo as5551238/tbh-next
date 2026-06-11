@@ -133,6 +133,7 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
       { icon: '🧙', name: '模板向导', id: 'templateWizard' },
       { icon: '🔗', name: '跨部门自动化', id: 'crossDeptAutomation' },
       { icon: '🛡️', name: '用量预警', id: 'usageAlerts' },
+      { icon: '📊', name: '系统监控', id: 'systemMonitor' },
     ]},
   ];
 }

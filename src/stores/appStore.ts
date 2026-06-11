@@ -47,7 +47,7 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
   workflows: 'ai', kpiDash: 'ai', subscription: 'ai',
   agentMarket: 'ai', knowledgeOSP: 'ai', mcpA2a: 'ai',
   behaviorTracker: 'ai', dste: 'ai', templateWizard: 'ai',
-  crossDeptAutomation: 'ai', usageAlerts: 'ai',
+  crossDeptAutomation: 'ai', usageAlerts: 'ai', systemMonitor: 'ai',
 };
 
 /** 根据 module 名推断其所属 interface */
