@@ -544,6 +544,47 @@ function generateLocalResponse(
     ].join('\n');
   }
 
+  if (/创建.*目标|新建.*目标|add.*goal|create.*goal/i.test(userInput)) {
+    const titleMatch = userInput.match(/[：:]\s*(.+)/) ?? userInput.match(/目标[是为]?\s*(.+)/);
+    const suggestedTitle = titleMatch?.[1]?.trim() ?? '';
+    return [
+      `🎯 **创建新目标**`,
+      '',
+      suggestedTitle ? `目标标题: **${suggestedTitle}**` : '请提供目标标题，格式："创建目标：XX"',
+      '',
+      '**目标创建模板**:',
+      '- 标题：明确的方向性描述',
+      '- 关键结果（1-5条）：可量化的衡量标准',
+      '- 截止日期：建议按季度设置',
+      '',
+      suggestedTitle ? `💡 说"创建目标：${suggestedTitle}，截止2026-09-30"可以带更多信息。` : '💡 配置AI API Key后可通过自然对话直接创建目标。',
+      '',
+      '---',
+      '*💡 你也可以直接在目标模块中手动创建*',
+    ].join('\n');
+  }
+
+  if (/创建.*任务|新建.*任务|add.*task|create.*task/i.test(userInput)) {
+    const titleMatch = userInput.match(/[：:]\s*(.+)/) ?? userInput.match(/任务[是为]?\s*(.+)/);
+    const suggestedTitle = titleMatch?.[1]?.trim() ?? '';
+    return [
+      `✅ **创建新任务**`,
+      '',
+      suggestedTitle ? `任务标题: **${suggestedTitle}**` : '请提供任务标题，格式："创建任务：XX"',
+      '',
+      '**任务创建模板**:',
+      '- 标题：具体的可执行动作',
+      '- 优先级：urgent/high/medium/low',
+      '- 截止日期：明确的交付时间',
+      '- 关联目标：对齐到团队目标',
+      '',
+      suggestedTitle ? `💡 说"创建任务：${suggestedTitle}，高优先级，截止周五"可以带更多信息。` : '💡 配置AI API Key后可通过自然对话直接创建任务。',
+      '',
+      '---',
+      '*💡 你也可以直接在任务模块中手动创建*',
+    ].join('\n');
+  }
+
   if (/流程|工作流|排期|里程碑/i.test(userInput)) {
     if (hasRealData) {
       const taskCount = metrics.taskCount as number;
