@@ -7,7 +7,7 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 import { recordRender } from '@/lib/monitoring';
 import { IntentFallbackForm } from '@/components/IntentFallbackForm';
 import { Bot, Send } from 'lucide-react';
-import { useChatMessages } from './ai/chat/useChatMessages';
+import { useChatMessages, getPreviousSessions, startNewSession } from './ai/chat/useChatMessages';
 import { useAgentLoop } from './ai/chat/useAgentLoop';
 import { ChatMessageItem } from './ai/chat/ChatMessageItem';
 import { ChatContextBar } from './ai/chat/ChatContextBar';

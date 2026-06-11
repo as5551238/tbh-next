@@ -330,6 +330,78 @@ const toolDefs: ToolDefinition[] = [
       });
     },
   },
+  {
+    name: 'create_goal',
+    description: '创建新目标。用于设定团队OKR、季度目标等。',
+    parameters: {
+      title: { type: 'string', description: '目标标题', required: true },
+      end_date: { type: 'string', description: '截止日期 (YYYY-MM-DD)', required: false },
+      description: { type: 'string', description: '目标描述', required: false },
+    },
+    handler: async (params) => {
+      return await createGoal({
+        title: String(params.title),
+        progress: 0,
+        status: 'on_track',
+        key_results: [],
+        owner_id: null,
+        leader_id: null,
+        end_date: (params.end_date as string) ?? null,
+        start_date: null,
+        description: (params.description as string) ?? null,
+      });
+    },
+  },
+  {
+    name: 'get_deviation_alerts',
+    description: '获取偏差预警和风险列表。用于查看逾期任务、目标偏离、异常指标等。综合搜索风险和逾期任务。',
+    parameters: {
+      severity: { type: 'string', description: '按严重程度筛选', enum: ['low', 'medium', 'high', 'critical'], required: false },
+    },
+    handler: async (params) => {
+      const [risks, tasks] = await Promise.all([fetchRisks(), fetchTasks()]);
+      // Get overdue tasks
+      const now = new Date();
+      const overdueTasks = (tasks as TaskRow[]).filter((t: TaskRow) =>
+        t.due_date && new Date(t.due_date) < now && t.status !== 'done' && !t.done
+      );
+      // Get open risks
+      let filteredRisks = (risks as RiskRow[]).filter((r: RiskRow) => r.status !== 'resolved' && r.status !== 'accepted');
+      if (params.severity) filteredRisks = filteredRisks.filter((r: RiskRow) => r.severity === params.severity);
+      return {
+        overdueTasks: overdueTasks.map((t: TaskRow) => ({
+          id: t.id, title: t.title, due_date: t.due_date, priority: t.priority,
+        })),
+        openRisks: filteredRisks.map((r: RiskRow) => ({
+          id: r.id, title: r.title, severity: r.severity, status: r.status,
+        })),
+        totalAlerts: overdueTasks.length + filteredRisks.length,
+      };
+    },
+  },
+  {
+    name: 'get_schedule_events',
+    description: '获取日程安排。用于查看今天/即将到来的会议、事件等。',
+    parameters: {
+      days_ahead: { type: 'number', description: '查看未来几天 (默认7天)', required: false },
+    },
+    handler: async (params) => {
+      // Schedule events may not exist in dataLayer; return tasks with due dates as substitute
+      const tasks = await fetchTasks();
+      const daysAhead = Number(params.days_ahead ?? 7);
+      const cutoff = new Date(Date.now() + daysAhead * 86400000);
+      const now = new Date();
+      const upcoming = (tasks as TaskRow[]).filter((t: TaskRow) => {
+        if (!t.due_date) return false;
+        const d = new Date(t.due_date);
+        return d >= now && d <= cutoff && t.status !== 'done' && !t.done;
+      });
+      return upcoming.map((t: TaskRow) => ({
+        id: t.id, title: t.title, due_date: t.due_date, priority: t.priority,
+        status: t.status, goal_id: t.goal_id,
+      }));
+    },
+  },
 ];
 
 // --- Public API ---

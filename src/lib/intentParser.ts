@@ -150,7 +150,7 @@ const INTENT_REGISTRY: Record<Exclude<IntentType, 'unknown'>, IntentRegistration
     extractParams: () => ({}),
   },
   create_goal: {
-    toolName: 'update_goal_progress',  // placeholder, will add create_goal tool
+    toolName: 'create_goal',
     keywords: [
       /(?:创建|新建|设定|制定).*(?:目标|OKR|KR|关键结果)/,
     ],
@@ -373,7 +373,7 @@ ${contextBlock}
 - create_task → "create_task", 参数: {title, priority?, due_date?}
 - update_task → "update_task_status", 参数: {task_id?, status?, priority?, due_date?}
 - query_progress → "get_team_metrics"|"get_tasks"|"get_goals"
-- create_goal → "update_goal_progress"
+- create_goal → "create_goal", 参数: {title, end_date?, description?}
 - create_action_item → "create_action_item", 参数: {title, priority?}
 - query_risks → "get_deviation_alerts"
 - query_schedule → "get_schedule_events"

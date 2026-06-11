@@ -22,6 +22,80 @@ export interface ChatMsg {
 
 const AI_ASSISTANT_CHANNEL = 'ai-assistant';
 
+// --- Session persistence (localStorage fallback) ---
+
+const SESSION_KEY = 'tbh-ai-sessions';
+const MAX_SESSIONS = 5;
+const MAX_MESSAGES_PER_SESSION = 30;
+
+interface PersistedSession {
+  id: string;
+  title: string;
+  messages: ChatMsg[];
+  updatedAt: string;
+}
+
+function loadSessions(): PersistedSession[] {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveSessions(sessions: PersistedSession[]): void {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sessions));
+  } catch { /* localStorage full, silently ignore */ }
+}
+
+function getCurrentSessionId(): string {
+  return sessionStorage.getItem('tbh-current-session-id') || `s_${Date.now()}`;
+}
+
+function setCurrentSessionId(id: string): void {
+  sessionStorage.setItem('tbh-current-session-id', id);
+}
+
+function saveCurrentSession(messages: ChatMsg[]): void {
+  if (messages.length === 0) return;
+  const sessions = loadSessions();
+  const sessionId = getCurrentSessionId();
+  const userMsgs = messages.filter((m) => m.role === 'user');
+  const title = userMsgs.length > 0 ? userMsgs[0].text.slice(0, 30) : '新对话';
+  const existing = sessions.findIndex((s) => s.id === sessionId);
+  const session: PersistedSession = {
+    id: sessionId,
+    title,
+    messages: messages.slice(-MAX_MESSAGES_PER_SESSION),
+    updatedAt: new Date().toISOString(),
+  };
+  if (existing >= 0) {
+    sessions[existing] = session;
+  } else {
+    sessions.unshift(session);
+  }
+  // Keep only MAX_SESSIONS
+  while (sessions.length > MAX_SESSIONS) sessions.pop();
+  saveSessions(sessions);
+}
+
+function loadCurrentSession(): ChatMsg[] | null {
+  const sessions = loadSessions();
+  const sessionId = getCurrentSessionId();
+  const found = sessions.find((s) => s.id === sessionId);
+  return found ? found.messages : null;
+}
+
+export function getPreviousSessions(): PersistedSession[] {
+  return loadSessions();
+}
+
+export function startNewSession(): string {
+  const id = `s_${Date.now()}`;
+  setCurrentSessionId(id);
+  return id;
+}
+
 export function useChatMessages() {
   const navigate = useNavigate();
   const storeNavigateTo = useAppStore((s) => s.navigateTo);
@@ -48,6 +122,7 @@ export function useChatMessages() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Try Supabase history first
       const rows = await fetchMessages(AI_ASSISTANT_CHANNEL);
       if (cancelled) return;
       const loaded: ChatMsg[] = rows.map((m, i) => ({
@@ -58,6 +133,18 @@ export function useChatMessages() {
         agent: m.sender_type === 'ai' ? 'general' : undefined,
         agentIcon: m.sender_type === 'ai' ? '🧠' : undefined,
       }));
+
+      // Fallback to localStorage if Supabase returns empty
+      if (loaded.length === 0) {
+        const persisted = loadCurrentSession();
+        if (persisted && persisted.length > 0) {
+          setMessages(persisted);
+          setHistoryLoaded(true);
+          scrollToBottom();
+          return;
+        }
+      }
+
       if (loaded.length === 0 && cell.morning) {
         loaded.push({
           id: 1,
@@ -74,6 +161,13 @@ export function useChatMessages() {
     })();
     return () => { cancelled = true; };
   }, [cell.morning, cell.ribbon, scrollToBottom]);
+
+  // Auto-save session to localStorage on message changes
+  useEffect(() => {
+    if (messages.length > 0 && historyLoaded) {
+      saveCurrentSession(messages);
+    }
+  }, [messages, historyLoaded]);
 
   // Subscribe to realtime messages for this channel
   useRealtime(
@@ -103,5 +197,6 @@ export function useChatMessages() {
     messages, setMessages, scrollRef, scrollToBottom,
     historyLoaded, cell, user, navTo,
     AI_ASSISTANT_CHANNEL,
+    startNewSession,
   };
 }
