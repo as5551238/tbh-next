@@ -253,17 +253,12 @@ export async function chatCompletion(
       if (isSupabaseConfigured()) {
         route = 'edge';
         response = await callSupabaseEdge(sanitizedMessages, options);
-        // Edge fell through to local → try RPC proxy
+        // Edge fell through → try Direct LLM (bypass RPC — pg_net has transaction isolation issues)
         if (response.agent === 'local') {
-          route = 'rpc';
-          response = await callRpcProxy(sanitizedMessages);
-        }
-        // RPC also fell through → try Direct LLM
-        if (response.agent === 'local') {
-          route = 'edge';  // keep 'edge' as the logical route, Direct is a variant
+          route = 'direct';
           response = await callDirectLLM(sanitizedMessages, options);
         }
-        // Direct also fell through → local fallback (now with real data)
+        // Direct also fell through → local fallback (with real data)
       } else {
         // No Supabase config → try Direct LLM from localStorage API key
         const hasDirectKey = !!localStorage.getItem('tbh_deepseek_api_key');
