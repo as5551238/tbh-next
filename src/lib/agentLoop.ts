@@ -296,7 +296,8 @@ export async function agentExecute(
 
 // --- Quick execute for read-only operations (no confirmation needed) ---
 
-export async function agentQuickExecute(userMessage: string, chatHistory?: ConversationTurn[]): Promise<AgentLoopResult> {
+/** @deprecated Unused — bypasses confirmation protocol. Use agentPlan/agentExecute instead. */
+async function agentQuickExecute(userMessage: string, chatHistory?: ConversationTurn[]): Promise<AgentLoopResult> {
   const steps: AgentLoopStep[] = [];
   steps.push({ phase: 'understanding', timestamp: Date.now(), detail: `解析: "${userMessage.slice(0, 50)}"` });
 

@@ -317,7 +317,7 @@ export async function localFallback(messages: ChatMessage[]): Promise<AIResponse
     ]);
     metrics = m as Record<string, unknown> | null;
     alerts = a as Record<string, unknown> | null;
-    schedule = s as unknown[] | null;
+    schedule = s as ScheduleEvent[] | null;
   } catch {
     // Data not available, fall through to static response
   }

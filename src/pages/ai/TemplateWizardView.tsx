@@ -12,7 +12,7 @@ export default function TemplateWizardView() {
   const industry = useAppStore((s) => s.industry);
   const { addGoal } = useGoals();
   const { addTask } = useTasks();
-  const { toasts, success } = useToast();
+  const { toasts, success, error: errorToast } = useToast();
   const [phase, setPhase] = useState<WizardPhase>('browse');
   const [selectedTemplate, setSelectedTemplate] = useState<IndustryTemplate | null>(null);
   const [applying, setApplying] = useState(false);
@@ -60,7 +60,7 @@ export default function TemplateWizardView() {
       setPhase('browse');
       setSelectedTemplate(null);
     } catch {
-      success('模板应用部分成功，请检查目标和任务列表');
+      errorToast('模板应用失败，请检查目标与任务列表后重试');
     } finally {
       setApplying(false);
     }

@@ -104,7 +104,7 @@ export async function chatCompletion(
   }
 
   // --- Execute AI call ---
-  let route: 'edge' | 'rpc' | 'local' = 'local';
+  let route: 'edge' | 'rpc' | 'local' | 'direct' = 'local';
   try {
     let response: AIResponse | null = null;
 

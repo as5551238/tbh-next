@@ -75,7 +75,7 @@ export async function createTask(data: Omit<TaskRow, 'id'>): Promise<TaskRow> {
 }
 
 export async function updateTask(id: string, data: Partial<Omit<TaskRow, 'id'>>): Promise<TaskRow> {
-  if (!isSupabaseConfigured() || !supabase) return { id, ...data } as TaskRow;
+  if (!isSupabaseConfigured() || !supabase) return { id, ...data, done: data.status === 'done' || data.done || false } as TaskRow;
   const row = filterColumns('tasks', (() => {
     const r: Record<string, unknown> = { ...data };
     if (data.done !== undefined) {

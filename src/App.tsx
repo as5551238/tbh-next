@@ -68,12 +68,13 @@ function RouteSync() {
   return null;
 }
 
-/** Convenience hook for module-level navigation */
-export function useNavigateModule() {
-  const navigate = useNavigate();
+/** @deprecated Unused — use navigateTo() from appStore instead, which enforces state consistency */
+function useNavigateModule() {
   const iface = useAppStore((s) => s.interface);
+  const navigateTo = useAppStore((s) => s.navigateTo);
+  const navigate = useNavigate();
   return (mod: string) => {
-    navigate(`/${iface}/${mod}`);
+    navigate(navigateTo(iface, mod));
   };
 }
 
