@@ -14,6 +14,7 @@ import BulkActionBar from '@/components/BulkActionBar';
 import { t } from '@/lib/i18n';
 import { usePermission } from '@/hooks/usePermission';
 import { recordRender } from '@/lib/monitoring';
+import { trackEvent } from '@/lib/behaviorTracker';
 
 export default function GoalsContent() {
   const { goals, loading, addGoal, editGoal, removeGoal } = useGoals();
@@ -66,6 +67,7 @@ export default function GoalsContent() {
       progress: editGoalData.progress,
       key_results: editGoalData.key_results.map((text) => ({ text, selected: false })) as typeof goals[number]['key_results'],
     });
+    trackEvent('goal_update', { id: editGoalData.id, title: editGoalData.title, status: editGoalData.status, progress: editGoalData.progress });
     goalModal.closeModal();
     setEditGoalData(null);
   }, [editGoalData, editGoal, goalModal.closeModal, goals]);

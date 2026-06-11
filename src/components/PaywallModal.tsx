@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { PLAN_LIMITS, PLAN_PRICES } from '@/lib/subscription';
+import { initiateCheckout, CHECKOUT_PLANS } from '@/lib/payment';
+import { useAppStore } from '@/stores/appStore';
 import { X, Check, Crown, Zap, Building2 } from 'lucide-react';
 
 interface PaywallModalProps {
@@ -18,7 +20,30 @@ const PLAN_ICONS: Record<string, ReactNode> = {
 
 export default function PaywallModal({ open, onClose, reason, feature }: PaywallModalProps) {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
+  const [checkingOut, setCheckingOut] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const authUser = useAppStore((s) => s.authUser);
+
+  const handleUpgrade = async (planId: string) => {
+    const plan = CHECKOUT_PLANS.find((p) => p.id === planId);
+    if (!plan) return;
+    setCheckingOut(true);
+    try {
+      const result = await initiateCheckout(
+        plan.priceId,
+        authUser?.id,
+        authUser?.email,
+      );
+      if (!result.success) {
+        alert('支付服务暂不可用，请联系管理员或稍后再试。');
+      }
+      // If success + url, initiateCheckout already did window.location.href redirect
+    } catch {
+      alert('支付服务异常，请稍后重试。');
+    } finally {
+      setCheckingOut(false);
+    }
+  };
 
   // Focus trap + Escape handler
   useEffect(() => {
@@ -126,9 +151,14 @@ export default function PaywallModal({ open, onClose, reason, feature }: Paywall
                     isFeatured ? 'bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:shadow-primary/20' :
                     'bg-primary/10 text-primary-2 hover:bg-primary/20'
                   )}
-                  disabled={isCurrentPlan}
+                  disabled={isCurrentPlan || checkingOut}
+                  onClick={() => {
+                    if (isCurrentPlan) return;
+                    const planKey = `${plan}_${billing}` as 'pro_monthly' | 'pro_yearly' | 'enterprise_monthly' | 'enterprise_yearly';
+                    handleUpgrade(planKey);
+                  }}
                 >
-                  {isCurrentPlan ? '当前方案' : '升级'}
+                  {isCurrentPlan ? '当前方案' : checkingOut ? '处理中...' : '升级'}
                 </button>
               </div>
             );

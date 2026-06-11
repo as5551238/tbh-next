@@ -1,7 +1,7 @@
 import React, { type JSX } from 'react';
 import { lazy, Suspense, useEffect, type LazyExoticComponent, type CSSProperties } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useAppStore } from '@/stores/appStore';
+import { useAppStore, ADMIN_ONLY_MODULES } from '@/stores/appStore';
 import { useIndustryColor, useDepartments } from '@/hooks/useMatrix';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useAuth } from '@/lib/auth';
@@ -38,9 +38,10 @@ const PAGE_MAP: Record<string, LazyExoticComponent<() => JSX.Element>> = {
   ai: PersonalAI,
 };
 
-/** Sync URL → zustand store (interface + module from path) */
+/** Sync URL → zustand store (interface + module from path) + viewMode guard */
 function RouteSync() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const segments = location.pathname.split('/').filter(Boolean);
@@ -49,12 +50,18 @@ function RouteSync() {
       const store = useAppStore.getState();
       const iface = segments[0];
       const mod = segments[1];
+      // viewMode guard: simple users cannot access admin modules via URL
+      if (store.viewMode === 'simple' && mod && ADMIN_ONLY_MODULES.has(mod)) {
+        const defaultMod = store.viewMode === 'simple' ? 'mywork' : 'overview';
+        navigate(`/${iface}/${defaultMod}`, { replace: true });
+        return;
+      }
       // Only sync if different from current state (avoid infinite loop)
       if (store.interface !== iface || (mod && store.activeModule !== mod)) {
         store.navigateTo(iface, mod);
       }
     }
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   return null;
 }

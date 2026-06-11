@@ -155,6 +155,40 @@ export function getCurrentQuarter(): { period: string; startDate: string; endDat
   return { period: `${year}-Q${q + 1}`, startDate, endDate };
 }
 
+// ─── Persistence (localStorage primary + optional Supabase) ───
+
+const SEASONS_STORAGE_KEY = 'tbh-dste-seasons';
+
+export function loadSeasons(): OKRSeason[] {
+  try {
+    const raw = localStorage.getItem(SEASONS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* corrupted data, start fresh */ }
+  // No saved data — return default season for current quarter
+  const cq = getCurrentQuarter();
+  return [createSeason(cq.period + ' 赛季', cq.startDate, cq.endDate, cq.period)];
+}
+
+export function saveSeasons(seasons: OKRSeason[]): void {
+  // Always persist to localStorage (fast, synchronous)
+  localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(seasons));
+  // Async Supabase dual-write (fire-and-forget, non-blocking)
+  try {
+    const { supabase, isSupabaseConfigured } = require('@/lib/supabase') as { supabase: any; isSupabaseConfigured: () => boolean };
+    if (isSupabaseConfigured() && supabase) {
+      const teamId = '__default__';
+      supabase
+        .from('dste_seasons')
+        .upsert(
+          { team_id: teamId, seasons_json: seasons, updated_at: new Date().toISOString() },
+          { onConflict: 'team_id' }
+        )
+        .then(() => { /* fire-and-forget */ })
+        .catch(() => { /* silently fail, localStorage is source of truth */ });
+    }
+  } catch { /* supabase module not available */ }
+}
+
 export function getNextQuarter(): { period: string; startDate: string; endDate: string } {
   const now = new Date();
   let year = now.getFullYear();

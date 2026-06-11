@@ -1,7 +1,9 @@
-import { useAppStore } from '@/stores/appStore';
+import { useAppStore, ADMIN_ONLY_MODULES } from '@/stores/appStore';
 import { useDepartments } from '@/hooks/useMatrix';
 import { canAccess } from '@/lib/permissions';
-import { cn } from '@/lib/utils';interface ModuleItem {
+import { cn } from '@/lib/utils';
+
+interface ModuleItem {
   icon: string;
   name: string;
   id: string;
@@ -168,6 +170,10 @@ export default function ModuleSidebar() {
   const title = { workspace: '模块', collab: '协作', ai: 'AI' }[iface];
 
   function handleModuleClick(id: string) {
+    // Navigation guard: block admin modules in simple viewMode
+    if (viewMode === 'simple' && ADMIN_ONLY_MODULES.has(id)) {
+      return; // Silently ignore — the module isn't in the simple sidebar, but guard against direct URL
+    }
     navigateTo(iface, id);
   }
 

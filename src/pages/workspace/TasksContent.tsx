@@ -15,6 +15,7 @@ import { t } from '@/lib/i18n';
 import { exportToCSV, exportToJSON } from '@/lib/export';
 import { usePermission } from '@/hooks/usePermission';
 import { recordRender } from '@/lib/monitoring';
+import { trackEvent } from '@/lib/behaviorTracker';
 
 export default function TasksContent() {
   const { can } = usePermission();
@@ -30,7 +31,7 @@ export default function TasksContent() {
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [taskExportOpen, setTaskExportOpen] = useState(false);
-  const [newTaskForm, setNewTaskForm] = useState({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '' });
+  const [newTaskForm, setNewTaskForm] = useState({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '', milestone: '', tags: '', estimated_hours: '' });
   const priorityStyle: Record<string, string> = { urgent: 'bg-danger/10 text-danger', high: 'bg-warn/10 text-warn', medium: 'bg-primary/10 text-primary-2', low: 'bg-surface-2 text-text-3' };
   const priorityLabel: Record<string, string> = { urgent: t('tasks.priorityUrgent'), high: t('tasks.priorityHigh'), medium: t('tasks.priorityMedium'), low: t('tasks.priorityLow') };
 
@@ -40,23 +41,39 @@ export default function TasksContent() {
     { key: 'status', label: t('tasks.status'), type: 'select', options: [{ value: 'todo', label: t('tasks.statusTodo') }, { value: 'in_progress', label: t('tasks.statusInProgress') }, { value: 'done', label: t('tasks.statusDone') }, { value: 'blocked', label: t('tasks.statusBlocked') }, { value: 'cancelled', label: t('tasks.statusCancelled') }] },
     { key: 'due_date', label: t('tasks.dueDate'), type: 'date' },
     { key: 'assignee_id', label: t('tasks.assignee'), type: 'text' },
+    { key: 'milestone', label: '里程碑', type: 'text' },
+    { key: 'tags', label: '标签', type: 'text' },
+    { key: 'estimated_hours', label: '预估工时(h)', type: 'number' },
+    { key: 'actual_hours', label: '实际工时(h)', type: 'number' },
   ];
 
   const handleTaskClick = useCallback((t: typeof tasks[number]) => {
-    setEditData({ id: t.id, title: t.title, priority: t.priority, status: t.status, due_date: t.due_date ?? '', assignee_id: t.assignee_id ?? '' });
+    setEditData({
+      id: t.id, title: t.title, priority: t.priority, status: t.status,
+      due_date: t.due_date ?? '', assignee_id: t.assignee_id ?? '',
+      milestone: (t as Record<string, unknown>).milestone ?? '',
+      tags: Array.isArray((t as Record<string, unknown>).tags) ? ((t as Record<string, unknown>).tags as string[]).join(',') : String((t as Record<string, unknown>).tags ?? ''),
+      estimated_hours: ((t as Record<string, unknown>).estimated_hours as number) ?? 0,
+      actual_hours: ((t as Record<string, unknown>).actual_hours as number) ?? 0,
+    });
     editModal.openModal();
   }, [editModal.openModal]);
 
   const handleTaskSave = useCallback((updated: Record<string, unknown>) => {
     const id = String(updated.id);
     const newStatus = String(updated.status);
+    const tagsRaw = String(updated.tags ?? '');
     editTask(id, {
       title: String(updated.title),
       priority: String(updated.priority),
       status: newStatus,
       due_date: updated.due_date ? String(updated.due_date) : null,
       assignee_id: updated.assignee_id ? String(updated.assignee_id) : null,
-    });
+      milestone: updated.milestone ? String(updated.milestone) : null,
+      tags: tagsRaw ? tagsRaw.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+      estimated_hours: updated.estimated_hours ? Number(updated.estimated_hours) : null,
+      actual_hours: updated.actual_hours ? Number(updated.actual_hours) : null,
+    } as Partial<TaskRow>);
     triggerFeedback({ type: 'task_status', action: 'updated', entity: { id, status: newStatus, title: updated.title, goal_id: tasks.find((t) => t.id === id)?.goal_id ?? null } });
   }, [editTask, triggerFeedback, tasks]);
 
@@ -64,6 +81,7 @@ export default function TasksContent() {
     e.stopPropagation();
     const newStatus = t.done ? 'todo' : 'done';
     editTask(t.id, { status: newStatus });
+    trackEvent(newStatus === 'done' ? 'task_complete' : 'task_update', { id: t.id, title: t.title, status: newStatus });
     triggerFeedback({ type: 'task_status', action: 'toggled', entity: { id: t.id, title: t.title, status: newStatus, goal_id: t.goal_id } });
   }, [editTask, triggerFeedback]);
 
@@ -100,7 +118,7 @@ export default function TasksContent() {
     <div className="flex flex-1 flex-col overflow-hidden">
       <PageHeader icon={<CheckCircle2 size={16} />} title={t('tasks.title')} badge={t('tasks.taskSummary', { total: tasks.length, done: tasks.filter(t => t.done).length, pending: tasks.filter(t => !t.done).length })}>
         {can('tasks:write') && (
-        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!tpLimit('maxTasks', tasks.length, '免费版最多创建20个任务，升级Pro解锁更多')) return; setNewTaskForm({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '' }); addTaskModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!tpLimit('maxTasks', tasks.length, '免费版最多创建20个任务，升级Pro解锁更多')) return; setNewTaskForm({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '', milestone: '', tags: '', estimated_hours: '' }); addTaskModal.openModal(); }}>
           <Plus size={12} />{t('tasks.newTask')}
         </button>
         )}
@@ -139,7 +157,7 @@ export default function TasksContent() {
         footer={
           <div className="flex flex-wrap gap-2">
             <button className={btnSecondary} onClick={addTaskModal.closeModal}>{t('common.cancel')}</button>
-            <button className={btnPrimary} onClick={() => { if (!newTaskForm.title.trim()) return; addTask({ title: newTaskForm.title, priority: newTaskForm.priority, status: newTaskForm.status, due_date: newTaskForm.due_date || null, assignee_id: newTaskForm.assignee_id || null, leader_id: null, goal_id: newTaskForm.goal_id || null, done: false } as unknown as Omit<TaskRow, 'id'>); addTaskModal.closeModal(); }} disabled={!newTaskForm.title.trim()}>{t('common.create')}</button>
+            <button className={btnPrimary} onClick={() => { if (!newTaskForm.title.trim()) return; addTask({ title: newTaskForm.title, priority: newTaskForm.priority, status: newTaskForm.status, due_date: newTaskForm.due_date || null, assignee_id: newTaskForm.assignee_id || null, leader_id: null, goal_id: newTaskForm.goal_id || null, done: false, milestone: newTaskForm.milestone || null, tags: newTaskForm.tags ? newTaskForm.tags.split(',').map((s: string) => s.trim()).filter(Boolean) : [], estimated_hours: newTaskForm.estimated_hours ? Number(newTaskForm.estimated_hours) : null } as unknown as Omit<TaskRow, 'id'>); trackEvent('task_create', { title: newTaskForm.title, priority: newTaskForm.priority }); addTaskModal.closeModal(); }} disabled={!newTaskForm.title.trim()}>{t('common.create')}</button>
           </div>
         }>
         <ModalField label={t('tasks.taskTitle')}>
@@ -168,6 +186,15 @@ export default function TasksContent() {
         </ModalField>
         <ModalField label={t('tasks.linkedGoalId')}>
           <input className={inputCls} placeholder={t('tasks.linkedGoalIdPlaceholder')} value={newTaskForm.goal_id} onChange={(e) => setNewTaskForm((p) => ({ ...p, goal_id: e.target.value }))} />
+        </ModalField>
+        <ModalField label="里程碑">
+          <input className={inputCls} placeholder="关联里程碑" value={newTaskForm.milestone} onChange={(e) => setNewTaskForm((p) => ({ ...p, milestone: e.target.value }))} />
+        </ModalField>
+        <ModalField label="标签">
+          <input className={inputCls} placeholder="逗号分隔，如: 前端,v2" value={newTaskForm.tags} onChange={(e) => setNewTaskForm((p) => ({ ...p, tags: e.target.value }))} />
+        </ModalField>
+        <ModalField label="预估工时(h)">
+          <input type="number" className={inputCls} placeholder="0" value={newTaskForm.estimated_hours} onChange={(e) => setNewTaskForm((p) => ({ ...p, estimated_hours: e.target.value }))} />
         </ModalField>
       </Modal>
 

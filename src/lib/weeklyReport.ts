@@ -289,3 +289,94 @@ export function reportToMarkdown(report: WeeklyReportResult): string {
 
   return lines.join('\n');
 }
+
+// ─── Persistence (localStorage primary + Supabase dual-write) ───
+
+const REPORTS_STORAGE_KEY = 'tbh-saved-reports';
+
+export interface SavedReport {
+  id: string;
+  type: 'weekly' | 'monthly' | 'custom';
+  title: string;
+  period: string;
+  aiSummary: string;
+  structuredData: WeekDataAggregate;
+  generatedAt: string;
+  model: string;
+}
+
+export function saveReportLocally(report: WeeklyReportResult): SavedReport {
+  const saved: SavedReport = {
+    id: `report_${Date.now()}`,
+    type: 'weekly',
+    title: report.title,
+    period: report.period,
+    aiSummary: report.aiSummary,
+    structuredData: report.structuredData,
+    generatedAt: report.generatedAt,
+    model: report.model,
+  };
+  try {
+    const existing: SavedReport[] = JSON.parse(localStorage.getItem(REPORTS_STORAGE_KEY) ?? '[]');
+    existing.unshift(saved);
+    // Keep only last 20 reports locally
+    const trimmed = existing.slice(0, 20);
+    localStorage.setItem(REPORTS_STORAGE_KEY, JSON.stringify(trimmed));
+  } catch { /* silently ignore */ }
+
+  // Async Supabase dual-write (fire-and-forget)
+  try {
+    const { supabase, isSupabaseConfigured } = require('@/lib/supabase') as { supabase: any; isSupabaseConfigured: () => boolean };
+    if (isSupabaseConfigured() && supabase) {
+      supabase.from('reports').insert({
+        team_id: '__default__',
+        type: saved.type,
+        title: saved.title,
+        period: saved.period,
+        period_start: saved.structuredData.periodStart,
+        period_end: saved.structuredData.periodEnd,
+        ai_summary: saved.aiSummary,
+        structured_data: saved.structuredData,
+        model: saved.model,
+      }).then(() => { /* fire-and-forget */ })
+        .catch(() => { /* silently fail */ });
+    }
+  } catch { /* supabase not available */ }
+
+  return saved;
+}
+
+export function loadSavedReports(): SavedReport[] {
+  try {
+    const raw = localStorage.getItem(REPORTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function loadReportsFromDB(limit = 20): Promise<SavedReport[]> {
+  try {
+    const { supabase, isSupabaseConfigured } = require('@/lib/supabase') as { supabase: any; isSupabaseConfigured: () => boolean };
+    if (isSupabaseConfigured() && supabase) {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (!error && data && data.length > 0) {
+        return data.map((row: Record<string, unknown>) => ({
+          id: row.id as string,
+          type: (row.type as string) || 'weekly',
+          title: row.title as string,
+          period: row.period as string,
+          aiSummary: (row.ai_summary as string) ?? '',
+          structuredData: (row.structured_data as WeekDataAggregate) ?? {},
+          generatedAt: (row.created_at as string) ?? '',
+          model: (row.model as string) ?? 'deepseek',
+        }));
+      }
+    }
+  } catch { /* fallback to local */ }
+  return loadSavedReports();
+}

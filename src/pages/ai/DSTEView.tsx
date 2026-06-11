@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   createSeason, canAdvancePhase, getNextPhase, computeSeasonProgress,
-  getCurrentQuarter, getNextQuarter,
+  getCurrentQuarter, getNextQuarter, loadSeasons, saveSeasons,
   PHASE_ORDER, PHASE_LABELS, PHASE_DESCRIPTIONS, PHASE_COLORS,
   type OKRSeason, type SeasonPhase, type SeasonMilestone,
 } from '@/lib/dsteEngine';
@@ -19,12 +19,20 @@ export default function DSTEView() {
   const { toasts, success } = useToast();
   const createModal = useModal();
   const milestoneModal = useModal();
-  const [seasons, setSeasons] = useState<OKRSeason[]>(() => {
-    // Initialize with current quarter
-    const cq = getCurrentQuarter();
-    const s = createSeason(cq.period + ' 赛季', cq.startDate, cq.endDate, cq.period);
-    return [s];
-  });
+  // Persisted seasons: load from localStorage on first render
+  const [seasons, setSeasons] = useState<OKRSeason[]>(() => loadSeasons());
+  const seasonsRef = useRef(seasons);
+  seasonsRef.current = seasons;
+
+  // Helper: update seasons + persist
+  const updateSeasons = useCallback((updater: (prev: OKRSeason[]) => OKRSeason[]) => {
+    setSeasons((prev) => {
+      const next = updater(prev);
+      saveSeasons(next);
+      return next;
+    });
+  }, []);
+
   const [selectedSeason, setSelectedSeason] = useState<OKRSeason | null>(null);
   const [seasonForm, setSeasonForm] = useState({ name: '', startDate: '', endDate: '' });
   const [milestoneForm, setMilestoneForm] = useState({ title: '', dueDate: '' });
@@ -33,14 +41,14 @@ export default function DSTEView() {
   const handleCreateSeason = useCallback(() => {
     if (!seasonForm.name.trim()) return;
     const s = createSeason(seasonForm.name, seasonForm.startDate, seasonForm.endDate);
-    setSeasons((prev) => [s, ...prev]);
+    updateSeasons((prev) => [s, ...prev]);
     createModal.closeModal();
     success(`赛季"${s.name}"已创建`);
     setSeasonForm({ name: '', startDate: '', endDate: '' });
-  }, [seasonForm, createModal, success]);
+  }, [seasonForm, createModal, success, updateSeasons]);
 
   const handleAdvancePhase = useCallback((seasonId: string) => {
-    setSeasons((prev) => prev.map((s) => {
+    updateSeasons((prev) => prev.map((s) => {
       if (s.id !== seasonId) return s;
       const check = canAdvancePhase(s);
       if (!check.canAdvance) return s;
@@ -49,7 +57,7 @@ export default function DSTEView() {
       return { ...s, phase: next, updatedAt: new Date().toISOString() };
     }));
     success('阶段已推进');
-  }, [success]);
+  }, [success, updateSeasons]);
 
   const handleAddMilestone = useCallback(() => {
     if (!milestoneForm.title.trim() || !editingMilestoneSeason) return;
@@ -60,17 +68,17 @@ export default function DSTEView() {
       completed: false,
       completedAt: null,
     };
-    setSeasons((prev) => prev.map((s) => {
+    updateSeasons((prev) => prev.map((s) => {
       if (s.id !== editingMilestoneSeason) return s;
       return { ...s, milestones: [...s.milestones, m], updatedAt: new Date().toISOString() };
     }));
     milestoneModal.closeModal();
     success('里程碑已添加');
     setMilestoneForm({ title: '', dueDate: '' });
-  }, [milestoneForm, editingMilestoneSeason, milestoneModal, success]);
+  }, [milestoneForm, editingMilestoneSeason, milestoneModal, success, updateSeasons]);
 
   const handleToggleMilestone = useCallback((seasonId: string, milestoneId: string) => {
-    setSeasons((prev) => prev.map((s) => {
+    updateSeasons((prev) => prev.map((s) => {
       if (s.id !== seasonId) return s;
       return {
         ...s,
@@ -80,15 +88,15 @@ export default function DSTEView() {
         updatedAt: new Date().toISOString(),
       };
     }));
-  }, []);
+  }, [updateSeasons]);
 
   const handleAddGoal = useCallback((seasonId: string, goalId: string) => {
-    setSeasons((prev) => prev.map((s) => {
+    updateSeasons((prev) => prev.map((s) => {
       if (s.id !== seasonId) return s;
       if (s.goals.includes(goalId)) return s;
       return { ...s, goals: [...s.goals, goalId], updatedAt: new Date().toISOString() };
     }));
-  }, []);
+  }, [updateSeasons]);
 
   const activeSeason = seasons[0]; // latest season
 

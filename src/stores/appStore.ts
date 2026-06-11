@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { MatrixData } from '@/matrix/data';
 import { getStoredModelId, setStoredModelId } from '@/lib/aiService';
+import { trackEvent } from '@/lib/behaviorTracker';
 
 // ═══════════════════════════════════════════════════════════════
 // L1: SINGLE SOURCE OF TRUTH for interface↔module mapping
@@ -54,6 +55,15 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
 export function getInterfaceForModule(mod: string): string {
   return MODULE_TO_INTERFACE[mod] ?? 'workspace';
 }
+
+/** Modules restricted to cockpit viewMode (admin/manager only) */
+export const ADMIN_ONLY_MODULES = new Set([
+  'admin', 'roles', 'org', 'featureFlags', 'automation', 'statusFlow',
+  'commandCenter', 'insight', 'prediction', 'savedViews',
+  'agentMarket', 'knowledgeOSP', 'mcpA2a', 'crossDeptAutomation',
+  'usageAlerts', 'systemMonitor', 'behaviorTracker', 'dste',
+  'templateWizard', 'subscription',
+]);
 
 /** 根据 role 推导默认 viewMode — admin/owner/leader/manager → cockpit, 其他 → simple */
 export function getViewModeForRole(role: string | undefined): 'cockpit' | 'simple' {
@@ -155,6 +165,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         `[AppStore] Invariant violation: interface="${iface}" but module="${mod}" belongs to "${MODULE_TO_INTERFACE[mod] ?? 'unknown'}". ` +
         `This may cause a blank page. Auto-correcting module to "${DEFAULT_MODULES[iface]}".`
       );
+    }
+    // Behavior tracking
+    if (mod !== state.activeModule) {
+      trackEvent('module_switch', { from: state.activeModule, to: mod, interface: iface });
     }
     set({
       interface: iface as AppState['interface'],

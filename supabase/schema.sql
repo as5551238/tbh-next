@@ -1621,3 +1621,137 @@ CREATE POLICY "Users can update own usage alerts" ON usage_alerts FOR UPDATE TO 
 CREATE POLICY "Users can delete own usage alerts" ON usage_alerts FOR DELETE TO authenticated USING (user_id = auth.uid());
 CREATE INDEX IF NOT EXISTS idx_usage_alerts_user ON usage_alerts(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_usage_alerts_created ON usage_alerts(created_at DESC);
+
+-- ============================================================
+-- 71. Reports (weekly/monthly report persistence)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS reports (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  team_id TEXT NOT NULL DEFAULT '__default__',
+  type TEXT NOT NULL DEFAULT 'weekly' CHECK (type IN ('weekly', 'monthly', 'custom')),
+  title TEXT NOT NULL,
+  period TEXT NOT NULL,
+  period_start DATE,
+  period_end DATE,
+  ai_summary TEXT,
+  structured_data JSONB DEFAULT '{}',
+  model TEXT DEFAULT 'deepseek',
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Team members can read reports" ON reports FOR SELECT TO authenticated USING (
+  team_id = '__default__' OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text)
+);
+CREATE POLICY "Users can create reports" ON reports FOR INSERT TO authenticated WITH CHECK (created_by = auth.uid());
+CREATE POLICY "Admin can delete reports" ON reports FOR DELETE TO authenticated USING (
+  EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager']))
+);
+CREATE INDEX IF NOT EXISTS idx_reports_team ON reports(team_id, type);
+CREATE INDEX IF NOT EXISTS idx_reports_period ON reports(period_start DESC);
+
+-- ============================================================
+-- 72. DSTE Seasons (replaces localStorage tbh-dste-seasons)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS dste_seasons (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  team_id TEXT NOT NULL DEFAULT '__default__' UNIQUE,
+  seasons_json JSONB NOT NULL DEFAULT '[]',
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  updated_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+ALTER TABLE dste_seasons ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Team members can read DSTE seasons" ON dste_seasons FOR SELECT TO authenticated USING (
+  team_id = '__default__' OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text)
+);
+CREATE POLICY "Admin can manage DSTE seasons" ON dste_seasons FOR ALL TO authenticated USING (
+  team_id = '__default__' OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager']))
+);
+
+-- ============================================================
+-- 73. pg_cron: Scheduled jobs (daily digest, weekly report, risk scan)
+-- ============================================================
+-- NOTE: These require pg_cron and pg_net extensions enabled in Supabase Dashboard.
+-- Run: CREATE EXTENSION IF NOT EXISTS pg_cron; CREATE EXTENSION IF NOT EXISTS pg_net;
+-- Then execute the functions below in SQL Editor.
+
+-- Daily digest: aggregate tasks/goals summary, store in reports table
+CREATE OR REPLACE FUNCTION daily_digest()
+RETURNS void AS $$
+DECLARE
+  v_today DATE := CURRENT_DATE;
+  v_period TEXT := to_char(v_today, 'YYYY-MM-DD');
+  v_summary JSONB;
+BEGIN
+  SELECT jsonb_build_object(
+    'total_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__'),
+    'completed_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__' AND status = 'done'),
+    'overdue_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__' AND status != 'done' AND due_date < v_today),
+    'total_goals', (SELECT count(*) FROM goals),
+    'at_risk_goals', (SELECT count(*) FROM goals WHERE status != 'done' AND progress < 50)
+  ) INTO v_summary;
+
+  INSERT INTO reports (team_id, type, title, period, period_start, period_end, ai_summary, structured_data)
+  VALUES ('__default__', 'daily', '每日摘要 ' || v_period, v_period, v_today, v_today, '自动生成每日摘要', v_summary);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Weekly report generation: runs every Monday at 00:05
+CREATE OR REPLACE FUNCTION weekly_report_generate()
+RETURNS void AS $$
+DECLARE
+  v_week_start DATE := date_trunc('week', CURRENT_DATE)::date;
+  v_week_end DATE := v_week_start + 6;
+  v_period TEXT := to_char(v_week_start, 'YYYY-MM-DD') || ' ~ ' || to_char(v_week_end, 'YYYY-MM-DD');
+  v_data JSONB;
+BEGIN
+  SELECT jsonb_build_object(
+    'total_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__'),
+    'completed_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__' AND status = 'done' AND completed_at >= v_week_start),
+    'overdue_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__' AND status != 'done' AND due_date < CURRENT_DATE),
+    'total_goals', (SELECT count(*) FROM goals),
+    'avg_goal_progress', COALESCE((SELECT avg(progress) FROM goals), 0),
+    'unresolved_alerts', (SELECT count(*) FROM deviation_alerts WHERE is_resolved = false)
+  ) INTO v_data;
+
+  INSERT INTO reports (team_id, type, title, period, period_start, period_end, ai_summary, structured_data)
+  VALUES ('__default__', 'weekly', '周报 ' || v_period, v_period, v_week_start, v_week_end, '自动生成周报（AI摘要需前端手动触发）', v_data);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Risk auto-scan: check for overdue tasks and at-risk goals
+CREATE OR REPLACE FUNCTION risk_auto_scan()
+RETURNS void AS $$
+DECLARE
+  v_today DATE := CURRENT_DATE;
+  v_new_alerts INT := 0;
+  v_task RECORD;
+  v_goal RECORD;
+BEGIN
+  -- Scan overdue tasks (not done, past due_date)
+  FOR v_task IN SELECT id, title, due_date FROM tasks WHERE team_id = '__default__' AND status != 'done' AND due_date < v_today AND due_date >= v_today - interval '7 days'
+  LOOP
+    INSERT INTO deviation_alerts (goal_id, type, severity, message, is_resolved)
+    SELECT g.id, 'task_overdue', 'warning', '任务逾期: ' || v_task.title || ' (截止' || v_task.due_date || ')', false
+    FROM goals g WHERE g.id = (SELECT goal_id FROM tasks WHERE id = v_task.id)
+    ON CONFLICT DO NOTHING;
+    v_new_alerts := v_new_alerts + 1;
+  END LOOP;
+
+  -- Scan at-risk goals (progress < 30% and end_date within 14 days)
+  FOR v_goal IN SELECT id, title, progress, end_date FROM goals WHERE status != 'done' AND progress < 30 AND end_date IS NOT NULL AND end_date <= v_today + interval '14 days' AND end_date >= v_today
+  LOOP
+    INSERT INTO deviation_alerts (goal_id, type, severity, message, is_resolved)
+    VALUES (v_goal.id, 'goal_at_risk', 'critical', '目标风险: ' || v_goal.title || ' (进度' || v_goal.progress || '%, 截止' || v_goal.end_date || ')', false)
+    ON CONFLICT DO NOTHING;
+    v_new_alerts := v_new_alerts + 1;
+  END LOOP;
+
+  RAISE NOTICE 'Risk auto-scan completed: % new alerts', v_new_alerts;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Schedule pg_cron jobs (run these in Supabase SQL Editor after enabling extensions):
+-- SELECT cron.schedule('daily-digest', '0 6 * * *', $$SELECT daily_digest()$$);
+-- SELECT cron.schedule('weekly-report', '5 0 * * 1', $$SELECT weekly_report_generate()$$);
+-- SELECT cron.schedule('risk-scan', '30 7 * * *', $$SELECT risk_auto_scan()$$);

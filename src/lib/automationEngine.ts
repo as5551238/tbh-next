@@ -93,36 +93,94 @@ export function evaluateAllConditions(conditions: Condition[], data: Record<stri
   return conditions.every((c) => evaluateCondition(c, data));
 }
 
-// ── Action Executor (simulated) ────────────────────────────────────────
+// ── Action Executor (real execution via dataLayer) ────────────────────────
+
+// Lazy import to avoid circular dependency at module load time
+let _editTask: ((id: string, updates: Record<string, unknown>) => void) | null = null;
+let _addActionItem: ((item: Record<string, unknown>) => void) | null = null;
+let _toastFn: ((msg: string) => void) | null = null;
+
+/** Register dataLayer callbacks — called once at app boot from a top-level component */
+export function registerAutomationCallbacks(callbacks: {
+  editTask: (id: string, updates: Record<string, unknown>) => void;
+  addActionItem: (item: Record<string, unknown>) => void;
+  toast: (msg: string) => void;
+}): void {
+  _editTask = callbacks.editTask;
+  _addActionItem = callbacks.addActionItem;
+  _toastFn = callbacks.toast;
+}
 
 export async function executeStep(step: ActionStep, context: Record<string, unknown>): Promise<{ success: boolean; error?: string }> {
-  // In production, each step type would call the appropriate API
-  // For now, simulate execution with a brief delay
-  await new Promise((r) => setTimeout(r, 50));
-
   switch (step.type) {
     case 'update_task': {
-      // Would call dataLayer.updateTask(...)
-      return { success: true };
+      const taskId = String(step.config.taskId ?? context.task_id ?? '');
+      const updates = (step.config.updates ?? {}) as Record<string, unknown>;
+      if (!taskId || !_editTask) {
+        return { success: false, error: _editTask ? `No task ID in step/config` : 'editTask callback not registered' };
+      }
+      try {
+        _editTask(taskId, updates);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
     }
     case 'send_notification': {
-      // Would call notification service
+      const message = String(step.config.message ?? '自动化通知触发');
+      if (_toastFn) {
+        _toastFn(message);
+      }
       return { success: true };
     }
     case 'create_action_item': {
-      // Would call addActionItem(...)
-      return { success: true };
+      const title = String(step.config.title ?? '自动化行动项');
+      const item = {
+        title,
+        assignee_id: String(step.config.assignee_id ?? context.assignee_id ?? ''),
+        due_date: String(step.config.due_date ?? ''),
+        status: 'pending',
+        source: 'automation',
+      };
+      if (!_addActionItem) {
+        return { success: false, error: 'addActionItem callback not registered' };
+      }
+      try {
+        _addActionItem(item);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
     }
     case 'assign_tasks': {
-      // Would call task assignment
-      return { success: true };
+      const taskId = String(step.config.taskId ?? context.task_id ?? '');
+      const assigneeId = String(step.config.assignee_id ?? '');
+      if (!taskId || !_editTask) {
+        return { success: false, error: 'Missing taskId or editTask callback' };
+      }
+      try {
+        _editTask(taskId, { assignee_id: assigneeId });
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
     }
     case 'change_status': {
-      // Would call status update
-      return { success: true };
+      const taskId = String(step.config.taskId ?? context.task_id ?? '');
+      const newStatus = String(step.config.status ?? '');
+      if (!taskId || !_editTask) {
+        return { success: false, error: 'Missing taskId or editTask callback' };
+      }
+      try {
+        _editTask(taskId, { status: newStatus });
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
     }
     case 'webhook': {
-      // Would call external webhook
+      // External webhooks remain simulated (no external API access per constraints)
+      await new Promise((r) => setTimeout(r, 50));
       return { success: true };
     }
     case 'delay': {
