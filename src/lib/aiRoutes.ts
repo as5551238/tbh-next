@@ -1,7 +1,8 @@
 /**
- * AI Routes — Three fallback routes for LLM calls.
+ * AI Routes — Four fallback routes for LLM calls.
  *
  * Route 1: Supabase Edge Function (secure — API keys stay server-side)
+ * Route 1.5: Supabase RPC proxy (call_llm_proxy — server-side, no Edge deploy needed)
  * Route 2: Direct LLM API call (dev mode — API key in client bundle)
  * Route 3: Local intelligent fallback (offline — no API needed)
  */
@@ -144,6 +145,53 @@ export async function callSupabaseEdge(
     return { text: data.text ?? '', agent: 'edge', usage: data.usage, toolCalls };
   } catch (err) {
     recordError('ai_edge', (err as Error)?.message ?? String(err));
+    return callRpcProxy(messages);
+  }
+}
+
+// --- Route 1.5: Supabase RPC proxy (call_llm_proxy) ---
+
+/**
+ * Call LLM via Supabase RPC function `call_llm_proxy`.
+ * This keeps API keys server-side without needing Edge Function deployment.
+ * Requires: DB function `call_llm_proxy(messages jsonb, model text)` deployed in Supabase.
+ */
+export async function callRpcProxy(messages: ChatMessage[]): Promise<AIResponse> {
+  if (!supabase || !isSupabaseConfigured()) return directLLMFallback(messages);
+
+  const activeModel = getActiveModel();
+  const rpcMessages = messages.map((m) => ({
+    role: m.role === 'tool' ? 'assistant' : m.role,
+    content: m.content,
+  }));
+
+  try {
+    const { data, error } = await supabase.rpc('call_llm_proxy', {
+      p_messages: rpcMessages,
+      p_model: activeModel.model,
+    });
+
+    if (error) {
+      console.warn('[aiRoutes] RPC proxy error:', error.message);
+      recordError('ai_rpc', error.message);
+      return directLLMFallback(messages);
+    }
+
+    // RPC returns { text, usage? }
+    const text = data?.text ?? data?.choices?.[0]?.message?.content ?? '';
+    if (!text) {
+      console.warn('[aiRoutes] RPC proxy returned empty text');
+      return directLLMFallback(messages);
+    }
+
+    const usage = data?.usage
+      ? { prompt_tokens: data.usage.prompt_tokens, completion_tokens: data.usage.completion_tokens }
+      : undefined;
+
+    return { text, agent: 'rpc', usage };
+  } catch (err) {
+    console.warn('[aiRoutes] RPC proxy exception:', err);
+    recordError('ai_rpc', (err as Error)?.message ?? String(err));
     return directLLMFallback(messages);
   }
 }

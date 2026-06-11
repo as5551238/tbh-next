@@ -16,6 +16,20 @@
 import { chatCompletion } from '@/lib/aiService';
 import type { TaskRow, GoalRow, ActionItemRow, DeviationAlertRow } from '@/lib/dataLayer/types';
 
+// ─── Lazy Supabase import (replaces CJS require) ───
+let _supabase: any = null;
+let _isSupabaseConfigured: (() => boolean) | null = null;
+async function getSupabase() {
+  if (!_supabase) {
+    try {
+      const mod = await import('@/lib/supabase');
+      _supabase = mod.supabase;
+      _isSupabaseConfigured = mod.isSupabaseConfigured;
+    } catch { /* supabase not available */ }
+  }
+  return { supabase: _supabase, isSupabaseConfigured: _isSupabaseConfigured };
+}
+
 // ─── Types ───
 
 export interface WeekDataAggregate {
@@ -325,9 +339,8 @@ export function saveReportLocally(report: WeeklyReportResult): SavedReport {
   } catch { /* silently ignore */ }
 
   // Async Supabase dual-write (fire-and-forget)
-  try {
-    const { supabase, isSupabaseConfigured } = require('@/lib/supabase') as { supabase: any; isSupabaseConfigured: () => boolean };
-    if (isSupabaseConfigured() && supabase) {
+  getSupabase().then(({ supabase, isSupabaseConfigured }) => {
+    if (isSupabaseConfigured?.() && supabase) {
       supabase.from('reports').insert({
         team_id: '__default__',
         type: saved.type,
@@ -341,7 +354,7 @@ export function saveReportLocally(report: WeeklyReportResult): SavedReport {
       }).then(() => { /* fire-and-forget */ })
         .catch(() => { /* silently fail */ });
     }
-  } catch { /* supabase not available */ }
+  }).catch(() => { /* supabase not available */ });
 
   return saved;
 }
@@ -357,8 +370,8 @@ export function loadSavedReports(): SavedReport[] {
 
 export async function loadReportsFromDB(limit = 20): Promise<SavedReport[]> {
   try {
-    const { supabase, isSupabaseConfigured } = require('@/lib/supabase') as { supabase: any; isSupabaseConfigured: () => boolean };
-    if (isSupabaseConfigured() && supabase) {
+    const { supabase, isSupabaseConfigured } = await getSupabase();
+    if (isSupabaseConfigured?.() && supabase) {
       const { data, error } = await supabase
         .from('reports')
         .select('*')

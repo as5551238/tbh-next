@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useRisks, useMatrixCell, useActionItems, useDeviationAlerts } from '@/hooks/useMatrix';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { AlertTriangle, Clock, TrendingDown, Shield, Plus, Trash2, Zap, Scan, RefreshCw, Settings } from 'lucide-react';
+import { AlertTriangle, Clock, TrendingDown, Shield, Plus, Trash2, Zap, Scan, RefreshCw, Settings, Activity } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
@@ -13,6 +13,8 @@ import { scanRisks, alertToDeviationInput, type RiskAlert, type RiskScanResult, 
 import { recordRender } from '@/lib/monitoring';
 import { useGoals, useTasks } from '@/hooks/useMatrix';
 import { createDeviationAlert } from '@/lib/dataLayer/crud';
+
+const RiskEngineDashboard = lazy(() => import('@/components/RiskEngineDashboard'));
 
 const LEVEL_STYLES: Record<string, string> = {
   critical: 'bg-danger/10 text-danger border-l-danger',
@@ -69,6 +71,7 @@ export default function RiskView() {
   const [autoScanEnabled, setAutoScanEnabled] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState<RiskAlert | null>(null);
   const [alertDetailOpen, setAlertDetailOpen] = useState(false);
+  const [riskTab, setRiskTab] = useState<'list' | 'engine'>('list');
   const [engineConfig, setEngineConfig] = useState<RiskEngineConfig>({
     autoScan: true,
     overdueCriticalDays: 3,
@@ -169,6 +172,31 @@ export default function RiskView() {
           <Plus size={12} />上报风险
         </button>
       </div>
+
+      {/* ── Tab: 风险列表 / 引擎仪表盘 ── */}
+      <div className="flex items-center gap-1 px-3 md:px-4 pt-2 pb-1">
+        {([
+          { key: 'list' as const, label: '风险列表', icon: AlertTriangle },
+          { key: 'engine' as const, label: '引擎仪表盘', icon: Activity },
+        ]).map(t => (
+          <button key={t.key} onClick={() => setRiskTab(t.key)}
+            className={cn('flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors', riskTab === t.key ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2')}>
+            <t.icon size={12} />{t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Engine Dashboard Tab ── */}
+      {riskTab === 'engine' && (
+        <div className="flex-1 overflow-y-auto p-3 md:p-4">
+          <Suspense fallback={<CardSkeleton />}>
+            <RiskEngineDashboard />
+          </Suspense>
+        </div>
+      )}
+
+      {/* ── Risk List Tab ── */}
+      {riskTab === 'engine' ? null : (<>
 
       {/* ── Auto-detected alerts section ── */}
       {scanResult && scanResult.alerts.length > 0 && (
@@ -343,6 +371,7 @@ export default function RiskView() {
       </Modal>
 
       <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="风险分析需要专业版或企业版" feature="ai_risk_analysis" />
+      </>)} {/* end risk list tab */}
     </div>
   );
 }

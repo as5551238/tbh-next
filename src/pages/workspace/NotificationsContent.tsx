@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Modal, useModal, btnPrimary, btnSecondary } from '@/components/Modal';
 import { Bell, Check, Trash2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
+import { trackEvent } from '@/lib/behaviorTracker';
 
 const TYPE_STYLES: Record<string, string> = {
   alert: 'bg-danger/10 text-danger',
@@ -27,7 +28,7 @@ export default function NotificationsContent() {
   function openDetail(notif: NotificationRow) {
     setActiveNotif(notif);
     detailModal.openModal();
-    if (!notif.read) markRead(notif.id);
+    if (!notif.read) { markRead(notif.id); trackEvent('notification_read', { id: notif.id }); }
   }
 
   function handleMarkAllRead() {
@@ -75,7 +76,7 @@ export default function NotificationsContent() {
               {!notif.read && <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
               <div className="ml-auto flex flex-wrap gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                 {!notif.read && <button onClick={() => markRead(notif.id)} className="rounded p-1 text-text-3 hover:text-success" aria-label="标记已读"><Check size={12} /></button>}
-                <button onClick={() => { setConfirmAction({ label: '确认删除此通知？', onConfirm: () => { removeNotification(notif.id); confirmModal.closeModal(); } }); confirmModal.openModal(); }} className="rounded p-1 text-text-3 hover:text-danger" aria-label="删除"><Trash2 size={12} /></button>
+                <button onClick={() => { setConfirmAction({ label: '确认删除此通知？', onConfirm: () => { removeNotification(notif.id); trackEvent('notification_dismiss', { id: notif.id }); confirmModal.closeModal(); } }); confirmModal.openModal(); }} className="rounded p-1 text-text-3 hover:text-danger" aria-label="删除"><Trash2 size={12} /></button>
               </div>
             </div>
             <p className="text-[11px] text-text-2 leading-relaxed">{displayMsg(notif)}</p>

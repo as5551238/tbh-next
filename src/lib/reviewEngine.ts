@@ -434,3 +434,126 @@ export function buildReviewDraftPrompt(
     '5. 语言简洁有力，避免空话套话',
   ].join('\n');
 }
+
+// --- Review Effectiveness Tracking (DSTE 闭环增强) ---
+
+export interface ReviewEffectiveness {
+  reviewId: string;
+  /** 行动项总数 */
+  totalActionItems: number;
+  /** 已完成行动项 */
+  completedActionItems: number;
+  /** 已闭环行动项 (closed_loop=true) */
+  closedActionItems: number;
+  /** 行动项完成率 */
+  actionCompletionRate: number;
+  /** 闭环率 */
+  closeRate: number;
+  /** 复盘前目标进度 (snapshotted at review time) */
+  goalProgressBefore: number;
+  /** 当前目标进度 */
+  goalProgressNow: number;
+  /** 目标进度改善量 */
+  progressDelta: number;
+  /** 有效天数 (review完成至今) */
+  daysSinceReview: number;
+  /** 综合有效性评分 0-100 */
+  effectivenessScore: number;
+  /** 评级 */
+  effectivenessGrade: 'excellent' | 'good' | 'moderate' | 'poor';
+}
+
+/**
+ * 计算复盘有效性 — 量化"复盘是否真正推动了目标前进"
+ *
+ * 评分公式：
+ *   effectivenessScore = actionCompletionRate * 30 + closeRate * 20 + progressImprovement * 30 + speedBonus * 20
+ *   - actionCompletionRate: 行动项执行率 (执行力)
+ *   - closeRate: 闭环率 (质量)
+ *   - progressImprovement: 目标进度改善 (结果)
+ *   - speedBonus: 速度加分 (效率)
+ */
+export function computeReviewEffectiveness(params: {
+  reviewId: string;
+  goalProgressBefore: number;
+  goalProgressNow: number;
+  totalActionItems: number;
+  completedActionItems: number;
+  closedActionItems: number;
+  reviewCompletedAt: string;
+}): ReviewEffectiveness {
+  const actionCompletionRate = params.totalActionItems > 0
+    ? Math.round((params.completedActionItems / params.totalActionItems) * 100)
+    : 0;
+  const closeRate = params.totalActionItems > 0
+    ? Math.round((params.closedActionItems / params.totalActionItems) * 100)
+    : 0;
+
+  const progressDelta = params.goalProgressNow - params.goalProgressBefore;
+  // progressImprovement: 0-100, based on how much progress improved (capped at +30% delta = 100)
+  const progressImprovement = Math.min(100, Math.max(0, Math.round((progressDelta / 30) * 100)));
+
+  // speedBonus: faster improvement = higher score. 7 days = baseline, 14+ days = penalty
+  const daysSinceReview = Math.max(1, Math.floor(
+    (Date.now() - new Date(params.reviewCompletedAt).getTime()) / (1000 * 60 * 60 * 24),
+  ));
+  let speedBonus = 100;
+  if (daysSinceReview <= 3 && progressDelta > 0) speedBonus = 100;
+  else if (daysSinceReview <= 7) speedBonus = 80;
+  else if (daysSinceReview <= 14) speedBonus = 60;
+  else if (daysSinceReview <= 30) speedBonus = 40;
+  else speedBonus = 20;
+
+  const effectivenessScore = Math.round(
+    actionCompletionRate * 0.3 + closeRate * 0.2 + progressImprovement * 0.3 + speedBonus * 0.2,
+  );
+
+  let effectivenessGrade: ReviewEffectiveness['effectivenessGrade'] = 'poor';
+  if (effectivenessScore >= 80) effectivenessGrade = 'excellent';
+  else if (effectivenessScore >= 60) effectivenessGrade = 'good';
+  else if (effectivenessScore >= 40) effectivenessGrade = 'moderate';
+
+  return {
+    reviewId: params.reviewId,
+    totalActionItems: params.totalActionItems,
+    completedActionItems: params.completedActionItems,
+    closedActionItems: params.closedActionItems,
+    actionCompletionRate,
+    closeRate,
+    goalProgressBefore: params.goalProgressBefore,
+    goalProgressNow: params.goalProgressNow,
+    progressDelta,
+    daysSinceReview,
+    effectivenessScore,
+    effectivenessGrade,
+  };
+}
+
+/**
+ * 为 ReviewSession 创建进度快照 — 复盘完成时调用
+ * 存储到 localStorage 用于后续有效性对比
+ */
+export function snapshotGoalProgress(reviewId: string, goalId: string, progress: number): void {
+  const key = 'tbh_review_snapshots';
+  try {
+    const snapshots: Array<{ reviewId: string; goalId: string; progress: number; snappedAt: string }> =
+      JSON.parse(localStorage.getItem(key) ?? '[]');
+    snapshots.push({ reviewId, goalId, progress, snappedAt: new Date().toISOString() });
+    // Keep last 100
+    if (snapshots.length > 100) snapshots.splice(0, snapshots.length - 100);
+    localStorage.setItem(key, JSON.stringify(snapshots));
+  } catch { /* ignore */ }
+}
+
+/**
+ * 获取复盘时的目标进度快照
+ */
+export function getReviewSnapshot(reviewId: string, _goalId?: string): number | null {
+  const key = 'tbh_review_snapshots';
+  try {
+    const snapshots: Array<{ reviewId: string; goalId: string; progress: number }> =
+      JSON.parse(localStorage.getItem(key) ?? '[]');
+    const snap = snapshots.find((s) => s.reviewId === reviewId);
+    return snap?.progress ?? null;
+  } catch { return null; }
+}

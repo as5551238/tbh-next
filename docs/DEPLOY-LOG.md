@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '50446ae2-a5a3-463e-8492-bd3111d998fc'
-  PropagateID: '50446ae2-a5a3-463e-8492-bd3111d998fc'
-  ReservedCode1: 'c8cd0690-5235-4edb-a463-778f0b353b62'
-  ReservedCode2: 'c8cd0690-5235-4edb-a463-778f0b353b62'
+  ProduceID: '2d90734c-308d-435d-a782-f159b2527383'
+  PropagateID: '2d90734c-308d-435d-a782-f159b2527383'
+  ReservedCode1: '1b98c99a-3d9e-4986-b053-d8b68b6455fd'
+  ReservedCode2: '1b98c99a-3d9e-4986-b053-d8b68b6455fd'
 ---
 
 # TBH-Next 部署记录

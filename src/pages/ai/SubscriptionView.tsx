@@ -6,7 +6,7 @@ import { PLAN_LIMITS, PLAN_PRICES, fetchSubscription, fetchUsageToday, type Subs
 import { CHECKOUT_PLANS, initiateCheckout, cancelSubscription, getSubscriptionStatus } from '@/lib/payment';
 import { upsertSubscription } from '@/lib/dataLayer';
 import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Lock, CheckCircle2, CreditCard } from 'lucide-react';
-import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs } from '@/hooks/useMatrix';
+import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs, useGoals, useTasks } from '@/hooks/useMatrix';
 import { CardSkeleton } from '@/components/Skeleton';
 import PaywallModal from '@/components/PaywallModal';
 
@@ -58,6 +58,8 @@ export default function SubscriptionView() {
   const { members } = useMembers();
   const { projects } = useProjects();
   const { docs: knowledgeDocs } = useKnowledgeDocs();
+  const { goals } = useGoals();
+  const { tasks } = useTasks();
   const [sub, setSub] = useState<SubscriptionInfo>({ plan: 'free', status: 'active', currentPeriodEnd: null });
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,10 +91,10 @@ export default function SubscriptionView() {
           projectsLimit: limits.maxProjects,
           docs: knowledgeDocs.length,
           docsLimit: limits.maxDocs,
-          goals: 0,
-          goalsLimit: limits.maxGoals ?? 0,
-          tasks: 0,
-          tasksLimit: 0,
+          goals: goals.length,
+          goalsLimit: limits.maxGoals >= 0 ? limits.maxGoals : goals.length,
+          tasks: tasks.length,
+          tasksLimit: limits.maxTasks >= 0 ? limits.maxTasks : tasks.length,
         } as UsageSummary);
       }
       setLoading(false);
@@ -142,7 +144,26 @@ export default function SubscriptionView() {
               <UsageMeter icon={<Bot size={14} />} label="Agent" current={usage.agents} limit={usage.agentsLimit} color="var(--color-warn)" />
               <UsageMeter icon={<FolderKanban size={14} />} label="项目" current={usage.projects} limit={usage.projectsLimit} color="var(--color-danger)" />
               <UsageMeter icon={<FileText size={14} />} label="文档" current={usage.docs} limit={usage.docsLimit} color='var(--brand-accent)' />
+              <UsageMeter icon={<TrendingUp size={14} />} label="目标" current={usage.goals} limit={usage.goalsLimit} color="var(--color-primary-2, var(--brand-accent))" />
+              <UsageMeter icon={<FileText size={14} />} label="任务" current={usage.tasks} limit={usage.tasksLimit} color="var(--color-primary-2, var(--brand-accent))" />
             </div>
+            {/* Upgrade CTA when near limit */}
+            {sub.plan === 'free' && (() => {
+              const nearLimit = [
+                usage.aiQueriesLimit > 0 && usage.aiQueries >= usage.aiQueriesLimit * 0.8,
+                usage.teamMembersLimit > 0 && usage.teamMembers >= usage.teamMembersLimit * 0.8,
+                usage.agentsLimit > 0 && usage.agents >= usage.agentsLimit * 0.8,
+                usage.goalsLimit > 0 && usage.goals >= usage.goalsLimit * 0.8,
+                usage.tasksLimit > 0 && usage.tasks >= usage.tasksLimit * 0.8,
+              ].some(Boolean);
+              if (!nearLimit) return null;
+              return (
+                <div className="mt-4 rounded-lg bg-warn/10 border border-warn/30 px-3 py-2">
+                  <div className="text-[11px] font-semibold text-warn">部分资源接近上限</div>
+                  <div className="text-[10px] text-text-2 mt-0.5">升级专业版可解锁 10x 额度，避免工作中断。</div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

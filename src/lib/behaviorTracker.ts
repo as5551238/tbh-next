@@ -19,10 +19,16 @@ import type { UsageEventRow } from '@/lib/dataLayer/types';
 export type BehaviorEventType =
   | 'task_create' | 'task_update' | 'task_complete' | 'task_delete'
   | 'goal_create' | 'goal_update' | 'goal_complete'
+  | 'project_create' | 'project_update' | 'project_delete'
+  | 'doc_create' | 'doc_update' | 'doc_delete'
+  | 'template_create' | 'template_use' | 'template_delete'
+  | 'automation_rule_execute' | 'automation_rule_create'
+  | 'season_create' | 'season_phase_advance'
   | 'ai_chat' | 'ai_tool_call'
   | 'risk_create' | 'risk_resolve'
   | 'action_item_create' | 'action_item_complete'
   | 'report_generate' | 'report_export'
+  | 'notification_read' | 'notification_dismiss'
   | 'page_view' | 'module_switch'
   | 'login' | 'logout';
 

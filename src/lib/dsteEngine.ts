@@ -169,6 +169,26 @@ export function loadSeasons(): OKRSeason[] {
   return [createSeason(cq.period + ' 赛季', cq.startDate, cq.endDate, cq.period)];
 }
 
+/** Async Supabase-first load with localStorage fallback */
+export async function loadSeasonsFromDB(): Promise<OKRSeason[]> {
+  try {
+    const { supabase, isSupabaseConfigured } = require('@/lib/supabase') as { supabase: any; isSupabaseConfigured: () => boolean };
+    if (isSupabaseConfigured() && supabase) {
+      const { data, error } = await supabase
+        .from('dste_seasons')
+        .select('seasons_json')
+        .eq('team_id', '__default__')
+        .single();
+      if (!error && data?.seasons_json) {
+        const seasons = data.seasons_json as OKRSeason[];
+        localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(seasons));
+        return seasons;
+      }
+    }
+  } catch { /* fallback to local */ }
+  return loadSeasons();
+}
+
 export function saveSeasons(seasons: OKRSeason[]): void {
   // Always persist to localStorage (fast, synchronous)
   localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(seasons));
@@ -198,4 +218,52 @@ export function getNextQuarter(): { period: string; startDate: string; endDate: 
   const startDate = new Date(year, startMonth, 1).toISOString().slice(0, 10);
   const endDate = new Date(year, startMonth + 3, 0).toISOString().slice(0, 10);
   return { period: `${year}-Q${q + 1}`, startDate, endDate };
+}
+
+// ─── Review-Season Linking (DSTE 闭环增强) ───
+
+export interface SeasonReviewStats {
+  seasonId: string;
+  seasonName: string;
+  totalReviews: number;
+  totalActionItems: number;
+  completedActionItems: number;
+  closedActionItems: number;
+  avgEffectiveness: number;
+  reviewsThisWeek: number;
+}
+
+export function linkReviewToSeason(reviewId: string, goalId?: string): string | null {
+  const seasons = loadSeasons();
+  const active = seasons.find((s) => s.phase !== 'evolve');
+  if (!active) return null;
+  const key = `tbh_season_reviews_${active.id}`;
+  try {
+    const reviews: Array<{ reviewId: string; goalId?: string; linkedAt: string }> =
+      JSON.parse(localStorage.getItem(key) ?? '[]');
+    if (!reviews.some((r) => r.reviewId === reviewId)) {
+      reviews.push({ reviewId, goalId, linkedAt: new Date().toISOString() });
+      localStorage.setItem(key, JSON.stringify(reviews));
+    }
+    active.reviewCount = reviews.length;
+    active.updatedAt = new Date().toISOString();
+    saveSeasons(seasons);
+    return active.id;
+  } catch { return null; }
+}
+
+export function getSeasonReviewStats(seasonId: string): SeasonReviewStats {
+  const seasons = loadSeasons();
+  const season = seasons.find((s) => s.id === seasonId);
+  const key = `tbh_season_reviews_${seasonId}`;
+  let totalReviews = 0;
+  let reviewsThisWeek = 0;
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  try {
+    const reviews: Array<{ reviewId: string; goalId?: string; linkedAt: string }> =
+      JSON.parse(localStorage.getItem(key) ?? '[]');
+    totalReviews = reviews.length;
+    reviewsThisWeek = reviews.filter((r) => new Date(r.linkedAt).getTime() > weekAgo).length;
+  } catch { /* ignore */ }
+  return { seasonId, seasonName: season?.name ?? '未知赛季', totalReviews, totalActionItems: 0, completedActionItems: 0, closedActionItems: 0, avgEffectiveness: 0, reviewsThisWeek };
 }

@@ -13,7 +13,7 @@ import type { MatrixCell } from '@/matrix/data';
 import { getToolSchemas, executeToolCall } from '@/lib/aiTools';
 import { DEEPSEEK_API_KEY } from '@/lib/aiPresets';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { callSupabaseEdge, directLLMFallback } from '@/lib/aiRoutes';
+import { callSupabaseEdge, callRpcProxy, directLLMFallback } from '@/lib/aiRoutes';
 import { recordApiCall, recordError } from '@/lib/monitoring';
 
 // --- Types ---
@@ -193,6 +193,12 @@ export async function chatCompletion(
       if (isSupabaseConfigured()) {
         route = 'edge';
         response = await callSupabaseEdge(sanitizedMessages, options);
+        // Edge fell through to local → try RPC proxy before direct
+        if (response.agent === 'local') {
+          route = 'rpc';
+          response = await callRpcProxy(sanitizedMessages);
+        }
+        // RPC also fell through → try direct as last resort
         if (response.agent === 'local' && DEEPSEEK_API_KEY) {
           route = 'direct';
           response = await directLLMFallback(sanitizedMessages);
@@ -201,7 +207,6 @@ export async function chatCompletion(
         route = 'direct';
         response = await directLLMFallback(sanitizedMessages);
       } else {
-        // localFallback is called internally by directLLMFallback when no API key
         response = await directLLMFallback(sanitizedMessages);
       }
     }

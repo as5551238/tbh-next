@@ -12,6 +12,7 @@ import PageHeader from '@/components/PageHeader';
 import { exportToCSV, exportToJSON } from '@/lib/export';
 import { usePermission } from '@/hooks/usePermission';
 import { chatCompletion } from '@/lib/aiService';
+import { trackEvent } from '@/lib/behaviorTracker';
 
 export default function ProjectsContent() {
   const { projects, loading, addProject, editProject, removeProject } = useProjects();
@@ -48,6 +49,7 @@ export default function ProjectsContent() {
       member_ids: [],
       task_count: 0,
     } as Omit<ProjectRow, 'id'>);
+    trackEvent('project_create', { title: form.title, status: form.status });
     modal.closeModal();
   }, [form, addProject, modal.closeModal]);
 
@@ -63,6 +65,7 @@ export default function ProjectsContent() {
       progress: Number(updated.progress),
       end_date: updated.end_date ? String(updated.end_date) : null,
     });
+    trackEvent('project_update', { id: updated.id, status: updated.status });
   }, [editProject]);
 
   const projExportHeaders = ['名称', '描述', '状态', '进度', '负责人', '开始日期', '截止日期'];
@@ -168,7 +171,7 @@ export default function ProjectsContent() {
       </Modal>
 
       <PaywallModal open={ppShow} onClose={ppClose} reason={ppReason} feature={ppFeat} />
-      <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title="编辑项目" fields={projectFields} data={editData} onSave={handleProjectSave} onDelete={can('projects:delete') ? () => { if (editData?.id) { removeProject(String(editData.id)); editModal.closeModal(); } } : undefined} commentTarget={editData?.id ? { type: 'project', id: String(editData.id) } : null} />
+      <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title="编辑项目" fields={projectFields} data={editData} onSave={handleProjectSave} onDelete={can('projects:delete') ? () => { if (editData?.id) { removeProject(String(editData.id)); trackEvent('project_delete', { id: editData.id }); editModal.closeModal(); } } : undefined} commentTarget={editData?.id ? { type: 'project', id: String(editData.id) } : null} />
       </div>
     </div>
   );

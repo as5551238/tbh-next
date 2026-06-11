@@ -5,6 +5,7 @@ import { BookOpen, BarChart3 } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import { CardSkeleton } from '@/components/Skeleton';
+import { trackEvent } from '@/lib/behaviorTracker';
 
 export default function KnowledgeContent() {
   const { docs, loading, addDoc, editDoc, removeDoc } = useKnowledgeDocs();
@@ -46,6 +47,7 @@ export default function KnowledgeContent() {
       member_id: null,
       related_items: [],
     });
+    trackEvent('doc_create', { title: form.title });
     modal.closeModal();
   }, [form, addDoc, modal.closeModal]);
 
@@ -62,6 +64,7 @@ export default function KnowledgeContent() {
       tags: tagsStr ? tagsStr.split(/[,，]/).map((s: string) => s.trim()).filter(Boolean) : [],
       color: String(updated.color),
     });
+    trackEvent('doc_update', { id: updated.id });
   }, [editDoc]);
 
   return (
@@ -115,7 +118,7 @@ export default function KnowledgeContent() {
         </ModalField>
       </Modal>
 
-      <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title="编辑知识文档" fields={docFields} data={editData} onSave={handleDocSave} onDelete={editData?.id && !String(editData.id).startsWith('mock') ? () => { removeDoc(String(editData.id)); editModal.closeModal(); } : undefined} commentTarget={editData?.id ? { type: 'knowledge_doc', id: String(editData.id) } : null} />
+      <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title="编辑知识文档" fields={docFields} data={editData} onSave={handleDocSave} onDelete={editData?.id && !String(editData.id).startsWith('mock') ? () => { removeDoc(String(editData.id)); trackEvent('doc_delete', { id: editData.id }); editModal.closeModal(); } : undefined} commentTarget={editData?.id ? { type: 'knowledge_doc', id: String(editData.id) } : null} />
     </div>
   );
 }

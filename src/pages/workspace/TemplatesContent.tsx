@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { FileCode2, Plus, Lock, Copy, Star } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
+import { trackEvent } from '@/lib/behaviorTracker';
 
 const CATEGORIES = ['PRD', '报告', '流程', '评审', '其他'] as const;
 
@@ -37,6 +38,7 @@ export default function TemplatesContent() {
   const handleAdd = async () => {
     if (!newItem.name.trim()) return;
     await addTemplate({ name: newItem.name, category: newItem.category, content: newItem.content, usage_count: 0, is_built_in: false, team_id: '' });
+    trackEvent('template_create', { name: newItem.name, category: newItem.category });
     success('模板已创建');
     setNewItem({ name: '', category: 'PRD', content: '' });
     addModal.closeModal();
@@ -46,6 +48,7 @@ export default function TemplatesContent() {
     const t = templates.find((x) => x.id === id);
     if (!t) return;
     await editTemplate(id, { usage_count: t.usage_count + 1 });
+    trackEvent('template_use', { id, name: t.name });
     success(`已使用模板「${t.name}」`);
   };
 
@@ -117,7 +120,7 @@ export default function TemplatesContent() {
                   使用模板
                 </button>
                 {!selected.is_built_in && (
-                  <button onClick={() => { removeTemplate(selected.id); setSelectedId(null); }} className="rounded-lg px-3 py-1.5 text-[11px] text-text-3 hover:text-danger transition-colors">删除</button>
+                  <button onClick={() => { removeTemplate(selected.id); trackEvent('template_delete', { id: selected.id }); setSelectedId(null); }} className="rounded-lg px-3 py-1.5 text-[11px] text-text-3 hover:text-danger transition-colors">删除</button>
                 )}
               </div>
             </div>

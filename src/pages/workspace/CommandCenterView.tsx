@@ -13,6 +13,7 @@
  * - Cached data loading via perfCache
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { useGoals, useTasks, useActionItems, useDeviationAlerts, useMembers } from '@/hooks/useMatrix';
 import { loadChains, loadExecutionLogs, loadUsageAlerts } from '@/lib/automationEngine';
@@ -31,9 +32,11 @@ interface KpiCard {
   sub?: string;
   trend?: 'up' | 'down' | 'flat';
   color?: string;
+  route?: string;
 }
 
 export default function CommandCenterView() {
+  const navigate = useNavigate();
   const navigateTo = useAppStore((s) => s.navigateTo);
   const { goals, loading: goalsLoading } = useGoals();
   const { tasks, loading: tasksLoading } = useTasks();
@@ -73,12 +76,12 @@ export default function CommandCenterView() {
     const taskRate = tasks.length > 0 ? Math.round(completedTasks.length / tasks.length * 100) : 0;
 
     return [
-      { icon: <Target size={16} />, label: '目标完成率', value: `${goalRate}%`, sub: `${completedGoals.length}/${goals.length}`, trend: goalRate >= 70 ? 'up' : goalRate >= 40 ? 'flat' : 'down', color: goalRate >= 70 ? 'var(--status-success)' : goalRate >= 40 ? 'var(--color-warn)' : 'var(--color-danger)' },
-      { icon: <CheckCircle2 size={16} />, label: '任务完成率', value: `${taskRate}%`, sub: `${completedTasks.length}/${tasks.length}`, trend: taskRate >= 70 ? 'up' : taskRate >= 40 ? 'flat' : 'down', color: taskRate >= 70 ? 'var(--status-success)' : taskRate >= 40 ? 'var(--color-warn)' : 'var(--color-danger)' },
-      { icon: <AlertTriangle size={16} />, label: '逾期任务', value: overdueTasks.length, sub: overdueTasks.length > 0 ? '需关注' : '全部正常', color: overdueTasks.length > 0 ? 'var(--color-danger)' : 'var(--status-success)' },
-      { icon: <Clock size={16} />, label: '风险目标', value: atRiskGoals.length, sub: atRiskGoals.length > 0 ? '偏离轨道' : '全部正常', color: atRiskGoals.length > 0 ? 'var(--color-warn)' : 'var(--status-success)' },
-      { icon: <Zap size={16} />, label: '待办行动项', value: openActionItems.length, sub: `${actionItems.filter(a => a.priority === 'critical').length} 紧急`, color: openActionItems.length > 10 ? 'var(--color-danger)' : 'var(--color-warn)' },
-      { icon: <Shield size={16} />, label: '偏差预警', value: unreadAlerts.length, sub: `${alerts.length} 总计`, color: unreadAlerts.length > 0 ? 'var(--color-danger)' : 'var(--status-success)' },
+      { icon: <Target size={16} />, label: '目标完成率', value: `${goalRate}%`, sub: `${completedGoals.length}/${goals.length}`, trend: goalRate >= 70 ? 'up' : goalRate >= 40 ? 'flat' : 'down', color: goalRate >= 70 ? 'var(--status-success)' : goalRate >= 40 ? 'var(--color-warn)' : 'var(--color-danger)', route: '/workspace/goals' },
+      { icon: <CheckCircle2 size={16} />, label: '任务完成率', value: `${taskRate}%`, sub: `${completedTasks.length}/${tasks.length}`, trend: taskRate >= 70 ? 'up' : taskRate >= 40 ? 'flat' : 'down', color: taskRate >= 70 ? 'var(--status-success)' : taskRate >= 40 ? 'var(--color-warn)' : 'var(--color-danger)', route: '/workspace/tasks' },
+      { icon: <AlertTriangle size={16} />, label: '逾期任务', value: overdueTasks.length, sub: overdueTasks.length > 0 ? '需关注' : '全部正常', color: overdueTasks.length > 0 ? 'var(--color-danger)' : 'var(--status-success)', route: '/workspace/tasks' },
+      { icon: <Clock size={16} />, label: '风险目标', value: atRiskGoals.length, sub: atRiskGoals.length > 0 ? '偏离轨道' : '全部正常', color: atRiskGoals.length > 0 ? 'var(--color-warn)' : 'var(--status-success)', route: '/workspace/goals' },
+      { icon: <Zap size={16} />, label: '待办行动项', value: openActionItems.length, sub: `${actionItems.filter(a => a.priority === 'critical').length} 紧急`, color: openActionItems.length > 10 ? 'var(--color-danger)' : 'var(--color-warn)', route: '/workspace/actionItems' },
+      { icon: <Shield size={16} />, label: '偏差预警', value: unreadAlerts.length, sub: `${alerts.length} 总计`, color: unreadAlerts.length > 0 ? 'var(--color-danger)' : 'var(--status-success)', route: '/ai/risk' },
     ];
   }, [goals, tasks, actionItems, alerts, loading, todayStr, now]);
 
@@ -164,7 +167,7 @@ export default function CommandCenterView() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="rounded-xl border border-border bg-surface p-3 cursor-pointer hover:shadow-lg transition-all" onClick={() => { /* Navigate to relevant module */ }}>
+          <div key={kpi.label} className="rounded-xl border border-border bg-surface p-3 cursor-pointer hover:shadow-lg transition-all" onClick={() => { if (kpi.route) navigate(kpi.route); }}>
             <div className="flex items-center gap-1.5 mb-1">
               <span style={{ color: kpi.color }}>{kpi.icon}</span>
               <span className="text-[10px] text-text-3">{kpi.label}</span>

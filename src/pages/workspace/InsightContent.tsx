@@ -1,14 +1,64 @@
-import { useState, useCallback } from 'react';
-import { useMatrixCell, useIndustryColor, useInsights } from '@/hooks/useMatrix';
+import { useState, useCallback, useMemo } from 'react';
+import { useMatrixCell, useIndustryColor, useInsights, useTasks, useGoals } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, Lightbulb, ArrowUpRight, ArrowDownRight, Plus, Trash2, Lock, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Lightbulb, ArrowUpRight, ArrowDownRight, Plus, Trash2, Lock, RefreshCw, BarChart3 } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 
 const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
+
+/** Pure SVG horizontal bar chart */
+function HBarChart({ data, label, color = 'var(--brand-accent)' }: { data: { label: string; value: number; max?: number }[]; label: string; color?: string }) {
+  const maxVal = Math.max(...data.map((d) => d.max ?? d.value), 1);
+  return (
+    <div className="rounded-xl border border-border bg-surface p-3">
+      <div className="flex items-center gap-1.5 mb-2"><BarChart3 size={12} className="text-text-3" /><span className="text-[10px] font-bold text-text-3 uppercase tracking-wider">{label}</span></div>
+      <div className="space-y-2">
+        {data.map((d, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="text-[10px] text-text-2 w-16 shrink-0 truncate text-right">{d.label}</span>
+            <div className="flex-1 h-4 rounded-full bg-surface-2 overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(d.value / maxVal) * 100}%`, backgroundColor: color, minWidth: d.value > 0 ? '4px' : '0' }} />
+            </div>
+            <span className="text-[10px] font-semibold text-text w-8 text-right">{d.value}{d.max != null ? `/${d.max}` : ''}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Pure SVG vertical bar chart for trend data */
+function VBarChart({ data, label, color = 'var(--brand-accent)' }: { data: { label: string; value: number }[]; label: string; color?: string }) {
+  const maxVal = Math.max(...data.map((d) => d.value), 1);
+  const barW = Math.max(16, Math.min(32, 280 / data.length - 4));
+  return (
+    <div className="rounded-xl border border-border bg-surface p-3">
+      <div className="flex items-center gap-1.5 mb-2"><BarChart3 size={12} className="text-text-3" /><span className="text-[10px] font-bold text-text-3 uppercase tracking-wider">{label}</span></div>
+      <svg viewBox={`0 0 ${data.length * (barW + 4) + 8} 100`} className="w-full h-24" preserveAspectRatio="xMidYMid meet">
+        {/* Y axis gridlines */}
+        {[0, 0.5, 1].map((pct) => (
+          <line key={pct} x1="0" y1={100 - pct * 90 - 5} x2="100%" y2={100 - pct * 90 - 5} stroke="var(--color-border, #333)" strokeWidth="0.3" strokeDasharray="2,2" />
+        ))}
+        {data.map((d, i) => {
+          const x = i * (barW + 4) + 4;
+          const h = (d.value / maxVal) * 85;
+          const y = 95 - h;
+          return (
+            <g key={i}>
+              <rect x={x} y={y} width={barW} height={h} rx="2" fill={color} opacity="0.85" />
+              <text x={x + barW / 2} y={y - 2} textAnchor="middle" fill="var(--color-text, #eee)" fontSize="6">{d.value}</text>
+              <text x={x + barW / 2} y={99} textAnchor="middle" fill="var(--color-text-3, #666)" fontSize="5">{d.label}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
 
 export default function InsightContent() {
   const { cell, loading } = useMatrixCell();
@@ -22,6 +72,43 @@ export default function InsightContent() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { toasts, success } = useToast();
+  const { tasks } = useTasks();
+  const { goals } = useGoals();
+
+  // Chart data: task status distribution
+  const taskStatusData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const t of tasks) {
+      const s = t.status ?? 'todo';
+      counts[s] = (counts[s] || 0) + 1;
+    }
+    return [
+      { label: '待办', value: counts['todo'] ?? 0 },
+      { label: '进行中', value: counts['in_progress'] ?? 0 },
+      { label: '已完成', value: counts['done'] ?? 0 },
+      { label: '已取消', value: counts['cancelled'] ?? 0 },
+    ];
+  }, [tasks]);
+
+  // Chart data: goal progress distribution (buckets)
+  const goalProgressData = useMemo(() => {
+    const buckets = [0, 0, 0, 0, 0]; // 0-20, 20-40, 40-60, 60-80, 80-100
+    for (const g of goals) {
+      const p = g.progress ?? 0;
+      const idx = Math.min(4, Math.floor(p / 20));
+      buckets[idx]++;
+    }
+    return [
+      { label: '0-20%', value: buckets[0] },
+      { label: '20-40%', value: buckets[1] },
+      { label: '40-60%', value: buckets[2] },
+      { label: '60-80%', value: buckets[3] },
+      { label: '80-100%', value: buckets[4] },
+    ];
+  }, [goals]);
+
+  // Chart data: tasks created per status as trend (simplified — uses status counts as proxy)
+  const taskTrendData = useMemo(() => taskStatusData.filter((d) => d.value > 0).map((d) => ({ label: d.label, value: d.value })), [taskStatusData]);
 
   const displayInsights = insights;
 
@@ -85,6 +172,13 @@ export default function InsightContent() {
             ? `当前共 ${displayInsights.length} 条洞察：${displayInsights.filter((i) => i.impact === 'negative').length} 个需关注项，${displayInsights.filter((i) => i.impact === 'positive').length} 个正向趋势。建议优先处理负面指标。`
             : '暂无洞察数据，将在使用过程中自动生成'}
         </p>
+      </div>
+
+      {/* Visual Charts */}
+      <div className="mx-4 grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <HBarChart data={taskStatusData} label="任务状态分布" color="var(--brand-accent)" />
+        <HBarChart data={goalProgressData} label="目标进度分布" color="var(--color-success, #22c55e)" />
+        {taskTrendData.length > 0 && <VBarChart data={taskTrendData} label="任务状态概览" color="var(--brand-accent)" />}
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">

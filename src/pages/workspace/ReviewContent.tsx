@@ -5,11 +5,13 @@ import { hasFeature } from '@/lib/subscription';
 const PRO_FEATURES = { deepReview: hasFeature('customWorkflows' as never), customReport: hasFeature('advancedAnalytics' as never), automation: hasFeature('customWorkflows' as never), prediction: hasFeature('advancedAnalytics' as never), statusFlow: hasFeature('customWorkflows' as never), knowledge: hasFeature('advancedAnalytics' as never), aiQuery: hasFeature('advancedAnalytics' as never) };
 import { useState, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
+import { linkReviewToSeason } from '@/lib/dsteEngine';
 import { useGoals, useTasks, useActionItems } from '@/hooks/useMatrix';
 import { ChatMessage, chatCompletion } from '@/lib/aiService';
 import {
   REVIEW_MODELS, recommendModels, detectDeviations, computeAutoProgress, buildReviewDraftPrompt, computePerformanceScore,
-  type ReviewModel, type ReviewSession, type DeviationAlert,
+  snapshotGoalProgress, getReviewSnapshot, computeReviewEffectiveness,
+  type ReviewModel, type ReviewSession, type DeviationAlert, type ReviewEffectiveness,
 } from '@/lib/reviewEngine';
 import {
   createActionItem, fetchActionItems, updateActionItem,
@@ -19,7 +21,7 @@ import {
 } from '@/lib/dataLayer';
 import { cn } from '@/lib/utils';
 import { btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
-import { RotateCcw, AlertTriangle, ChevronRight, Loader2, Sparkles, CheckCircle2, ArrowRight, FileText, Lightbulb, ListChecks, X, Zap } from 'lucide-react';
+import { RotateCcw, AlertTriangle, ChevronRight, Loader2, Sparkles, CheckCircle2, ArrowRight, FileText, Lightbulb, ListChecks, X, Zap, TrendingUp } from 'lucide-react';
 
 type Phase = 'alerts' | 'pick' | 'guide' | 'draft' | 'done';
 
@@ -577,6 +579,13 @@ export default function ReviewContent() {
             onClick={() => {
               // Persist action items before completing
               if (session && session.draft) {
+                // DSTE闭环：快照目标当前进度
+                if (session.targetId) {
+                  const goal = goals.find((g) => g.id === session.targetId);
+                  if (goal) snapshotGoalProgress(session.id, session.targetId, goal.progress);
+                }
+                // DSTE闭环：关联到当前活跃赛季
+                linkReviewToSeason(session.id, session.targetId || undefined);
                 saveActionItems(session.draft, session.targetId, session.id);
               }
               setPhase('done');
@@ -710,6 +719,65 @@ export default function ReviewContent() {
                 <div className="text-lg font-extrabold text-text">{score.overall}</div>
                 <div className="text-[9px] text-text-3">综合分</div>
               </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Review Effectiveness Tracking (DSTE闭环) */}
+      {session && (() => {
+        const goalId = session.targetId;
+        const goal = goals.find((g) => g.id === goalId);
+        if (!goalId || !goal) return null;
+        const progressBefore = getReviewSnapshot(session.id, goalId);
+        if (progressBefore === null) return null;
+        const reviewActionItems = actionItems.filter((a) => a.source_id === session.id);
+        const effectiveness = computeReviewEffectiveness({
+          reviewId: session.id,
+          goalProgressBefore: progressBefore,
+          goalProgressNow: goal.progress,
+          totalActionItems: reviewActionItems.length,
+          completedActionItems: reviewActionItems.filter((a) => a.status === 'completed').length,
+          closedActionItems: reviewActionItems.filter((a) => a.closed_loop).length,
+          reviewCompletedAt: session.updatedAt,
+        });
+        const EFF_GRADE: Record<string, { label: string; color: string; bg: string }> = {
+          excellent: { label: '优秀', color: 'text-success', bg: 'bg-success/10' },
+          good: { label: '良好', color: 'text-primary-2', bg: 'bg-primary/10' },
+          moderate: { label: '一般', color: 'text-warn', bg: 'bg-warn/10' },
+          poor: { label: '待改进', color: 'text-danger', bg: 'bg-danger/10' },
+        };
+        const eg = EFF_GRADE[effectiveness.effectivenessGrade];
+        return (
+          <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <TrendingUp size={14} className="text-accent" />
+              <span className="text-xs font-bold">复盘有效性追踪</span>
+              <span className={cn('ml-auto rounded-full px-2 py-0.5 text-[9px] font-bold', eg.bg, eg.color)}>{eg.label}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-3">
+              <div className="rounded-lg bg-surface-2 p-2">
+                <div className="text-sm font-bold text-text">{effectiveness.effectivenessScore}</div>
+                <div className="text-[8px] text-text-3">有效性评分</div>
+              </div>
+              <div className="rounded-lg bg-surface-2 p-2">
+                <div className={cn('text-sm font-bold', effectiveness.progressDelta >= 0 ? 'text-success' : 'text-danger')}>
+                  {effectiveness.progressDelta >= 0 ? '+' : ''}{effectiveness.progressDelta}%
+                </div>
+                <div className="text-[8px] text-text-3">目标进度变化</div>
+              </div>
+              <div className="rounded-lg bg-surface-2 p-2">
+                <div className="text-sm font-bold text-text">{effectiveness.actionCompletionRate}%</div>
+                <div className="text-[8px] text-text-3">行动项完成率</div>
+              </div>
+              <div className="rounded-lg bg-surface-2 p-2">
+                <div className="text-sm font-bold text-text">{effectiveness.closeRate}%</div>
+                <div className="text-[8px] text-text-3">闭环率</div>
+              </div>
+            </div>
+            <div className="text-[9px] text-text-3">
+              复盘时进度 {effectiveness.goalProgressBefore}% → 当前 {effectiveness.goalProgressNow}%
+              （{effectiveness.daysSinceReview} 天前复盘）
             </div>
           </div>
         );

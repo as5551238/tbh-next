@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   createSeason, canAdvancePhase, getNextPhase, computeSeasonProgress,
-  getCurrentQuarter, getNextQuarter, loadSeasons, saveSeasons,
+  getCurrentQuarter, getNextQuarter, loadSeasons, loadSeasonsFromDB, saveSeasons,
   PHASE_ORDER, PHASE_LABELS, PHASE_DESCRIPTIONS, PHASE_COLORS,
   type OKRSeason, type SeasonPhase, type SeasonMilestone,
 } from '@/lib/dsteEngine';
@@ -11,6 +11,7 @@ import { useAppStore } from '@/stores/appStore';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { cn } from '@/lib/utils';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
+import { trackEvent } from '@/lib/behaviorTracker';
 import { Trophy, ChevronRight, Plus, ArrowRight, Clock, Target, Milestone, RotateCcw, Zap } from 'lucide-react';
 
 export default function DSTEView() {
@@ -19,10 +20,25 @@ export default function DSTEView() {
   const { toasts, success } = useToast();
   const createModal = useModal();
   const milestoneModal = useModal();
-  // Persisted seasons: load from localStorage on first render
+  // Persisted seasons: load from localStorage immediately, then upgrade from Supabase
   const [seasons, setSeasons] = useState<OKRSeason[]>(() => loadSeasons());
+  const [dbLoaded, setDbLoaded] = useState(false);
   const seasonsRef = useRef(seasons);
   seasonsRef.current = seasons;
+
+  // Supabase-first load: try DB, fallback to localStorage
+  useEffect(() => {
+    if (dbLoaded) return;
+    loadSeasonsFromDB().then((db) => {
+      if (db.length > 0) {
+        setSeasons(db);
+        seasonsRef.current = db;
+        // sync to localStorage so offline access works
+        saveSeasons(db);
+      }
+      setDbLoaded(true);
+    }).catch(() => setDbLoaded(true));
+  }, [dbLoaded]);
 
   // Helper: update seasons + persist
   const updateSeasons = useCallback((updater: (prev: OKRSeason[]) => OKRSeason[]) => {
@@ -43,6 +59,7 @@ export default function DSTEView() {
     const s = createSeason(seasonForm.name, seasonForm.startDate, seasonForm.endDate);
     updateSeasons((prev) => [s, ...prev]);
     createModal.closeModal();
+    trackEvent('season_create', { name: s.name });
     success(`赛季"${s.name}"已创建`);
     setSeasonForm({ name: '', startDate: '', endDate: '' });
   }, [seasonForm, createModal, success, updateSeasons]);
@@ -56,6 +73,7 @@ export default function DSTEView() {
       if (!next) return s;
       return { ...s, phase: next, updatedAt: new Date().toISOString() };
     }));
+    trackEvent('season_phase_advance', { seasonId });
     success('阶段已推进');
   }, [success, updateSeasons]);
 
