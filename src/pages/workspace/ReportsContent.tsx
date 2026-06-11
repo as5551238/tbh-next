@@ -8,12 +8,13 @@ import { cn } from '@/lib/utils';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { chatCompletion } from '@/lib/aiService';
 import { usePermission } from '@/hooks/usePermission';
-import { BarChart3, Download, Plus, Sparkles, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { BarChart3, Download, Plus, Sparkles, FileText, ChevronDown, ChevronUp, Building2, FileText as PersonalIcon } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { ReportInput, ReportUpdate } from '@/contracts/dataContracts';
 import { CardSkeleton } from '@/components/Skeleton';
 import { aggregateWeekData, generateWeeklyReport, reportToMarkdown, saveReportLocally, loadSavedReports, loadReportsFromDB, type WeeklyReportResult, type WeekDataAggregate, type SavedReport } from '@/lib/weeklyReport';
+import EnterpriseWeeklyReport from '@/components/EnterpriseWeeklyReport';
 
 const TYPE_STYLES: Record<string, string> = { weekly: 'bg-primary/10 text-primary-2', monthly: 'bg-accent/10 text-accent', custom: 'bg-success/10 text-success' };
 
@@ -34,6 +35,7 @@ export default function ReportsContent() {
   const [form, setForm] = useState({ title: '', type: 'weekly' });
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiSummarizing, setAiSummarizing] = useState(false);
+  const [reportTab, setReportTab] = useState<'personal' | 'enterprise'>('personal');
 
   // ── Weekly report state ──
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReportResult | null>(null);
@@ -186,6 +188,29 @@ export default function ReportsContent() {
           <Plus size={12} />生成报表
         </button>
       </div>
+
+      {/* ── Tab: 个人/企业 ── */}
+      <div className="flex items-center gap-1 px-3 md:px-4 pt-2 pb-1">
+        {([
+          { key: 'personal' as const, label: '个人周报', icon: PersonalIcon },
+          { key: 'enterprise' as const, label: '企业周报', icon: Building2 },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setReportTab(tab.key)}
+            className={cn('flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors', reportTab === tab.key ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2')}>
+            <tab.icon size={12} />{tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Enterprise Tab ── */}
+      {reportTab === 'enterprise' && (
+        <div className="flex-1 overflow-y-auto p-3 md:p-4">
+          <EnterpriseWeeklyReport />
+        </div>
+      )}
+
+      {/* ── Personal Tab ── */}
+      {reportTab === 'personal' && (<>
 
       {/* ── AI Summary card ── */}
       {aiSummary && (
@@ -368,6 +393,7 @@ export default function ReportsContent() {
         }}
       />
       <PaywallModal open={rpShow} onClose={rpClose} reason={rpReason} feature={rpFeat} />
+      </>)} {/* end personal tab */}
     </div>
   );
 }

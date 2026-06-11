@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { useMatrixCell, useIndustryColor, useGoals, useTasks, useActionItems } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, Target, CheckCircle2, ArrowRight, Zap, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Target, CheckCircle2, ArrowRight, Zap, Clock, AlertTriangle } from 'lucide-react';
 import { generateFocusPlan, FOCUS_TAG_CONFIG, type Prioritizable, type PrioritizedItem } from '@/lib/priorityEngine';
 import LoopDiagram from '@/components/LoopDiagram';
 import { t } from '@/lib/i18n';

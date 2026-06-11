@@ -269,3 +269,141 @@ export function alertToDeviationInput(alert: RiskAlert): {
     is_resolved: false,
   };
 }
+
+// ─── L2: Risk Trajectory Prediction ───
+
+export interface RiskTrajectory {
+  alertId: string;
+  /** Current risk score */
+  currentScore: number;
+  /** Predicted score in N days (extrapolated) */
+  predictedScore: number;
+  /** Days until crossing critical threshold (80), null if won't cross */
+  daysToCritical: number | null;
+  /** Trend direction */
+  trend: 'improving' | 'stable' | 'deteriorating';
+  /** Confidence 0-1 */
+  confidence: number;
+  /** Reason for prediction */
+  reason: string;
+}
+
+/**
+ * Predict risk trajectory based on historical alert patterns
+ * Uses simple heuristics: if a task/goal has been flagged multiple times
+ * or has been deteriorating, predict continued deterioration
+ */
+export function predictRiskTrajectories(
+  currentAlerts: RiskAlert[],
+  previousAlerts: RiskAlert[] = [],
+): RiskTrajectory[] {
+  const previousMap = new Map<string, RiskAlert>();
+  previousAlerts.forEach(a => previousMap.set(a.id, a));
+
+  return currentAlerts.map(alert => {
+    const prev = previousMap.get(alert.id);
+    const scoreDelta = prev ? alert.score - prev.score : 0;
+
+    // Score velocity (points per day, rough estimate from alert age)
+    const daysSinceDetection = Math.max(1,
+      (Date.now() - new Date(alert.detectedAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const velocity = scoreDelta / daysSinceDetection;
+
+    // Predict 7-day score
+    const predictedScore = Math.min(100, Math.max(0, alert.score + velocity * 7));
+
+    // Days to critical (score 80)
+    let daysToCritical: number | null = null;
+    if (velocity > 0 && alert.score < 80) {
+      daysToCritical = Math.ceil((80 - alert.score) / velocity);
+    }
+
+    let trend: RiskTrajectory['trend'] = 'stable';
+    if (velocity > 3) trend = 'deteriorating';
+    else if (velocity < -3) trend = 'improving';
+
+    const reason = buildTrajectoryReason(alert, velocity, predictedScore, prev);
+
+    return {
+      alertId: alert.id,
+      currentScore: alert.score,
+      predictedScore: Math.round(predictedScore),
+      daysToCritical,
+      trend,
+      confidence: Math.min(1, 0.3 + (previousAlerts.length > 0 ? 0.4 : 0) + (daysSinceDetection > 1 ? 0.3 : 0)),
+      reason,
+    };
+  });
+}
+
+function buildTrajectoryReason(
+  alert: RiskAlert,
+  velocity: number,
+  predictedScore: number,
+  prev: RiskAlert | undefined,
+): string {
+  const parts: string[] = [];
+
+  if (prev) {
+    const delta = alert.score - prev.score;
+    if (delta > 0) parts.push(`风险评分上升${delta}分`);
+    else if (delta < 0) parts.push(`风险评分下降${Math.abs(delta)}分`);
+    else parts.push(`风险评分持平`);
+  } else {
+    parts.push(`新检测到的风险`);
+  }
+
+  if (velocity > 5) parts.push(`恶化速度较快(日均+${velocity.toFixed(1)}分)`);
+  else if (velocity < -5) parts.push(`正在改善(日均${velocity.toFixed(1)}分)`);
+
+  if (predictedScore >= 80) parts.push(`预计7天内达到严重级别`);
+  else if (predictedScore >= 50) parts.push(`预计7天内达到警告级别`);
+
+  if (alert.source === 'task_overdue') parts.push(`逾期任务通常持续恶化直至处理`);
+  if (alert.source === 'goal_at_risk') parts.push(`目标风险需尽早干预以避免失败`);
+
+  return parts.join('；');
+}
+
+// ─── Milestone Overdue Detection (was missing) ───
+
+export interface MilestoneLike {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  completed: boolean;
+  goalId?: string;
+}
+
+export function detectMilestoneOverdue(
+  milestones: MilestoneLike[],
+  cfg: RiskEngineConfig = DEFAULT_CONFIG,
+  now: Date = new Date(),
+): RiskAlert[] {
+  const today = now.toISOString().slice(0, 10);
+  return milestones
+    .filter(m => !m.completed && m.dueDate && m.dueDate < today)
+    .map(m => {
+      const daysLate = daysBetween(m.dueDate!, now);
+      let severity: RiskSeverity = 'info';
+      let score = 25;
+      if (daysLate >= cfg.overdueCriticalDays) {
+        severity = 'critical';
+        score = 75 + Math.min(daysLate, 25);
+      } else if (daysLate >= cfg.overdueWarningDays) {
+        severity = 'warning';
+        score = 45 + daysLate * 10;
+      }
+      return {
+        id: deterministicId('milestone_overdue', m.id, today),
+        source: 'milestone_overdue' as const,
+        severity,
+        title: `里程碑逾期: ${m.title}`,
+        description: `里程碑「${m.title}」已逾期 ${daysLate} 天（截止: ${m.dueDate}）`,
+        score: Math.min(score, 100),
+        goalId: m.goalId,
+        detectedAt: now.toISOString(),
+      };
+    });
+}

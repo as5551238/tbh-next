@@ -12,6 +12,7 @@ const Router = isGHPages ? HashRouter : BrowserRouter;
 // basename is only needed for BrowserRouter (sub-directory hosting on GitHub Pages).
 // HashRouter handles paths inside the hash — no basename needed.
 const routerBasename = isGHPages ? undefined : (import.meta.env.BASE_URL.replace(/\/$/, '') || undefined);
+import { hydrateStoreFromUrl } from '@/stores/appStore';
 import App from './App';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
@@ -44,6 +45,10 @@ if ('serviceWorker' in navigator) {
 if (isGHPages && !window.location.hash) {
   window.location.replace(window.location.pathname + '#/');
 }
+
+// L0: Sync URL → zustand state BEFORE first React render
+// Prevents flash of wrong page on direct URL navigation (e.g. #/ai/dste)
+hydrateStoreFromUrl();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

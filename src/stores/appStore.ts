@@ -225,3 +225,43 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ theme });
   },
 }));
+
+// ═══════════════════════════════════════════════════════════════
+// L0: SYNCHRONOUS URL → STORE HYDRATION (before first React render)
+// ═══════════════════════════════════════════════════════════════
+// Solves: direct URL navigation (e.g. #/ai/dste) shows wrong page
+// because zustand defaults (workspace/overview) are used on first render
+// before RouteSync's useEffect fires.
+// Call this ONCE in main.tsx before createRoot().render().
+
+const VALID_INTERFACES = ['workspace', 'collab', 'ai'] as const;
+
+export function hydrateStoreFromUrl(): void {
+  let pathname: string;
+  if (window.location.hash) {
+    // HashRouter: parse hash fragment, e.g. "#/ai/dste" → "/ai/dste"
+    pathname = window.location.hash.replace(/^#\/?/, '/') || '/';
+  } else {
+    pathname = window.location.pathname;
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  if (!segments[0] || !VALID_INTERFACES.includes(segments[0] as any)) return;
+
+  const iface = segments[0] as AppState['interface'];
+  const mod = segments[1];
+
+  const store = useAppStore.getState();
+  const defaults = store.viewMode === 'simple' ? SIMPLE_DEFAULT_MODULES : DEFAULT_MODULES;
+  const resolvedMod = mod && MODULE_TO_INTERFACE[mod] === iface
+    ? mod
+    : (defaults[iface] ?? 'overview');
+
+  // Only set if different from defaults
+  if (store.interface !== iface || store.activeModule !== resolvedMod) {
+    useAppStore.setState({
+      interface: iface,
+      activeModule: resolvedMod,
+    });
+  }
+}

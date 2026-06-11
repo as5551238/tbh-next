@@ -15,6 +15,7 @@ registerTranslations('en', {
     myAccount: 'My Account',
     home: 'Home',
     toggleLanguage: 'Switch language',
+    actionItems: 'Action Items',
   },
   login: {
     title: 'TBH Next',

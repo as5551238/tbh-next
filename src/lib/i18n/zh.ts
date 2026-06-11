@@ -15,6 +15,7 @@ registerTranslations('zh', {
     myAccount: '我的',
     home: '返回首页',
     toggleLanguage: '切换语言',
+    actionItems: '行动项',
   },
   login: {
     title: 'TBH Next',

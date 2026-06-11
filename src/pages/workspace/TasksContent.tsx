@@ -19,6 +19,26 @@ import { trackEvent } from '@/lib/behaviorTracker';
 
 type TaskViewMode = 'list' | 'kanban' | 'gantt' | 'calendar';
 
+interface KanbanViewProps {
+  tasks: TaskRow[];
+  onTaskClick: (t: TaskRow) => void;
+  onToggleDone: (e: MouseEvent, t: TaskRow) => void;
+  onStatusChange: (id: string, status: string) => void;
+  priorityStyle: Record<string, string>;
+  priorityLabel: Record<string, string>;
+}
+
+interface GanttViewProps {
+  tasks: TaskRow[];
+  onTaskClick: (t: TaskRow) => void;
+}
+
+interface CalendarViewProps {
+  tasks: TaskRow[];
+  onTaskClick: (t: TaskRow) => void;
+  priorityStyle: Record<string, string>;
+}
+
 export default function TasksContent() {
   const { can } = usePermission();
   const { tasks, loading, addTask, editTask, removeTask } = useTasks();
@@ -49,6 +69,11 @@ export default function TasksContent() {
     { key: 'estimated_hours', label: '预估工时(h)', type: 'number' },
     { key: 'actual_hours', label: '实际工时(h)', type: 'number' },
   ];
+
+  const handleStatusChange = useCallback((id: string, status: string) => {
+    editTask(id, { status, done: status === 'done' });
+    trackEvent('task_update', { id, status, source: 'kanban_drag' });
+  }, [editTask]);
 
   const handleTaskClick = useCallback((t: typeof tasks[number]) => {
     setEditData({
@@ -157,7 +182,7 @@ export default function TasksContent() {
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)}</div>
       ) : viewMode === 'kanban' ? (
         /* ===== 看板视图 ===== */
-        <KanbanView tasks={tasks} onTaskClick={handleTaskClick} onToggleDone={handleToggleDone} priorityStyle={priorityStyle} priorityLabel={priorityLabel} />
+        <KanbanView tasks={tasks} onTaskClick={handleTaskClick} onToggleDone={handleToggleDone} onStatusChange={handleStatusChange} priorityStyle={priorityStyle} priorityLabel={priorityLabel} />
       ) : viewMode === 'gantt' ? (
         /* ===== 甘特图视图 ===== */
         <GanttView tasks={tasks} onTaskClick={handleTaskClick} />
@@ -244,32 +269,54 @@ export default function TasksContent() {
 // ===== 看板视图 =====
 
 const KANBAN_COLUMNS = [
-  { key: 'todo', label: '待办', color: 'border-l-surface-2' },
-  { key: 'in_progress', label: '进行中', color: 'border-l-warn' },
-  { key: 'done', label: '已完成', color: 'border-l-success' },
-  { key: 'blocked', label: '阻塞', color: 'border-l-danger' },
+  { key: 'todo', label: '待办', color: 'border-l-surface-2', bg: 'bg-surface-2/30' },
+  { key: 'in_progress', label: '进行中', color: 'border-l-warn', bg: 'bg-warn/5' },
+  { key: 'done', label: '已完成', color: 'border-l-success', bg: 'bg-success/5' },
+  { key: 'blocked', label: '阻塞', color: 'border-l-danger', bg: 'bg-danger/5' },
 ];
 
-function KanbanView({ tasks, onTaskClick, onToggleDone, priorityStyle, priorityLabel }: {
-  tasks: TaskRow[];
-  onTaskClick: (t: TaskRow) => void;
-  onToggleDone: (e: MouseEvent, t: TaskRow) => void;
-  priorityStyle: Record<string, string>;
-  priorityLabel: Record<string, string>;
-}) {
+function KanbanView({ tasks, onTaskClick, onToggleDone, onStatusChange, priorityStyle, priorityLabel }: KanbanViewProps) {
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [dragTaskId, setDragTaskId] = useState<string | null>(null);
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 min-h-[400px]">
       {KANBAN_COLUMNS.map(col => {
         const colTasks = tasks.filter(t => t.status === col.key);
         return (
-          <div key={col.key} className={cn('rounded-xl border border-border bg-surface-2/30 p-2 border-l-4', col.color)}>
+          <div
+            key={col.key}
+            className={cn('rounded-xl border border-border p-2 border-l-4 transition-colors', col.bg, col.color, dragOverCol === col.key && 'ring-2 ring-primary/30 bg-primary/5')}
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverCol(col.key); }}
+            onDragLeave={() => setDragOverCol(null)}
+            onDrop={(e) => {
+              e.preventDefault();
+              const taskId = e.dataTransfer.getData('text/plain');
+              if (taskId && col.key !== tasks.find(t => t.id === taskId)?.status) {
+                onStatusChange(taskId, col.key);
+              }
+              setDragOverCol(null);
+              setDragTaskId(null);
+            }}
+          >
             <div className="flex items-center justify-between mb-2 px-1">
               <span className="text-[11px] font-bold text-text-2">{col.label}</span>
               <span className="text-[10px] text-text-3 bg-surface rounded-full px-1.5 py-0.5">{colTasks.length}</span>
             </div>
-            <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-1.5 min-h-[40px] max-h-[60vh] overflow-y-auto">
               {colTasks.map(t => (
-                <div key={t.id} className={cn('rounded-lg border border-border bg-surface px-2.5 py-2 cursor-pointer hover:shadow-sm transition-all', t.done && 'opacity-50')} onClick={() => onTaskClick(t)}>
+                <div
+                  key={t.id}
+                  draggable
+                  onDragStart={(e) => { e.dataTransfer.setData('text/plain', t.id); e.dataTransfer.effectAllowed = 'move'; setDragTaskId(t.id); }}
+                  onDragEnd={() => { setDragOverCol(null); setDragTaskId(null); }}
+                  className={cn(
+                    'rounded-lg border border-border bg-surface px-2.5 py-2 cursor-pointer hover:shadow-sm transition-all',
+                    t.done && 'opacity-50',
+                    dragTaskId === t.id && 'opacity-40 scale-95'
+                  )}
+                  onClick={() => onTaskClick(t)}
+                >
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className={cn('h-3 w-3 rounded border-2 shrink-0 flex items-center justify-center', t.done ? 'bg-success border-success' : 'border-border')} onClick={(e) => onToggleDone(e, t)}>
                       {t.done && <CheckCircle2 size={8} className="text-white" />}
@@ -282,7 +329,7 @@ function KanbanView({ tasks, onTaskClick, onToggleDone, priorityStyle, priorityL
                   </div>
                 </div>
               ))}
-              {colTasks.length === 0 && <div className="text-center py-6 text-[10px] text-text-3">暂无</div>}
+              {colTasks.length === 0 && <div className="text-center py-6 text-[10px] text-text-3">{dragOverCol === col.key ? '松开放入' : '暂无'}</div>}
             </div>
           </div>
         );
@@ -293,67 +340,93 @@ function KanbanView({ tasks, onTaskClick, onToggleDone, priorityStyle, priorityL
 
 // ===== 甘特图视图 =====
 
-function GanttView({ tasks, onTaskClick }: { tasks: TaskRow[]; onTaskClick: (t: TaskRow) => void }) {
-  const activeTasks = useMemo(() => tasks.filter(t => t.status !== 'cancelled' && t.status !== 'done').slice(0, 20), [tasks]);
+function GanttView({ tasks, onTaskClick }: GanttViewProps) {
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [showDone, setShowDone] = useState(false);
+
   const dateRange = useMemo(() => {
     const now = new Date();
+    const base = new Date(now);
+    base.setDate(base.getDate() + weekOffset * 7);
     const days: string[] = [];
     for (let i = -7; i < 30; i++) {
-      const d = new Date(now);
+      const d = new Date(base);
       d.setDate(d.getDate() + i);
       days.push(d.toISOString().slice(0, 10));
     }
     return days;
-  }, []);
+  }, [weekOffset]);
 
-  const startDate = dateRange[0];
-  const endDate = dateRange[dateRange.length - 1];
   const totalDays = dateRange.length;
-  const todayIdx = 7; // -7 offset means today is at index 7
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayIdx = dateRange.indexOf(todayStr);
+  const rangeLabel = `${dateRange[0].slice(5)} ~ ${dateRange[totalDays - 1].slice(5)}`;
+
+  const visibleTasks = useMemo(() => {
+    const filtered = showDone ? tasks : tasks.filter(t => t.status !== 'cancelled');
+    return filtered.slice(0, 25);
+  }, [tasks, showDone]);
+
+  const statusBarColor = (status: string) => {
+    if (status === 'in_progress') return 'bg-warn';
+    if (status === 'blocked') return 'bg-danger';
+    if (status === 'done') return 'bg-success/60';
+    return 'bg-primary/60';
+  };
 
   return (
-    <div className="overflow-x-auto">
-      {/* Timeline header */}
-      <div className="flex border-b border-border mb-1 min-w-[800px]">
-        <div className="w-40 shrink-0 px-2 py-1 text-[10px] font-bold text-text-3">任务</div>
-        <div className="flex-1 flex">
-          {dateRange.map((d, i) => (
-            <div key={d} className={cn('flex-1 text-center text-[8px] py-1 min-w-[28px]', i === todayIdx ? 'text-primary-2 font-bold' : 'text-text-3')}>
-              {d.slice(8)}<br/>{d.slice(5, 7)}
-            </div>
-          ))}
-        </div>
+    <div>
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
+        <button onClick={() => setWeekOffset(w => w - 1)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">← 上一周</button>
+        <button onClick={() => setWeekOffset(0)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">今天</button>
+        <button onClick={() => setWeekOffset(w => w + 1)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">下一周 →</button>
+        <span className="text-[10px] text-text-3">{rangeLabel}</span>
+        <label className="flex items-center gap-1 ml-auto text-[10px] text-text-3 cursor-pointer">
+          <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} className="h-3 w-3 accent-primary" />
+          显示已完成
+        </label>
       </div>
-      {/* Task bars */}
-      {activeTasks.map(task => {
-        const taskStart = task.start_date || task.created_at || startDate;
-        const taskEnd = task.due_date || endDate;
-        const startIdx = Math.max(0, dateRange.indexOf(taskStart.slice(0, 10)));
-        const endIdx = Math.min(totalDays - 1, dateRange.indexOf(taskEnd.slice(0, 10)));
-        const barLeft = startIdx >= 0 ? `${(startIdx / totalDays) * 100}%` : '0%';
-        const barWidth = endIdx > startIdx ? `${((endIdx - startIdx + 1) / totalDays) * 100}%` : '4%';
-        const barColor = task.status === 'in_progress' ? 'bg-warn' : task.status === 'blocked' ? 'bg-danger' : 'bg-primary/60';
-
-        return (
-          <div key={task.id} className="flex items-center min-w-[800px] hover:bg-surface-2/30 cursor-pointer" onClick={() => onTaskClick(task)}>
-            <div className="w-40 shrink-0 px-2 py-1.5 text-[10px] text-text truncate">{task.title}</div>
-            <div className="flex-1 relative h-7">
-              {/* Today line */}
-              <div className="absolute top-0 bottom-0 w-px bg-primary/30" style={{ left: `${(todayIdx / totalDays) * 100}%` }} />
-              <div className={cn('absolute top-1.5 h-4 rounded-sm', barColor)} style={{ left: barLeft, width: barWidth }} title={`${task.title}: ${taskStart?.slice(0, 10)} → ${taskEnd?.slice(0, 10)}`} />
-            </div>
+      <div className="overflow-x-auto">
+        <div className="flex border-b border-border mb-1 min-w-[800px]">
+          <div className="w-36 shrink-0 px-2 py-1 text-[10px] font-bold text-text-3">任务</div>
+          <div className="flex-1 flex">
+            {dateRange.map((d, i) => (
+              <div key={d} className={cn('flex-1 text-center text-[8px] py-1 min-w-[28px]', d === todayStr ? 'text-primary-2 font-bold bg-primary/5' : 'text-text-3')}>
+                {d.slice(8)}
+              </div>
+            ))}
           </div>
-        );
-      })}
-      {activeTasks.length === 0 && <div className="text-center py-8 text-xs text-text-3">暂无进行中的任务</div>}
+        </div>
+        {visibleTasks.map(task => {
+          const taskStart = task.start_date || task.created_at || dateRange[0];
+          const taskEnd = task.due_date || dateRange[totalDays - 1];
+          const startIdx = Math.max(0, dateRange.indexOf(taskStart.slice(0, 10)));
+          const endIdx = Math.min(totalDays - 1, dateRange.indexOf(taskEnd.slice(0, 10)));
+          const barLeft = `${(startIdx / totalDays) * 100}%`;
+          const barWidth = endIdx > startIdx ? `${((endIdx - startIdx + 1) / totalDays) * 100}%` : '4%';
+          const isOverdue = task.due_date && task.due_date < todayStr && task.status !== 'done';
+
+          return (
+            <div key={task.id} className="flex items-center min-w-[800px] hover:bg-surface-2/30 cursor-pointer" onClick={() => onTaskClick(task)}>
+              <div className={cn('w-36 shrink-0 px-2 py-1.5 text-[10px] truncate', isOverdue && 'text-danger font-bold', task.status === 'done' && 'text-text-3 line-through')}>{task.title}</div>
+              <div className="flex-1 relative h-7">
+                {todayIdx >= 0 && <div className="absolute top-0 bottom-0 w-px bg-primary/30" style={{ left: `${(todayIdx / totalDays) * 100}%` }} />}
+                <div className={cn('absolute top-1.5 h-4 rounded-sm', statusBarColor(task.status))} style={{ left: barLeft, width: barWidth }} title={`${task.title}: ${taskStart?.slice(0, 10)} → ${taskEnd?.slice(0, 10)}`} />
+              </div>
+            </div>
+          );
+        })}
+        {visibleTasks.length === 0 && <div className="text-center py-8 text-xs text-text-3">暂无任务</div>}
+      </div>
     </div>
   );
 }
 
 // ===== 日历视图 =====
 
-function CalendarView({ tasks, onTaskClick, priorityStyle }: { tasks: TaskRow[]; onTaskClick: (t: TaskRow) => void; priorityStyle: Record<string, string> }) {
+function CalendarView({ tasks, onTaskClick, priorityStyle }: CalendarViewProps) {
   const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
@@ -372,17 +445,29 @@ function CalendarView({ tasks, onTaskClick, priorityStyle }: { tasks: TaskRow[];
     return m;
   }, [tasks]);
 
+  const taskCountThisMonth = useMemo(() => {
+    let count = 0;
+    const prefix = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`;
+    tasks.forEach(t => { if (t.due_date?.startsWith(prefix)) count++; });
+    return count;
+  }, [tasks, viewDate]);
+
   const prevMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const nextMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  const goToToday = () => setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
 
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">← 上月</button>
+        <div className="flex items-center gap-2">
+          <button onClick={prevMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">← 上月</button>
+          <button onClick={goToToday} className="text-[10px] text-primary-2 px-2 py-1 rounded hover:bg-primary/10 font-medium">今天</button>
+          <button onClick={nextMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">下月 →</button>
+        </div>
         <span className="text-sm font-bold text-text">{monthLabel}</span>
-        <button onClick={nextMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">下月 →</button>
+        <span className="text-[10px] text-text-3">本月 {taskCountThisMonth} 项</span>
       </div>
       <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
         {weekDays.map(d => (
@@ -395,12 +480,16 @@ function CalendarView({ tasks, onTaskClick, priorityStyle }: { tasks: TaskRow[];
           const day = i + 1;
           const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const dayTasks = taskMap.get(dateStr) || [];
-          const isToday = dateStr === today.toISOString().slice(0, 10);
+          const isToday = dateStr === todayStr;
+          const isPast = dateStr < todayStr;
+          const overdueTasks = dayTasks.filter(t => t.status !== 'done' && t.status !== 'cancelled');
+          const doneTasks = dayTasks.filter(t => t.status === 'done');
+
           return (
-            <div key={day} className={cn('bg-surface min-h-[60px] p-1', isToday && 'bg-primary/5')}>
-              <div className={cn('text-[10px] mb-0.5', isToday ? 'text-primary-2 font-bold' : 'text-text-3')}>{day}</div>
+            <div key={day} className={cn('bg-surface min-h-[60px] p-1', isToday && 'bg-primary/5', isPast && overdueTasks.length > 0 && 'bg-danger/5')}>
+              <div className={cn('text-[10px] mb-0.5', isToday ? 'text-primary-2 font-bold' : isPast && overdueTasks.length > 0 ? 'text-danger' : 'text-text-3')}>{day}</div>
               {dayTasks.slice(0, 2).map(t => (
-                <div key={t.id} className={cn('rounded px-1 py-0.5 text-[8px] truncate cursor-pointer hover:opacity-80', priorityStyle[t.priority] || priorityStyle.medium)} onClick={() => onTaskClick(t)}>
+                <div key={t.id} className={cn('rounded px-1 py-0.5 text-[8px] truncate cursor-pointer hover:opacity-80', t.status === 'done' ? 'bg-success/10 text-success line-through' : priorityStyle[t.priority] || priorityStyle.medium)} onClick={() => onTaskClick(t)}>
                   {t.title}
                 </div>
               ))}
