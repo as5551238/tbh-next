@@ -42,17 +42,19 @@ const PAGE_MAP: Record<string, LazyExoticComponent<() => JSX.Element>> = {
 function RouteSync() {
   const location = useLocation();
   const navigate = useNavigate();
+  const authUser = useAppStore((s) => s.authUser);
+  const viewMode = useAppStore((s) => s.viewMode);
 
   useEffect(() => {
     const segments = location.pathname.split('/').filter(Boolean);
     if (segments[0] && ['workspace', 'collab', 'ai'].includes(segments[0])) {
-      // Use navigateTo for L2 protected entry + L3 invariant consistency
       const store = useAppStore.getState();
       const iface = segments[0];
       const mod = segments[1];
       // viewMode guard: simple users cannot access admin modules via URL
-      if (store.viewMode === 'simple' && mod && ADMIN_ONLY_MODULES.has(mod)) {
-        const defaultMod = store.viewMode === 'simple' ? 'mywork' : 'overview';
+      // Skip guard until auth is resolved (authUser !== null) to avoid race condition
+      if (authUser !== null && viewMode === 'simple' && mod && ADMIN_ONLY_MODULES.has(mod)) {
+        const defaultMod = viewMode === 'simple' ? 'mywork' : 'overview';
         navigate(`/${iface}/${defaultMod}`, { replace: true });
         return;
       }
@@ -61,7 +63,7 @@ function RouteSync() {
         store.navigateTo(iface, mod);
       }
     }
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, authUser, viewMode]);
 
   return null;
 }

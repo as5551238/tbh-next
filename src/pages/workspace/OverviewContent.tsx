@@ -217,6 +217,77 @@ export default function OverviewContent() {
         completionRate={goals.length > 0 ? Math.round(goals.filter((g) => g.status === 'completed').length / goals.length * 100) : 0}
       />
 
+      {/* 项目进度 & 风险概览 — 管理端驾驶舱核心 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* 项目进度卡片 */}
+        <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-text-3 uppercase tracking-wider">项目进度</span>
+            <button onClick={() => navigate(navigateTo('workspace', 'projects'))} className="text-[10px] text-primary-2 hover:underline">查看全部</button>
+          </div>
+          {goals.filter((g) => g.status === 'in_progress' || g.status === 'active').slice(0, 4).map((g) => {
+            const pct = Math.min(100, Math.max(0, g.progress || 0));
+            const barColor = pct >= 70 ? 'bg-success' : pct >= 40 ? 'bg-warn' : 'bg-danger';
+            return (
+              <div key={g.id} className="mb-2.5 last:mb-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-text truncate max-w-[70%]">{g.title}</span>
+                  <span className={cn('text-[10px] font-bold', pct >= 70 ? 'text-success' : pct >= 40 ? 'text-warn' : 'text-danger')}>{pct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
+                  <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+          {goals.filter((g) => g.status === 'in_progress' || g.status === 'active').length === 0 && (
+            <div className="text-center py-4 text-xs text-text-3">暂无进行中的目标</div>
+          )}
+        </div>
+
+        {/* 风险项 + 周报入口 */}
+        <div className="space-y-3">
+          <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-text-3 uppercase tracking-wider">风险预警</span>
+              <button onClick={() => navigate(navigateTo('ai', 'risk'))} className="text-[10px] text-primary-2 hover:underline">AI分析</button>
+            </div>
+            {todayFocus.overdueCount > 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-danger/5 border border-danger/20 px-2.5 py-2 mb-1.5">
+                <AlertTriangle size={12} className="text-danger shrink-0" />
+                <span className="text-xs text-danger font-medium">{todayFocus.overdueCount}个逾期任务需处理</span>
+              </div>
+            )}
+            {todayFocus.atRiskCount > 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-warn/5 border border-warn/20 px-2.5 py-2 mb-1.5">
+                <TrendingDown size={12} className="text-warn shrink-0" />
+                <span className="text-xs text-warn font-medium">{todayFocus.atRiskCount}个目标进度落后</span>
+              </div>
+            )}
+            {todayFocus.overdueCount === 0 && todayFocus.atRiskCount === 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-success/5 border border-success/20 px-2.5 py-2">
+                <CheckCircle2 size={12} className="text-success shrink-0" />
+                <span className="text-xs text-success font-medium">当前无风险项</span>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => navigate(navigateTo('ai', 'morning'))}
+            className="w-full group flex items-center justify-between rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-primary/30 hover:shadow-lg"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">📊</span>
+              <div>
+                <div className="text-xs font-semibold text-text">AI周报 & 晨间简报</div>
+                <div className="text-[10px] text-text-3 mt-0.5">一键生成，可导出PDF</div>
+              </div>
+            </div>
+            <ArrowRight size={16} className="text-text-3 transition-transform group-hover:translate-x-1" />
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <button onClick={() => navigate(navigateTo('collab'))} className="group flex items-center justify-between rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-primary/30 hover:shadow-lg">
           <div><div className="text-xs font-semibold text-text">{t('overview.collabDesk')}</div><div className="text-[10px] text-text-3 mt-0.5">{t('overview.activeChannels', { count: cell.channels.length })}</div></div>

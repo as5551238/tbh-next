@@ -56,13 +56,12 @@ export function getInterfaceForModule(mod: string): string {
   return MODULE_TO_INTERFACE[mod] ?? 'workspace';
 }
 
-/** Modules restricted to cockpit viewMode (admin/manager only) */
+/** Modules restricted to cockpit viewMode (admin/manager only)
+ *  Only truly admin-level modules; DSTE/goals/insight etc. are available to all roles */
 export const ADMIN_ONLY_MODULES = new Set([
-  'admin', 'roles', 'org', 'featureFlags', 'automation', 'statusFlow',
-  'commandCenter', 'insight', 'prediction', 'savedViews',
-  'agentMarket', 'knowledgeOSP', 'mcpA2a', 'crossDeptAutomation',
-  'usageAlerts', 'systemMonitor', 'behaviorTracker', 'dste',
-  'templateWizard', 'subscription',
+  'admin', 'roles', 'org', 'featureFlags', 'statusFlow',
+  'crossDeptAutomation', 'systemMonitor', 'behaviorTracker',
+  'subscription',
 ]);
 
 /** 根据 role 推导默认 viewMode — admin/owner/leader/manager → cockpit, 其他 → simple */
@@ -158,13 +157,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   navigateTo: (iface, module) => {
     const state = get();
     const defaults = state.viewMode === 'simple' ? SIMPLE_DEFAULT_MODULES : DEFAULT_MODULES;
-    const mod = module ?? defaults[iface] ?? 'overview';
-    // L3: 运行时不变量检查
-    if (import.meta.env.DEV && !isInterfaceModuleConsistent(iface, mod)) {
-      console.warn(
-        `[AppStore] Invariant violation: interface="${iface}" but module="${mod}" belongs to "${MODULE_TO_INTERFACE[mod] ?? 'unknown'}". ` +
-        `This may cause a blank page. Auto-correcting module to "${DEFAULT_MODULES[iface]}".`
-      );
+    let mod = module ?? defaults[iface] ?? 'overview';
+    // L3: 运行时不变量检查 + 真正自动纠偏
+    if (!isInterfaceModuleConsistent(iface, mod)) {
+      const corrected = defaults[iface] ?? 'overview';
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[AppStore] Invariant violation: interface="${iface}" but module="${mod}" belongs to "${MODULE_TO_INTERFACE[mod] ?? 'unknown'}". ` +
+          `Auto-correcting module to "${corrected}".`
+        );
+      }
+      mod = corrected;
     }
     // Behavior tracking
     if (mod !== state.activeModule) {

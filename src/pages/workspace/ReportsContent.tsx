@@ -1,7 +1,7 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { hasFeature } from '@/lib/subscription';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useReports, useGoals, useTasks, useRisks, useActionItems, useDeviationAlerts } from '@/hooks/useMatrix';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -13,7 +13,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { ReportInput, ReportUpdate } from '@/contracts/dataContracts';
 import { CardSkeleton } from '@/components/Skeleton';
-import { aggregateWeekData, generateWeeklyReport, reportToMarkdown, type WeeklyReportResult, type WeekDataAggregate } from '@/lib/weeklyReport';
+import { aggregateWeekData, generateWeeklyReport, reportToMarkdown, saveReportLocally, loadSavedReports, loadReportsFromDB, type WeeklyReportResult, type WeekDataAggregate, type SavedReport } from '@/lib/weeklyReport';
 
 const TYPE_STYLES: Record<string, string> = { weekly: 'bg-primary/10 text-primary-2', monthly: 'bg-accent/10 text-accent', custom: 'bg-success/10 text-success' };
 
@@ -41,6 +41,16 @@ export default function ReportsContent() {
   const [weeklyExpanded, setWeeklyExpanded] = useState(true);
   const [weeklyData, setWeeklyData] = useState<WeekDataAggregate | null>(null);
 
+  // ── Saved report history (localStorage + Supabase dual-source) ──
+  const [savedReports, setSavedReports] = useState<SavedReport[]>(() => loadSavedReports());
+
+  // Try Supabase on mount for richer history
+  useEffect(() => {
+    loadReportsFromDB(20).then((dbReports) => {
+      if (dbReports.length > 0) setSavedReports(dbReports);
+    }).catch(() => { /* keep local fallback */ });
+  }, []);
+
   // ── One-click weekly report generation (DR-53: data drives action) ──
   const handleGenerateWeeklyReport = useCallback(async () => {
     if (weeklyGenerating) return;
@@ -50,6 +60,9 @@ export default function ReportsContent() {
       setWeeklyData(data);
       const result = await generateWeeklyReport(data);
       setWeeklyReport(result);
+      // Persist locally + Supabase dual-write (DR-53 / DR-68)
+      const saved = saveReportLocally(result);
+      setSavedReports((prev) => [saved, ...prev].slice(0, 20));
       // Persist as a report row (DR-53)
       addReport({
         title: result.title,
@@ -255,6 +268,25 @@ export default function ReportsContent() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Saved Report History (localStorage + Supabase) ── */}
+      {savedReports.length > 0 && (
+        <div className="mx-3 md:mx-4 mt-2">
+          <div className="text-[10px] font-semibold text-text-3 mb-1">历史报告</div>
+          <div className="space-y-1">
+            {savedReports.slice(0, 5).map((sr) => (
+              <div key={sr.id} className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-[11px] hover:bg-surface-2 transition-colors">
+                <FileText size={12} className="text-primary-2 shrink-0" />
+                <span className="truncate flex-1 text-text">{sr.title}</span>
+                <span className="text-[9px] text-text-3 shrink-0">{sr.period}</span>
+                <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold shrink-0', TYPE_STYLES[sr.type] ?? TYPE_STYLES.weekly)}>
+                  {sr.type === 'weekly' ? '周报' : sr.type === 'monthly' ? '月报' : '自定义'}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

@@ -5,7 +5,7 @@ import { useTasks } from '@/hooks/useMatrix';
 import type { TaskRow } from '@/lib/dataLayer';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Plus } from 'lucide-react';
+import { CheckCircle2, Plus, LayoutList, Columns3, Calendar, GanttChart } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { TableRowSkeleton } from '@/components/Skeleton';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
@@ -16,6 +16,8 @@ import { exportToCSV, exportToJSON } from '@/lib/export';
 import { usePermission } from '@/hooks/usePermission';
 import { recordRender } from '@/lib/monitoring';
 import { trackEvent } from '@/lib/behaviorTracker';
+
+type TaskViewMode = 'list' | 'kanban' | 'gantt' | 'calendar';
 
 export default function TasksContent() {
   const { can } = usePermission();
@@ -30,6 +32,7 @@ export default function TasksContent() {
   const addTaskModal = useModal();
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<TaskViewMode>('list');
   const [taskExportOpen, setTaskExportOpen] = useState(false);
   const [newTaskForm, setNewTaskForm] = useState({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '', milestone: '', tags: '', estimated_hours: '' });
   const priorityStyle: Record<string, string> = { urgent: 'bg-danger/10 text-danger', high: 'bg-warn/10 text-warn', medium: 'bg-primary/10 text-primary-2', low: 'bg-surface-2 text-text-3' };
@@ -135,10 +138,35 @@ export default function TasksContent() {
         </div>
         )}
       </PageHeader>
+      {/* View Mode Switcher */}
+      <div className="flex items-center gap-1 px-3 md:px-4 pt-1 pb-2">
+        {([
+          { key: 'list' as TaskViewMode, label: '列表', icon: LayoutList },
+          { key: 'kanban' as TaskViewMode, label: '看板', icon: Columns3 },
+          { key: 'gantt' as TaskViewMode, label: '甘特图', icon: GanttChart },
+          { key: 'calendar' as TaskViewMode, label: '日历', icon: Calendar },
+        ]).map(v => (
+          <button key={v.key} onClick={() => setViewMode(v.key)}
+            className={cn('flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors', viewMode === v.key ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2')}>
+            <v.icon size={12} />{v.label}
+          </button>
+        ))}
+      </div>
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)}</div>
-      ) : tasks.map((t) => (
+      ) : viewMode === 'kanban' ? (
+        /* ===== 看板视图 ===== */
+        <KanbanView tasks={tasks} onTaskClick={handleTaskClick} onToggleDone={handleToggleDone} priorityStyle={priorityStyle} priorityLabel={priorityLabel} />
+      ) : viewMode === 'gantt' ? (
+        /* ===== 甘特图视图 ===== */
+        <GanttView tasks={tasks} onTaskClick={handleTaskClick} />
+      ) : viewMode === 'calendar' ? (
+        /* ===== 日历视图 ===== */
+        <CalendarView tasks={tasks} onTaskClick={handleTaskClick} priorityStyle={priorityStyle} />
+      ) : (
+        /* ===== 列表视图（默认） ===== */
+        <>{tasks.map((t) => (
         <div key={t.id} className={cn('flex items-center gap-2 md:gap-3 rounded-xl border border-border bg-surface px-3 md:px-4 py-2.5 md:py-3 transition-all hover:border-border-2 cursor-pointer', t.done && 'opacity-50')} onClick={() => handleTaskClick(t)}>
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
             <input type="checkbox" checked={selectedIds.has(t.id)} onChange={() => toggleSelect(t.id)} className="h-3.5 w-3.5 accent-primary rounded" />
@@ -150,7 +178,8 @@ export default function TasksContent() {
           <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', priorityStyle[t.priority] || priorityStyle.medium)}>{priorityLabel[t.priority] || t.priority}</span>
             <span className="text-[10px] text-text-3 shrink-0">{t.due_date}</span>
         </div>
-      ))}
+        ))}</>
+      )}
       <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title={t('tasks.editTask')} fields={taskFields} data={editData} onSave={handleTaskSave} onDelete={can('tasks:delete') ? () => { if (editData?.id) { removeTask(String(editData.id)); editModal.closeModal(); } } : undefined} commentTarget={editData?.id ? { type: 'task', id: String(editData.id) } : null} />
 
       <Modal open={addTaskModal.open} onClose={addTaskModal.closeModal} title={t('tasks.newTaskTitle')}
@@ -207,6 +236,178 @@ export default function TasksContent() {
         onBatchAssign={bulkAssign}
       />
       <PaywallModal open={tpShow} onClose={tpClose} reason={tpReason} feature={tpFeat} />
+      </div>
+    </div>
+  );
+}
+
+// ===== 看板视图 =====
+
+const KANBAN_COLUMNS = [
+  { key: 'todo', label: '待办', color: 'border-l-surface-2' },
+  { key: 'in_progress', label: '进行中', color: 'border-l-warn' },
+  { key: 'done', label: '已完成', color: 'border-l-success' },
+  { key: 'blocked', label: '阻塞', color: 'border-l-danger' },
+];
+
+function KanbanView({ tasks, onTaskClick, onToggleDone, priorityStyle, priorityLabel }: {
+  tasks: TaskRow[];
+  onTaskClick: (t: TaskRow) => void;
+  onToggleDone: (e: MouseEvent, t: TaskRow) => void;
+  priorityStyle: Record<string, string>;
+  priorityLabel: Record<string, string>;
+}) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 min-h-[400px]">
+      {KANBAN_COLUMNS.map(col => {
+        const colTasks = tasks.filter(t => t.status === col.key);
+        return (
+          <div key={col.key} className={cn('rounded-xl border border-border bg-surface-2/30 p-2 border-l-4', col.color)}>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-[11px] font-bold text-text-2">{col.label}</span>
+              <span className="text-[10px] text-text-3 bg-surface rounded-full px-1.5 py-0.5">{colTasks.length}</span>
+            </div>
+            <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
+              {colTasks.map(t => (
+                <div key={t.id} className={cn('rounded-lg border border-border bg-surface px-2.5 py-2 cursor-pointer hover:shadow-sm transition-all', t.done && 'opacity-50')} onClick={() => onTaskClick(t)}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className={cn('h-3 w-3 rounded border-2 shrink-0 flex items-center justify-center', t.done ? 'bg-success border-success' : 'border-border')} onClick={(e) => onToggleDone(e, t)}>
+                      {t.done && <CheckCircle2 size={8} className="text-white" />}
+                    </div>
+                    <span className={cn('text-xs text-text truncate', t.done && 'line-through')}>{t.title}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 pl-[18px]">
+                    <span className={cn('rounded-full px-1.5 py-0 text-[8px] font-bold', priorityStyle[t.priority] || priorityStyle.medium)}>{priorityLabel[t.priority] || t.priority}</span>
+                    {t.due_date && <span className="text-[9px] text-text-3">{t.due_date.slice(5, 10)}</span>}
+                  </div>
+                </div>
+              ))}
+              {colTasks.length === 0 && <div className="text-center py-6 text-[10px] text-text-3">暂无</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ===== 甘特图视图 =====
+
+function GanttView({ tasks, onTaskClick }: { tasks: TaskRow[]; onTaskClick: (t: TaskRow) => void }) {
+  const activeTasks = useMemo(() => tasks.filter(t => t.status !== 'cancelled' && t.status !== 'done').slice(0, 20), [tasks]);
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const days: string[] = [];
+    for (let i = -7; i < 30; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + i);
+      days.push(d.toISOString().slice(0, 10));
+    }
+    return days;
+  }, []);
+
+  const startDate = dateRange[0];
+  const endDate = dateRange[dateRange.length - 1];
+  const totalDays = dateRange.length;
+  const todayIdx = 7; // -7 offset means today is at index 7
+
+  return (
+    <div className="overflow-x-auto">
+      {/* Timeline header */}
+      <div className="flex border-b border-border mb-1 min-w-[800px]">
+        <div className="w-40 shrink-0 px-2 py-1 text-[10px] font-bold text-text-3">任务</div>
+        <div className="flex-1 flex">
+          {dateRange.map((d, i) => (
+            <div key={d} className={cn('flex-1 text-center text-[8px] py-1 min-w-[28px]', i === todayIdx ? 'text-primary-2 font-bold' : 'text-text-3')}>
+              {d.slice(8)}<br/>{d.slice(5, 7)}
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Task bars */}
+      {activeTasks.map(task => {
+        const taskStart = task.start_date || task.created_at || startDate;
+        const taskEnd = task.due_date || endDate;
+        const startIdx = Math.max(0, dateRange.indexOf(taskStart.slice(0, 10)));
+        const endIdx = Math.min(totalDays - 1, dateRange.indexOf(taskEnd.slice(0, 10)));
+        const barLeft = startIdx >= 0 ? `${(startIdx / totalDays) * 100}%` : '0%';
+        const barWidth = endIdx > startIdx ? `${((endIdx - startIdx + 1) / totalDays) * 100}%` : '4%';
+        const barColor = task.status === 'in_progress' ? 'bg-warn' : task.status === 'blocked' ? 'bg-danger' : 'bg-primary/60';
+
+        return (
+          <div key={task.id} className="flex items-center min-w-[800px] hover:bg-surface-2/30 cursor-pointer" onClick={() => onTaskClick(task)}>
+            <div className="w-40 shrink-0 px-2 py-1.5 text-[10px] text-text truncate">{task.title}</div>
+            <div className="flex-1 relative h-7">
+              {/* Today line */}
+              <div className="absolute top-0 bottom-0 w-px bg-primary/30" style={{ left: `${(todayIdx / totalDays) * 100}%` }} />
+              <div className={cn('absolute top-1.5 h-4 rounded-sm', barColor)} style={{ left: barLeft, width: barWidth }} title={`${task.title}: ${taskStart?.slice(0, 10)} → ${taskEnd?.slice(0, 10)}`} />
+            </div>
+          </div>
+        );
+      })}
+      {activeTasks.length === 0 && <div className="text-center py-8 text-xs text-text-3">暂无进行中的任务</div>}
+    </div>
+  );
+}
+
+// ===== 日历视图 =====
+
+function CalendarView({ tasks, onTaskClick, priorityStyle }: { tasks: TaskRow[]; onTaskClick: (t: TaskRow) => void; priorityStyle: Record<string, string> }) {
+  const today = new Date();
+  const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+
+  const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+  const firstDayOfWeek = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
+  const monthLabel = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月`;
+
+  const taskMap = useMemo(() => {
+    const m = new Map<string, TaskRow[]>();
+    tasks.forEach(t => {
+      if (t.due_date) {
+        const key = t.due_date.slice(0, 10);
+        if (!m.has(key)) m.set(key, []);
+        m.get(key)!.push(t);
+      }
+    });
+    return m;
+  }, [tasks]);
+
+  const prevMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  const nextMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+
+  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={prevMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">← 上月</button>
+        <span className="text-sm font-bold text-text">{monthLabel}</span>
+        <button onClick={nextMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">下月 →</button>
+      </div>
+      <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+        {weekDays.map(d => (
+          <div key={d} className="bg-surface-2 px-2 py-1 text-center text-[9px] font-bold text-text-3">{d}</div>
+        ))}
+        {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+          <div key={`empty-${i}`} className="bg-surface min-h-[60px] p-1" />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const dayTasks = taskMap.get(dateStr) || [];
+          const isToday = dateStr === today.toISOString().slice(0, 10);
+          return (
+            <div key={day} className={cn('bg-surface min-h-[60px] p-1', isToday && 'bg-primary/5')}>
+              <div className={cn('text-[10px] mb-0.5', isToday ? 'text-primary-2 font-bold' : 'text-text-3')}>{day}</div>
+              {dayTasks.slice(0, 2).map(t => (
+                <div key={t.id} className={cn('rounded px-1 py-0.5 text-[8px] truncate cursor-pointer hover:opacity-80', priorityStyle[t.priority] || priorityStyle.medium)} onClick={() => onTaskClick(t)}>
+                  {t.title}
+                </div>
+              ))}
+              {dayTasks.length > 2 && <div className="text-[8px] text-text-3 pl-1">+{dayTasks.length - 2}项</div>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

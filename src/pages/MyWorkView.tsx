@@ -101,6 +101,53 @@ export default function MyWorkView() {
         <p className="text-xs text-text-3 mt-0.5">聚焦你的任务和目标进展</p>
       </div>
 
+      {/* 今日3件事 — 集中精力最高优先级任务 */}
+      {todayTasks.length > 0 && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-primary-2 mb-2.5">
+            <Zap size={14} />
+            今日3件事
+          </div>
+          <div className="space-y-1.5">
+            {todayTasks.slice(0, 3).map((t, i) => (
+              <div key={t.id} className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary-2">{i + 1}</span>
+                <span className="text-xs font-medium text-text flex-1 truncate">{t.title}</span>
+                {t.priority === 'urgent' && <span className="rounded-full bg-danger/10 px-1.5 py-0.5 text-[9px] font-bold text-danger">紧急</span>}
+                {t.priority === 'high' && <span className="rounded-full bg-warn/10 px-1.5 py-0.5 text-[9px] font-bold text-warn">高优</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 我的目标进度 */}
+      {goals.filter((g) => g.status === 'in_progress' || g.status === 'active').length > 0 && (
+        <div>
+          <h2 className="text-sm font-semibold text-text mb-2 flex items-center gap-1.5">
+            <Target size={14} className="text-primary-2" />
+            我的目标
+          </h2>
+          <div className="space-y-2">
+            {goals.filter((g) => g.status === 'in_progress' || g.status === 'active').slice(0, 3).map((g) => {
+              const pct = Math.min(100, Math.max(0, g.progress || 0));
+              const barColor = pct >= 70 ? 'bg-success' : pct >= 40 ? 'bg-warn' : 'bg-danger';
+              return (
+                <div key={g.id} className="rounded-lg border border-border bg-surface px-3 py-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-text truncate max-w-[80%]">{g.title}</span>
+                    <span className="text-[10px] font-bold text-text-3">{pct}%</span>
+                  </div>
+                  <div className="h-1 rounded-full bg-surface-2 overflow-hidden">
+                    <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatCard label="今日待办" value={todayTasks.length} icon={ListTodo} color="bg-primary/10 text-primary-2" />
