@@ -9,8 +9,8 @@ type Phase = 'alerts' | 'pick' | 'guide' | 'draft' | 'done';
 export function useReviewDraft(
   industry: string,
   dept: string,
-  goals: { id: string; title: string; progress: number; end_date?: string }[],
-  tasks: { goal_id?: string; status: string; priority?: string; due_date?: string; completed_at?: string; done?: boolean }[],
+  goals: { id: string; title: string; progress: number; end_date?: string | null }[],
+  tasks: { goal_id?: string | null; status: string; priority?: string | null; due_date?: string | null; completed_at?: string | null; done?: boolean }[],
 ) {
   const [phase, setPhase] = useState<Phase>('alerts');
   const [selectedModel, setSelectedModel] = useState<ReviewModel | null>(null);
@@ -225,7 +225,7 @@ export function useReviewDraft(
       done: false,
       status: 'todo',
     } as unknown as Parameters<typeof createTask>[0]);
-    await updateActionItem(ai.id, { status: 'completed', closed_loop: true });
+    await updateActionItem(ai.id, { status: 'completed', closed_loop: true, completed_at: new Date().toISOString() });
     setActionItems((prev) => prev.map((p) => p.id === ai.id ? { ...p, status: 'completed', closed_loop: true } : p));
   }, []);
 

@@ -263,11 +263,11 @@ export function localContacts(): ContactRow[] {
 
 export function localAgentDetails(): AgentDetailRow[] {
   return [
-    { id: 'AG-001', name: '产品分析师', description: 'PRD与需求分析，市场趋势洞察', model: 'GPT-4o', status: 'running', tasks_completed: 142, uptime: '99.8%', enabled: true, capabilities: ['PRD生成', '需求排序', '用户画像分析'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
-    { id: 'AG-002', name: '竞品侦探', description: '竞品动态监控与对比分析', model: 'Claude-3.5', status: 'running', tasks_completed: 89, uptime: '99.5%', enabled: true, capabilities: ['竞品监控', '功能对比', '趋势预警'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
-    { id: 'AG-003', name: '数据看门人', description: '功能使用率追踪与异常检测', model: 'GPT-4o', status: 'running', tasks_completed: 213, uptime: '99.9%', enabled: true, capabilities: ['指标追踪', '异常告警', '报表生成'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
-    { id: 'AG-004', name: '技术助手', description: '架构评审与技术债务追踪', model: 'Claude-3.5', status: 'idle', tasks_completed: 67, uptime: '98.2%', enabled: true, capabilities: ['代码审查', '架构评估', '性能诊断'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
-    { id: 'AG-005', name: '日报编辑', description: '每日工作总结与进展汇编', model: 'GPT-4o-mini', status: 'idle', tasks_completed: 31, uptime: '99.1%', enabled: false, capabilities: ['日报生成', '进展汇总'], avatar: '', skills: [], team_id: '__default__', created_at: '', updated_at: '' },
+    { id: 'AG-001', name: '产品分析师', description: 'PRD与需求分析，市场趋势洞察', model: 'GPT-4o', status: 'running', tasks_completed: 142, uptime: '99.8%', enabled: true, capabilities: ['PRD生成', '需求排序', '用户画像分析'], avatar: '', skills: [], team_id: '__default__', system_prompt: '', created_at: '', updated_at: '' },
+    { id: 'AG-002', name: '竞品侦探', description: '竞品动态监控与对比分析', model: 'Claude-3.5', status: 'running', tasks_completed: 89, uptime: '99.5%', enabled: true, capabilities: ['竞品监控', '功能对比', '趋势预警'], avatar: '', skills: [], team_id: '__default__', system_prompt: '', created_at: '', updated_at: '' },
+    { id: 'AG-003', name: '数据看门人', description: '功能使用率追踪与异常检测', model: 'GPT-4o', status: 'running', tasks_completed: 213, uptime: '99.9%', enabled: true, capabilities: ['指标追踪', '异常告警', '报表生成'], avatar: '', skills: [], team_id: '__default__', system_prompt: '', created_at: '', updated_at: '' },
+    { id: 'AG-004', name: '技术助手', description: '架构评审与技术债务追踪', model: 'Claude-3.5', status: 'idle', tasks_completed: 67, uptime: '98.2%', enabled: true, capabilities: ['代码审查', '架构评估', '性能诊断'], avatar: '', skills: [], team_id: '__default__', system_prompt: '', created_at: '', updated_at: '' },
+    { id: 'AG-005', name: '日报编辑', description: '每日工作总结与进展汇编', model: 'GPT-4o-mini', status: 'idle', tasks_completed: 31, uptime: '99.1%', enabled: false, capabilities: ['日报生成', '进展汇总'], avatar: '', skills: [], team_id: '__default__', system_prompt: '', created_at: '', updated_at: '' },
   ];
 }
 

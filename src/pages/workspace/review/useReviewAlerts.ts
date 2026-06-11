@@ -4,8 +4,8 @@ import { fetchDeviationAlerts, createDeviationAlert, updateDeviationAlert, type 
 import type { DeviationAlert } from '@/lib/reviewEngine';
 
 export function useReviewAlerts(
-  goals: { id: string; title: string; progress: number; start_date?: string; end_date?: string }[],
-  tasks: { goal_id?: string; status: string; progress?: number }[],
+  goals: { id: string; title: string; progress: number; start_date?: string | null; end_date?: string | null }[],
+  tasks: { goal_id?: string | null; status: string; progress?: number; done?: boolean }[],
   goalsLoading: boolean,
 ) {
   const [alerts, setAlerts] = useState<DeviationAlert[]>([]);
@@ -15,7 +15,7 @@ export function useReviewAlerts(
   const computeAlerts = useCallback(() => {
     const goalItems = goals.map((g) => ({
       id: g.id, title: g.title, progress: g.progress,
-      startDate: g.start_date, endDate: g.end_date, type: 'goal' as const,
+      startDate: g.start_date ?? null, endDate: g.end_date ?? null, type: 'goal' as const,
     }));
     const allAlerts = detectDeviations(goalItems);
     setAlerts(allAlerts);
@@ -64,7 +64,9 @@ export function useReviewAlerts(
   const autoProgressMap = useCallback(() => {
     const map: Record<string, number> = {};
     for (const g of goals) {
-      const auto = computeAutoProgress(g.id, tasks);
+      const auto = computeAutoProgress(g.id, tasks.map(t => ({
+        goal_id: t.goal_id ?? null, status: t.status, done: t.done ?? (t.status === 'done'),
+      })));
       if (auto >= 0) map[g.id] = auto;
     }
     return map;

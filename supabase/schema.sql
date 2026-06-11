@@ -1,1805 +1,1089 @@
--- TBH Next Database Schema v5
--- 61 tables + 1 view | RLS + audit logs + updated_at triggers + team multi-tenancy
--- Synced with live DB on 2026-06-11 (goals/tasks columns verified against production)
--- Run this in Supabase SQL Editor
+-- TBH-Next Schema v6 (auto-generated from production DB)
+-- Generated: 2026-06-11T16:03:40.379Z
 
--- ============================================================
--- 1. Reference data: Industries
--- ============================================================
-CREATE TABLE IF NOT EXISTS industries (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE,
-  sort_order INT DEFAULT 0,
-  color TEXT DEFAULT '#7b6cf0',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 2. Reference data: Departments
-CREATE TABLE IF NOT EXISTS departments (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  industry TEXT NOT NULL REFERENCES industries(name) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  sort_order INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(industry, name)
-);
-
--- 3. KPIs
-CREATE TABLE IF NOT EXISTS kpis (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  industry TEXT NOT NULL,
-  dept TEXT NOT NULL,
-  name TEXT NOT NULL,
-  value TEXT NOT NULL,
-  target TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'good',
-  trend TEXT NOT NULL DEFAULT 'flat',
-  sort_order INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 4. Matrix cells (aggregated view)
-CREATE TABLE IF NOT EXISTS matrix_cells (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  industry TEXT NOT NULL,
-  dept TEXT NOT NULL,
-  workflow JSONB DEFAULT '[]',
-  wf_current INT DEFAULT 0,
-  top3 JSONB DEFAULT '[]',
-  morning TEXT DEFAULT '',
-  ribbon TEXT DEFAULT '',
-  next_step TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(industry, dept)
-);
-
--- 5. Agents
-CREATE TABLE IF NOT EXISTS agents (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  industry TEXT NOT NULL,
-  dept TEXT NOT NULL,
-  name TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  status TEXT DEFAULT '在线',
-  sort_order INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 6. Channels
-CREATE TABLE IF NOT EXISTS channels (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  industry TEXT NOT NULL,
-  dept TEXT NOT NULL,
-  name TEXT NOT NULL,
-  sort_order INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 7. Goals / OKR
--- NOTE: Schema synced with live DB on 2026-06-11. Columns match TypeScript GoalRow.
-CREATE TABLE IF NOT EXISTS goals (
-  id TEXT NOT NULL PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT,
-  type TEXT NOT NULL DEFAULT 'default',
-  status TEXT NOT NULL DEFAULT 'on_track',
-  parent_id TEXT,
-  level INTEGER NOT NULL DEFAULT 0,
-  start_date TEXT NOT NULL DEFAULT '',
-  end_date TEXT NOT NULL DEFAULT '',
-  owner_id TEXT,
-  key_results JSONB DEFAULT '[]',
-  progress INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  leader_id TEXT,
-  supporter_ids JSONB DEFAULT '[]',
-  canvas_x DOUBLE PRECISION,
-  canvas_y DOUBLE PRECISION,
-  priority TEXT NOT NULL DEFAULT 'medium',
-  tags TEXT[] DEFAULT '{}',
-  category TEXT NOT NULL DEFAULT '',
-  repeat_cycle TEXT NOT NULL DEFAULT '',
-  discussion_thread_id TEXT,
-  summary TEXT NOT NULL DEFAULT '',
-  tracking_records JSONB DEFAULT '[]',
-  attachments JSONB DEFAULT '[]',
-  selected_kr_ids JSONB DEFAULT '[]',
-  team_id TEXT DEFAULT '__default__',
-  deleted_at TIMESTAMPTZ,
-  app_type TEXT NOT NULL DEFAULT 'team'
-);
-
--- 8. Tasks
--- NOTE: Schema synced with live DB on 2026-06-11. Columns match TypeScript TaskRow.
-CREATE TABLE IF NOT EXISTS tasks (
-  id TEXT NOT NULL PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT,
-  project_id TEXT,
-  goal_id TEXT,
-  status TEXT NOT NULL DEFAULT 'todo',
-  priority TEXT NOT NULL DEFAULT 'medium',
-  assignee_id TEXT,
-  owner_id TEXT,
-  due_date TEXT,
-  reminder_date TEXT,
-  completed_at TIMESTAMPTZ,
-  subtasks JSONB DEFAULT '[]',
-  tags JSONB DEFAULT '[]',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  leader_id TEXT,
-  supporter_ids JSONB DEFAULT '[]',
-  canvas_x DOUBLE PRECISION,
-  canvas_y DOUBLE PRECISION,
-  parent_id TEXT,
-  category TEXT NOT NULL DEFAULT '',
-  repeat_cycle TEXT NOT NULL DEFAULT '',
-  discussion_thread_id TEXT,
-  summary TEXT NOT NULL DEFAULT '',
-  tracking_records JSONB DEFAULT '[]',
-  attachments JSONB DEFAULT '[]',
-  start_date DATE,
-  blocked_by JSONB DEFAULT '[]',
-  sprint_id TEXT,
-  team_id TEXT DEFAULT '__default__',
-  deleted_at TIMESTAMPTZ,
-  progress INTEGER,
-  milestone TEXT,
-  dependency_ids UUID[] DEFAULT '{}',
-  subtask_ids UUID[] DEFAULT '{}',
-  estimated_hours NUMERIC,
-  actual_hours NUMERIC,
-  app_type TEXT NOT NULL DEFAULT 'team'
-);
-
--- 9. Projects
-CREATE TABLE IF NOT EXISTS projects (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  status TEXT DEFAULT 'active',
-  progress INT DEFAULT 0,
-  members INT DEFAULT 1,
-  deadline TEXT DEFAULT '',
-  goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,
-  team_id TEXT DEFAULT '__default__',
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 10. Knowledge docs
-CREATE TABLE IF NOT EXISTS knowledge_docs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  type TEXT DEFAULT '文档',
-  author TEXT DEFAULT '',
-  updated TEXT DEFAULT '',
-  content TEXT DEFAULT '',
-  team_id TEXT DEFAULT '__default__',
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 11. Members
-CREATE TABLE IF NOT EXISTS members (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  role TEXT DEFAULT 'member',
-  dept TEXT DEFAULT '',
-  email TEXT DEFAULT '',
-  phone TEXT DEFAULT '',
-  status TEXT DEFAULT 'offline',
-  avatar_url TEXT DEFAULT '',
-  team_id TEXT DEFAULT '__default__',
-  user_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 12. Channel messages (realtime chat)
-CREATE TABLE IF NOT EXISTS messages (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  channel TEXT NOT NULL,
-  sender_id UUID,
-  sender_name TEXT NOT NULL DEFAULT '',
-  sender_type TEXT NOT NULL DEFAULT 'user',
-  content TEXT NOT NULL,
-  team_id UUID,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 13. Team membership (multi-tenancy foundation)
-CREATE TABLE IF NOT EXISTS team_members (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  team_id TEXT NOT NULL,
-  member_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL DEFAULT 'member',
-  joined_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(team_id, member_id)
-);
-
--- 14. Subscriptions & billing
-CREATE TABLE IF NOT EXISTS subscriptions (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  plan TEXT NOT NULL DEFAULT 'free',
-  status TEXT NOT NULL DEFAULT 'active',
-  current_period_start TIMESTAMPTZ DEFAULT now(),
-  current_period_end TIMESTAMPTZ,
-  stripe_customer_id TEXT,
-  stripe_subscription_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id)
-);
-
--- 15. Usage tracking
-CREATE TABLE IF NOT EXISTS usage_events (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  event_type TEXT NOT NULL,
-  detail JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 16. Action items (MLOO loop core)
 CREATE TABLE IF NOT EXISTS action_items (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  source TEXT NOT NULL DEFAULT 'manual',
-  source_id TEXT,
-  goal_id TEXT REFERENCES goals(id) ON DELETE SET NULL,
-  assignee_id TEXT,
-  status TEXT NOT NULL DEFAULT 'open',
-  priority TEXT DEFAULT 'medium',
-  due_date DATE,
-  completed_at TIMESTAMPTZ,
-  closed_loop BOOLEAN DEFAULT false,
-  team_id TEXT DEFAULT '__default__',
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  description text DEFAULT ''::text,
+  source text NOT NULL DEFAULT 'manual'::text,
+  source_id text,
+  goal_id text,
+  assignee_id text,
+  status text NOT NULL DEFAULT 'open'::text,
+  priority text DEFAULT 'medium'::text,
+  due_date date,
+  completed_at timestamp with time zone,
+  closed_loop boolean DEFAULT false,
+  team_id text DEFAULT '__default__'::text,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
 );
 
--- 17. Deviation alerts (MLOO loop core)
-CREATE TABLE IF NOT EXISTS deviation_alerts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  goal_id TEXT REFERENCES goals(id) ON DELETE CASCADE,
-  task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
-  alert_type TEXT NOT NULL,
-  severity TEXT NOT NULL DEFAULT 'warning',
-  message TEXT NOT NULL,
-  is_read BOOLEAN DEFAULT false,
-  is_resolved BOOLEAN DEFAULT false,
-  resolved_at TIMESTAMPTZ,
-  action_item_id UUID REFERENCES action_items(id) ON DELETE SET NULL,
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 18. Audit logs
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID,
-  action TEXT NOT NULL,
-  table_name TEXT NOT NULL,
-  record_id UUID,
-  old_data JSONB,
-  new_data JSONB,
-  ip_address TEXT,
-  user_agent TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- ============================================================
--- 19-61. Tables added in Sprint 2-4 and incremental development
--- ============================================================
-
--- 19. Teams
-CREATE TABLE IF NOT EXISTS teams (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  avatar TEXT DEFAULT '',
-  invite_code TEXT,
-  owner_id TEXT NOT NULL,
-  settings JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 20. Agent details (per-agent instance data)
-CREATE TABLE IF NOT EXISTS agent_details (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  model TEXT DEFAULT 'deepseek-v4-pro',
-  status TEXT DEFAULT 'idle',
-  avatar TEXT DEFAULT '',
-  skills JSONB DEFAULT '[]',
-  config JSONB DEFAULT '{}',
-  tasks_completed INT DEFAULT 0,
-  uptime TEXT DEFAULT '0%',
-  enabled BOOLEAN DEFAULT true,
-  capabilities JSONB DEFAULT '[]',
-  team_id TEXT DEFAULT '__default__',
-  system_prompt TEXT DEFAULT '' NOT NULL,
-  created_by TEXT,
-  sort_order INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 21. Agent configs (agent scheduling/configuration)
-CREATE TABLE IF NOT EXISTS agent_configs (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  model TEXT DEFAULT 'deepseek-chat' NOT NULL,
-  temperature REAL DEFAULT 0.7 NOT NULL,
-  max_tokens INT DEFAULT 2048 NOT NULL,
-  system_prompt TEXT DEFAULT '' NOT NULL,
-  schedule TEXT DEFAULT '' NOT NULL,
-  enabled BOOLEAN DEFAULT true NOT NULL,
-  sort_order INT DEFAULT 0 NOT NULL,
-  team_id TEXT,
-  member_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
-);
-
--- 22. Activities (activity feed)
 CREATE TABLE IF NOT EXISTS activities (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  member_id TEXT,
-  action TEXT NOT NULL,
-  target_type TEXT NOT NULL,
-  target_id TEXT NOT NULL,
-  target_title TEXT NOT NULL,
-  details TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  member_id text,
+  action text NOT NULL,
+  target_type text NOT NULL,
+  target_id text NOT NULL,
+  target_title text NOT NULL,
+  details text,
+  created_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
 );
 
--- 23. Announcements
-CREATE TABLE IF NOT EXISTS announcements (
-  id TEXT DEFAULT ('an-'::text || (gen_random_uuid())::text) PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT DEFAULT '',
-  priority TEXT DEFAULT 'normal',
-  author_id TEXT,
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 24. Approvals
-CREATE TABLE IF NOT EXISTS approvals (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  type TEXT DEFAULT '',
-  status TEXT DEFAULT 'pending',
-  applicant_id TEXT DEFAULT '',
-  approver_id TEXT,
-  description TEXT DEFAULT '',
-  urgency TEXT DEFAULT 'normal',
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 25. Automation rules
-CREATE TABLE IF NOT EXISTS automation_rules (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  name TEXT NOT NULL,
-  enabled BOOLEAN DEFAULT true,
-  item_type TEXT NOT NULL,
-  trigger TEXT NOT NULL,
-  condition JSONB DEFAULT '{}',
-  actions JSONB DEFAULT '[]',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 26. Behavior events (analytics)
-CREATE TABLE IF NOT EXISTS behavior_events (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  entity_type TEXT,
-  entity_id TEXT,
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 27. Bookmarks
-CREATE TABLE IF NOT EXISTS bookmarks (
-  id TEXT PRIMARY KEY,
-  title TEXT DEFAULT '' NOT NULL,
-  url TEXT DEFAULT '' NOT NULL,
-  category TEXT DEFAULT '' NOT NULL,
-  icon TEXT DEFAULT '' NOT NULL,
-  "order" INT DEFAULT 0 NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 28. Categories
-CREATE TABLE IF NOT EXISTS categories (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  color TEXT DEFAULT '#3b82f6' NOT NULL,
-  icon TEXT DEFAULT 'tag' NOT NULL,
-  applies_to TEXT[] DEFAULT '{}' NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 29. Collaboration docs
-CREATE TABLE IF NOT EXISTS collab_docs (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT DEFAULT '',
-  last_editor TEXT DEFAULT '',
-  editors_count INT DEFAULT 0,
-  status TEXT DEFAULT 'draft',
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 30. Comments
-CREATE TABLE IF NOT EXISTS comments (
-  id TEXT PRIMARY KEY,
-  item_id TEXT NOT NULL,
-  item_type TEXT NOT NULL,
-  member_id TEXT NOT NULL,
-  member_name TEXT NOT NULL,
-  content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  mentioned_member_ids JSONB DEFAULT '[]',
-  is_read BOOLEAN DEFAULT false,
-  follow_up_required BOOLEAN DEFAULT false,
-  follow_up_status TEXT DEFAULT 'none',
-  team_id TEXT DEFAULT '__default__',
-  parent_id TEXT,
-  attachments JSONB DEFAULT '[]'
-);
-
--- 31. Contacts
-CREATE TABLE IF NOT EXISTS contacts (
-  id TEXT DEFAULT ('c-'::text || (gen_random_uuid())::text) PRIMARY KEY,
-  name TEXT NOT NULL,
-  department TEXT DEFAULT '',
-  role TEXT DEFAULT '',
-  email TEXT DEFAULT '',
-  phone TEXT DEFAULT '',
-  status TEXT DEFAULT 'offline',
-  is_ai BOOLEAN DEFAULT false,
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 32. Docs (document management)
-CREATE TABLE IF NOT EXISTS docs (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  type TEXT DEFAULT '',
-  status TEXT DEFAULT 'draft',
-  author TEXT DEFAULT '',
-  editors INT DEFAULT 0,
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 33. Email settings (global singleton)
-CREATE TABLE IF NOT EXISTS email_settings (
-  id INT DEFAULT 1 PRIMARY KEY,
-  enabled BOOLEAN DEFAULT false,
-  resend_api_key TEXT DEFAULT '',
-  from_email TEXT DEFAULT '',
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 34. Experiences (knowledge precipitation)
-CREATE TABLE IF NOT EXISTS experiences (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT DEFAULT '',
-  category TEXT DEFAULT '',
-  tags JSONB DEFAULT '[]',
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 35. Feature flags
-CREATE TABLE IF NOT EXISTS feature_flags (
-  key TEXT PRIMARY KEY,
-  enabled BOOLEAN DEFAULT false NOT NULL,
-  team_ids JSONB DEFAULT '[]',
-  description TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 36. Insights (AI-generated)
-CREATE TABLE IF NOT EXISTS insights (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  impact TEXT DEFAULT 'positive' NOT NULL,
-  kpi TEXT DEFAULT '',
-  team_id TEXT DEFAULT 'default',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 37. Item links (cross-entity relationships)
-CREATE TABLE IF NOT EXISTS item_links (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  source_id TEXT NOT NULL,
-  source_type TEXT NOT NULL,
-  target_id TEXT NOT NULL,
-  target_type TEXT NOT NULL,
-  label TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 38. Knowledge (user knowledge base)
-CREATE TABLE IF NOT EXISTS knowledge (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT DEFAULT '',
-  tags TEXT[] DEFAULT '{}',
-  member_id TEXT NOT NULL,
-  related_items JSONB DEFAULT '[]',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 39. Meetings
-CREATE TABLE IF NOT EXISTS meetings (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  time TEXT DEFAULT '',
-  duration TEXT DEFAULT '',
-  location TEXT DEFAULT '',
-  organizer TEXT DEFAULT '',
-  attendees INT DEFAULT 0,
-  status TEXT DEFAULT 'scheduled',
-  type TEXT DEFAULT 'regular',
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 40. Notes
-CREATE TABLE IF NOT EXISTS notes (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT DEFAULT '' NOT NULL,
-  folder TEXT DEFAULT '' NOT NULL,
-  color TEXT DEFAULT '#ffffff' NOT NULL,
-  is_pinned BOOLEAN DEFAULT false NOT NULL,
-  linked_item_id TEXT,
-  linked_item_type TEXT,
-  created_by TEXT NOT NULL,
-  updated_by TEXT DEFAULT '' NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  category TEXT DEFAULT '',
-  tags JSONB DEFAULT '[]',
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 41. Notification preferences
-CREATE TABLE IF NOT EXISTS notification_preferences (
-  id TEXT DEFAULT replace((gen_random_uuid())::text, '-', '') PRIMARY KEY,
-  member_id TEXT NOT NULL,
-  item_id TEXT NOT NULL,
-  item_type TEXT NOT NULL,
-  muted BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT
-);
-
--- 42. Notifications
-CREATE TABLE IF NOT EXISTS notifications (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  type TEXT NOT NULL,
-  title TEXT NOT NULL,
-  message TEXT NOT NULL,
-  related_id TEXT NOT NULL,
-  related_type TEXT NOT NULL,
-  member_id TEXT,
-  read BOOLEAN DEFAULT false NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__',
-  level TEXT DEFAULT 'normal'
-);
-
--- 43. Org info
-CREATE TABLE IF NOT EXISTS org_info (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  name TEXT DEFAULT '' NOT NULL,
-  industry TEXT DEFAULT '',
-  size TEXT DEFAULT '',
-  plan TEXT DEFAULT 'free',
-  created TEXT DEFAULT '',
-  departments JSONB DEFAULT '[]',
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 44. Predictions (AI prediction model)
-CREATE TABLE IF NOT EXISTS predictions (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  impact TEXT DEFAULT 'medium',
-  probability REAL DEFAULT 0.5,
-  trend TEXT DEFAULT 'flat',
-  reason TEXT DEFAULT '',
-  suggestion TEXT DEFAULT '',
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 45. Reports
-CREATE TABLE IF NOT EXISTS reports (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  type TEXT DEFAULT '',
-  content TEXT DEFAULT '',
-  status TEXT DEFAULT 'draft',
-  generated_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 46. Reviews (performance/cycle reviews)
-CREATE TABLE IF NOT EXISTS reviews (
-  id TEXT PRIMARY KEY,
-  period TEXT,
-  period_start TEXT,
-  period_end TEXT,
-  member_id TEXT,
-  content TEXT,
-  improvements JSONB DEFAULT '[]',
-  metrics JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 47. Risks
-CREATE TABLE IF NOT EXISTS risks (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  level TEXT DEFAULT 'medium' NOT NULL,
-  source TEXT DEFAULT '',
-  detected_at TIMESTAMPTZ DEFAULT now(),
-  status TEXT DEFAULT 'active',
-  affected_kpi TEXT,
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 48. Roles
-CREATE TABLE IF NOT EXISTS roles (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  name TEXT NOT NULL,
-  key TEXT NOT NULL,
-  members INT DEFAULT 0,
-  permissions JSONB DEFAULT '[]',
-  color TEXT DEFAULT '#7b6cf0',
-  description TEXT DEFAULT '',
-  sort_order INT DEFAULT 0,
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 49. Saved views
-CREATE TABLE IF NOT EXISTS saved_views (
-  id TEXT PRIMARY KEY,
-  name TEXT DEFAULT '' NOT NULL,
-  type TEXT DEFAULT 'goal' NOT NULL,
-  filters JSONB DEFAULT '[]',
-  filter_logic TEXT DEFAULT 'and' NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 50. Schedule events
-CREATE TABLE IF NOT EXISTS schedule_events (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT DEFAULT '' NOT NULL,
-  start_date TEXT NOT NULL,
-  end_date TEXT NOT NULL,
-  all_day BOOLEAN DEFAULT false NOT NULL,
-  color TEXT DEFAULT '#3b82f6' NOT NULL,
-  linked_item_id TEXT,
-  linked_item_type TEXT,
-  member_id TEXT NOT NULL,
-  repeat_cycle TEXT DEFAULT 'none' NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  team_id TEXT DEFAULT '__default__',
-  type TEXT DEFAULT 'event'
-);
-
--- 51. Shared files
-CREATE TABLE IF NOT EXISTS shared_files (
-  id TEXT DEFAULT ('f-'::text || (gen_random_uuid())::text) PRIMARY KEY,
-  name TEXT NOT NULL,
-  type TEXT DEFAULT 'document',
-  size_kb INT DEFAULT 0,
-  uploader_id TEXT,
-  team_id TEXT DEFAULT '__default__',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 52. Sprints
-CREATE TABLE IF NOT EXISTS sprints (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  name TEXT NOT NULL,
-  start_date TEXT NOT NULL,
-  end_date TEXT NOT NULL,
-  goal_ids JSONB DEFAULT '[]',
-  status TEXT DEFAULT 'planning' NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 53. Status flow rules
-CREATE TABLE IF NOT EXISTS status_flow_rules (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  from_status TEXT NOT NULL,
-  to_status TEXT NOT NULL,
-  allowed_roles JSONB DEFAULT '[]',
-  auto_actions JSONB DEFAULT '[]',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 54. Tags
-CREATE TABLE IF NOT EXISTS tags (
-  id TEXT PRIMARY KEY,
-  name TEXT DEFAULT '' NOT NULL,
-  color TEXT DEFAULT '#6366f1' NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 55. Templates
-CREATE TABLE IF NOT EXISTS templates (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT DEFAULT '' NOT NULL,
-  type TEXT NOT NULL,
-  content TEXT DEFAULT '' NOT NULL,
-  created_by TEXT NOT NULL,
-  updated_by TEXT NOT NULL,
-  is_public BOOLEAN DEFAULT true NOT NULL,
-  category TEXT DEFAULT '' NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  team_id TEXT DEFAULT '__default__'
-);
-
--- 56. Workflow instances
-CREATE TABLE IF NOT EXISTS workflow_instances (
-  id TEXT DEFAULT (gen_random_uuid())::text PRIMARY KEY,
-  workflow_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  status TEXT DEFAULT 'idle' NOT NULL,
-  current_step INT DEFAULT 0,
-  usage_count INT DEFAULT 0,
-  category TEXT DEFAULT '',
-  steps JSONB DEFAULT '[]',
-  is_built_in BOOLEAN DEFAULT false,
-  team_id TEXT DEFAULT 'default',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 57. Team industry profile
-CREATE TABLE IF NOT EXISTS team_industry_profile (
-  team_id TEXT NOT NULL,
-  industry_key TEXT NOT NULL,
-  industry_name TEXT NOT NULL,
-  detected_at TIMESTAMPTZ DEFAULT now(),
-  confirmed_by TEXT,
-  confirmed_at TIMESTAMPTZ,
-  custom_overrides JSONB DEFAULT '{}',
-  PRIMARY KEY (team_id, industry_key)
-);
-
--- 58. User behavior profile
-CREATE TABLE IF NOT EXISTS user_behavior_profile (
-  user_id TEXT NOT NULL PRIMARY KEY,
-  efficiency_score INT DEFAULT 0,
-  collaboration_score INT DEFAULT 0,
-  proactivity_score INT DEFAULT 0,
-  stability_score INT DEFAULT 0,
-  goal_alignment_score INT DEFAULT 0,
-  ai_adoption_score INT DEFAULT 0,
-  profile_tags TEXT[] DEFAULT '{}',
-  computed_at TIMESTAMPTZ DEFAULT now(),
-  period_days INT DEFAULT 30
-);
-
--- ============================================================
--- 59. View: members_safe (member info without sensitive fields)
--- ============================================================
--- This view is created by migration; included here for reference only.
--- CREATE OR REPLACE VIEW members_safe AS SELECT id, name, role, department, avatar, status, join_date, created_at, updated_at, nickname, permissions, team_id, email, phone, wechat_id FROM members;
-
--- ============================================================
--- RLS: Enable Row Level Security on ALL tables
--- ============================================================
-ALTER TABLE industries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE kpis ENABLE ROW LEVEL SECURITY;
-ALTER TABLE matrix_cells ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
-ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE knowledge_docs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE usage_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE action_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE deviation_alerts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agent_details ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agent_configs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
-ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
-ALTER TABLE approvals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE automation_rules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE behavior_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE collab_docs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE docs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE email_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE experiences ENABLE ROW LEVEL SECURITY;
-ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
-ALTER TABLE insights ENABLE ROW LEVEL SECURITY;
-ALTER TABLE item_links ENABLE ROW LEVEL SECURITY;
-ALTER TABLE knowledge ENABLE ROW LEVEL SECURITY;
-ALTER TABLE meetings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE org_info ENABLE ROW LEVEL SECURITY;
-ALTER TABLE predictions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
-ALTER TABLE risks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE saved_views ENABLE ROW LEVEL SECURITY;
-ALTER TABLE schedule_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE shared_files ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sprints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE status_flow_rules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
-ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
-ALTER TABLE workflow_instances ENABLE ROW LEVEL SECURITY;
-ALTER TABLE team_industry_profile ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_behavior_profile ENABLE ROW LEVEL SECURITY;
-
--- ============================================================
--- RLS Helper Functions (must be created before policies)
--- ============================================================
-
--- Check if current user is member of a team
-CREATE OR REPLACE FUNCTION is_team_member(team_uuid TEXT)
-RETURNS BOOLEAN AS $func$
-  SELECT EXISTS (
-    SELECT 1 FROM team_members
-    WHERE team_id = team_uuid AND member_id::uuid = auth.uid()
-  );
-$func$ LANGUAGE sql SECURITY DEFINER STABLE;
-
--- Check if current user is admin/owner/leader of a team
-CREATE OR REPLACE FUNCTION is_team_admin(team_uuid TEXT)
-RETURNS BOOLEAN AS $func$
-  SELECT EXISTS (
-    SELECT 1 FROM team_members
-    WHERE team_id = team_uuid AND member_id::uuid = auth.uid()
-    AND role IN ('admin', 'owner', 'leader')
-  );
-$func$ LANGUAGE sql SECURITY DEFINER STABLE;
-
--- Check if current user is admin of any team
-CREATE OR REPLACE FUNCTION is_any_team_admin()
-RETURNS BOOLEAN AS $func$
-  SELECT EXISTS (
-    SELECT 1 FROM team_members
-    WHERE member_id::uuid = auth.uid() AND role IN ('admin', 'owner', 'leader')
-  );
-$func$ LANGUAGE sql SECURITY DEFINER STABLE;
-
--- Get all team IDs the current user belongs to
-CREATE OR REPLACE FUNCTION get_user_team_ids()
-RETURNS SETOF TEXT AS $func$
-  SELECT team_id FROM team_members WHERE member_id::uuid = auth.uid();
-$func$ LANGUAGE sql SECURITY DEFINER STABLE;
-
--- ============================================================
--- RLS Policies
--- ============================================================
-
--- --- Reference data: public read, admin write ---
-CREATE POLICY "public_read_industries" ON industries FOR SELECT TO authenticated USING (true);
-CREATE POLICY "admin_insert_industries" ON industries FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_update_industries" ON industries FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_delete_industries" ON industries FOR DELETE TO authenticated USING (is_any_team_admin());
-
-CREATE POLICY "public_read_departments" ON departments FOR SELECT TO authenticated USING (true);
-CREATE POLICY "admin_insert_departments" ON departments FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_update_departments" ON departments FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_delete_departments" ON departments FOR DELETE TO authenticated USING (is_any_team_admin());
-
-CREATE POLICY "public_read_kpis" ON kpis FOR SELECT TO authenticated USING (true);
-CREATE POLICY "admin_insert_kpis" ON kpis FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_update_kpis" ON kpis FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_delete_kpis" ON kpis FOR DELETE TO authenticated USING (is_any_team_admin());
-
-CREATE POLICY "public_read_matrix_cells" ON matrix_cells FOR SELECT TO authenticated USING (true);
-CREATE POLICY "admin_insert_matrix_cells" ON matrix_cells FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_update_matrix_cells" ON matrix_cells FOR UPDATE TO authenticated USING (is_any_team_admin()) WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_delete_matrix_cells" ON matrix_cells FOR DELETE TO authenticated USING (is_any_team_admin());
-
-CREATE POLICY "public_read_agents" ON agents FOR SELECT TO authenticated USING (true);
-CREATE POLICY "admin_insert_agents" ON agents FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_update_agents" ON agents FOR UPDATE TO authenticated USING (is_any_team_admin());
-CREATE POLICY "admin_delete_agents" ON agents FOR DELETE TO authenticated USING (is_any_team_admin());
-
-CREATE POLICY "public_read_channels" ON channels FOR SELECT TO authenticated USING (true);
-CREATE POLICY "admin_insert_channels" ON channels FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_update_channels" ON channels FOR UPDATE TO authenticated USING (is_any_team_admin());
-CREATE POLICY "admin_delete_channels" ON channels FOR DELETE TO authenticated USING (is_any_team_admin());
-
--- --- Business data: team-based access (using app.current_team) ---
-CREATE POLICY "team_select_goals" ON goals FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_goals" ON goals FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_goals" ON goals FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_goals" ON goals FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
-CREATE POLICY "team_select_tasks" ON tasks FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_tasks" ON tasks FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_tasks" ON tasks FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_tasks" ON tasks FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
-CREATE POLICY "team_select_projects" ON projects FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_projects" ON projects FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_projects" ON projects FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_projects" ON projects FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
-CREATE POLICY "team_select_knowledge_docs" ON knowledge_docs FOR SELECT TO authenticated USING (is_team_member(team_id::text));
-CREATE POLICY "team_insert_knowledge_docs" ON knowledge_docs FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id::text));
-CREATE POLICY "team_update_knowledge_docs" ON knowledge_docs FOR UPDATE TO authenticated USING (is_team_member(team_id::text));
-CREATE POLICY "team_delete_knowledge_docs" ON knowledge_docs FOR DELETE TO authenticated USING (is_team_admin(team_id::text));
-
-CREATE POLICY "team_select_members" ON members FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_members" ON members FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_members" ON members FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_members" ON members FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
-CREATE POLICY "team_select_messages" ON messages FOR SELECT TO authenticated USING (is_team_member(team_id::text));
-CREATE POLICY "team_insert_messages" ON messages FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id::text));
-
--- --- Team membership ---
-CREATE POLICY "member_read_teams" ON team_members FOR SELECT TO authenticated USING (member_id::uuid = auth.uid() OR EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = team_members.team_id AND tm.member_id::uuid = auth.uid() AND tm.role IN ('admin', 'owner', 'leader')));
-CREATE POLICY "admin_insert_team_member" ON team_members FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = team_members.team_id AND tm.member_id::uuid = auth.uid() AND tm.role IN ('admin', 'owner')));
-CREATE POLICY "admin_update_team_member" ON team_members FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = team_members.team_id AND tm.member_id::uuid = auth.uid() AND tm.role IN ('admin', 'owner')));
-CREATE POLICY "admin_delete_team_member" ON team_members FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM team_members tm WHERE tm.team_id = team_members.team_id AND tm.member_id::uuid = auth.uid() AND tm.role IN ('admin', 'owner')));
-
--- --- Subscriptions: users own only ---
-CREATE POLICY "auth_read_own_subscription" ON subscriptions FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "auth_insert_own_subscription" ON subscriptions FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "auth_update_own_subscription" ON subscriptions FOR UPDATE TO authenticated USING (user_id = auth.uid());
-
--- --- Usage events ---
-CREATE POLICY "auth_read_own_usage" ON usage_events FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "auth_insert_own_usage" ON usage_events FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-
--- --- Action items: team-based ---
-CREATE POLICY "team_select_action_items" ON action_items FOR SELECT TO authenticated USING (is_team_member(team_id));
-CREATE POLICY "team_insert_action_items" ON action_items FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id));
-CREATE POLICY "team_update_action_items" ON action_items FOR UPDATE TO authenticated USING (is_team_member(team_id));
-CREATE POLICY "team_delete_action_items" ON action_items FOR DELETE TO authenticated USING (is_team_admin(team_id));
-
--- --- Deviation alerts: team-based ---
-CREATE POLICY "team_select_deviation_alerts" ON deviation_alerts FOR SELECT TO authenticated USING (is_team_member(team_id));
-CREATE POLICY "team_insert_deviation_alerts" ON deviation_alerts FOR INSERT TO authenticated WITH CHECK (is_team_member(team_id));
-CREATE POLICY "team_update_deviation_alerts" ON deviation_alerts FOR UPDATE TO authenticated USING (is_team_member(team_id));
-
--- --- Audit logs: admin-only ---
-CREATE POLICY "admin_read_audit_logs" ON audit_logs FOR SELECT TO authenticated USING (is_any_team_admin());
-
--- --- Teams ---
-CREATE POLICY "member_read_teams" ON teams FOR SELECT TO authenticated USING (is_team_member(id) OR owner_id::uuid = auth.uid());
-CREATE POLICY "owner_insert_teams" ON teams FOR INSERT TO authenticated WITH CHECK (owner_id::uuid = auth.uid());
-CREATE POLICY "owner_update_teams" ON teams FOR UPDATE TO authenticated USING (owner_id::uuid = auth.uid() OR is_team_admin(id));
-CREATE POLICY "owner_delete_teams" ON teams FOR DELETE TO authenticated USING (owner_id::uuid = auth.uid());
-
--- --- Agent details ---
-CREATE POLICY "team_select_agent_details" ON agent_details FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_agent_details" ON agent_details FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "team_update_agent_details" ON agent_details FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_agent_details" ON agent_details FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Agent configs ---
-CREATE POLICY "Users can view own team configs" ON agent_configs FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can manage own team configs" ON agent_configs FOR ALL TO authenticated USING (true);
-
--- --- Activities ---
-CREATE POLICY "team_select_activities" ON activities FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_activities" ON activities FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_activities" ON activities FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_activities" ON activities FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Announcements ---
-CREATE POLICY "announcements_authenticated_all" ON announcements FOR ALL TO authenticated;
-
--- --- Approvals ---
-CREATE POLICY "team_select_approvals" ON approvals FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_approvals" ON approvals FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_approvals" ON approvals FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_approvals" ON approvals FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Automation rules ---
-CREATE POLICY "team_select_automation_rules" ON automation_rules FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_automation_rules" ON automation_rules FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_automation_rules" ON automation_rules FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_automation_rules" ON automation_rules FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Behavior events ---
-CREATE POLICY "Users can see own behavior events" ON behavior_events FOR SELECT TO authenticated USING (user_id = auth.uid()::text OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager'])));
-CREATE POLICY "Users can insert own behavior events" ON behavior_events FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid()::text);
-
--- --- Bookmarks ---
-CREATE POLICY "team_select_bookmarks" ON bookmarks FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_bookmarks" ON bookmarks FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_bookmarks" ON bookmarks FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_bookmarks" ON bookmarks FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Categories ---
-CREATE POLICY "team_select_categories" ON categories FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_categories" ON categories FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_categories" ON categories FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_categories" ON categories FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Collab docs ---
-CREATE POLICY "team_select_collab_docs" ON collab_docs FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_collab_docs" ON collab_docs FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_collab_docs" ON collab_docs FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_collab_docs" ON collab_docs FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Comments ---
-CREATE POLICY "team_select_comments" ON comments FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_comments" ON comments FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_comments" ON comments FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_comments" ON comments FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Contacts ---
-CREATE POLICY "contacts_authenticated_all" ON contacts FOR ALL TO authenticated;
-
--- --- Docs ---
-CREATE POLICY "team_select_docs" ON docs FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_docs" ON docs FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_docs" ON docs FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_docs" ON docs FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Email settings: admin-only ---
-CREATE POLICY "admin_read_email_settings" ON email_settings FOR SELECT TO authenticated USING (is_any_team_admin());
-CREATE POLICY "admin_write_email_settings" ON email_settings FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_update_email_settings" ON email_settings FOR UPDATE TO authenticated USING (is_any_team_admin());
-
--- --- Experiences ---
-CREATE POLICY "team_select_experiences" ON experiences FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_experiences" ON experiences FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_experiences" ON experiences FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_experiences" ON experiences FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Feature flags: admin-only ---
-CREATE POLICY "admin_read_feature_flags" ON feature_flags FOR SELECT TO authenticated USING (is_any_team_admin());
-CREATE POLICY "admin_insert_feature_flags" ON feature_flags FOR INSERT TO authenticated WITH CHECK (is_any_team_admin());
-CREATE POLICY "admin_update_feature_flags" ON feature_flags FOR UPDATE TO authenticated USING (is_any_team_admin());
-CREATE POLICY "admin_delete_feature_flags" ON feature_flags FOR DELETE TO authenticated USING (is_any_team_admin());
-
--- --- Insights ---
-CREATE POLICY "insights_read" ON insights FOR SELECT TO authenticated;
-CREATE POLICY "insights_insert" ON insights FOR INSERT TO authenticated;
-CREATE POLICY "insights_update" ON insights FOR UPDATE TO authenticated;
-CREATE POLICY "insights_delete" ON insights FOR DELETE TO authenticated;
-
--- --- Item links ---
-CREATE POLICY "team_select_item_links" ON item_links FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_item_links" ON item_links FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_item_links" ON item_links FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_item_links" ON item_links FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Knowledge ---
-CREATE POLICY "team_select_knowledge" ON knowledge FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_knowledge" ON knowledge FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_knowledge" ON knowledge FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_knowledge" ON knowledge FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Meetings ---
-CREATE POLICY "team_select_meetings" ON meetings FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_meetings" ON meetings FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_meetings" ON meetings FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_meetings" ON meetings FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Notes ---
-CREATE POLICY "team_select_notes" ON notes FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_notes" ON notes FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_notes" ON notes FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_notes" ON notes FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Notification preferences ---
-CREATE POLICY "user_read_notification_prefs" ON notification_preferences FOR SELECT TO authenticated USING (member_id::uuid = auth.uid() OR is_any_team_admin());
-CREATE POLICY "user_insert_notification_prefs" ON notification_preferences FOR INSERT TO authenticated WITH CHECK (member_id::uuid = auth.uid() OR is_any_team_admin());
-CREATE POLICY "user_update_notification_prefs" ON notification_preferences FOR UPDATE TO authenticated USING (member_id::uuid = auth.uid() OR is_any_team_admin());
-CREATE POLICY "user_delete_notification_prefs" ON notification_preferences FOR DELETE TO authenticated USING (member_id::uuid = auth.uid() OR is_any_team_admin());
-
--- --- Notifications ---
-CREATE POLICY "team_select_notifications" ON notifications FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_notifications" ON notifications FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_notifications" ON notifications FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_notifications" ON notifications FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Org info ---
-CREATE POLICY "team_select_org_info" ON org_info FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_org_info" ON org_info FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_org_info" ON org_info FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Predictions ---
-CREATE POLICY "team_select_predictions" ON predictions FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_predictions" ON predictions FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_predictions" ON predictions FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_predictions" ON predictions FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Reports ---
-CREATE POLICY "team_select_reports" ON reports FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_reports" ON reports FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_reports" ON reports FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_reports" ON reports FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Reviews ---
-CREATE POLICY "team_select_reviews" ON reviews FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_reviews" ON reviews FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_reviews" ON reviews FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_reviews" ON reviews FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Risks ---
-CREATE POLICY "team_select_risks" ON risks FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_risks" ON risks FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_risks" ON risks FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_risks" ON risks FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Roles ---
-CREATE POLICY "team_select_roles" ON roles FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_insert_roles" ON roles FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_update_roles" ON roles FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true));
-CREATE POLICY "team_delete_roles" ON roles FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true));
-
--- --- Saved views ---
-CREATE POLICY "team_select_saved_views" ON saved_views FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_saved_views" ON saved_views FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_saved_views" ON saved_views FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_saved_views" ON saved_views FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Schedule events ---
-CREATE POLICY "team_select_schedule_events" ON schedule_events FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_schedule_events" ON schedule_events FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_schedule_events" ON schedule_events FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_schedule_events" ON schedule_events FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Shared files ---
-CREATE POLICY "shared_files_authenticated_all" ON shared_files FOR ALL TO authenticated;
-
--- --- Sprints ---
-CREATE POLICY "team_select_sprints" ON sprints FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_sprints" ON sprints FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_sprints" ON sprints FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_sprints" ON sprints FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Status flow rules ---
-CREATE POLICY "team_select_status_flow_rules" ON status_flow_rules FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_status_flow_rules" ON status_flow_rules FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_status_flow_rules" ON status_flow_rules FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_status_flow_rules" ON status_flow_rules FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Tags ---
-CREATE POLICY "team_select_tags" ON tags FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_tags" ON tags FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_tags" ON tags FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_tags" ON tags FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Templates ---
-CREATE POLICY "team_select_templates" ON templates FOR SELECT TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_insert_templates" ON templates FOR INSERT TO authenticated WITH CHECK (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_update_templates" ON templates FOR UPDATE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-CREATE POLICY "team_delete_templates" ON templates FOR DELETE TO authenticated USING (team_id = current_setting('app.current_team', true) OR current_setting('app.current_team', true) IS NULL);
-
--- --- Team industry profile ---
-CREATE POLICY "Team members can view industry" ON team_industry_profile FOR SELECT TO authenticated;
-CREATE POLICY "Admins can manage industry" ON team_industry_profile FOR INSERT TO authenticated;
-CREATE POLICY "Admins can update industry" ON team_industry_profile FOR UPDATE TO authenticated;
-
--- --- User behavior profile ---
-CREATE POLICY "Admins and managers can view profiles" ON user_behavior_profile FOR SELECT TO authenticated USING (user_id = auth.uid()::text OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager'])));
-CREATE POLICY "System can insert profiles" ON user_behavior_profile FOR INSERT TO authenticated;
-CREATE POLICY "System can update profiles" ON user_behavior_profile FOR UPDATE TO authenticated;
-
--- --- Workflow instances ---
-CREATE POLICY "wf_read" ON workflow_instances FOR SELECT TO authenticated;
-CREATE POLICY "wf_insert" ON workflow_instances FOR INSERT TO authenticated;
-CREATE POLICY "wf_update" ON workflow_instances FOR UPDATE TO authenticated;
-CREATE POLICY "wf_delete" ON workflow_instances FOR DELETE TO authenticated;
-
--- ============================================================
--- Audit trigger function
--- ============================================================
-CREATE OR REPLACE FUNCTION audit_trigger_func()
-RETURNS TRIGGER AS $$
-DECLARE
-  current_user_id UUID;
-BEGIN
-  current_user_id := auth.uid();
-  IF (TG_OP = 'INSERT') THEN
-    INSERT INTO audit_logs (user_id, action, table_name, record_id, new_data)
-    VALUES (current_user_id, 'INSERT', TG_TABLE_NAME, NEW.id, to_jsonb(NEW));
-    RETURN NEW;
-  ELSIF (TG_OP = 'UPDATE') THEN
-    INSERT INTO audit_logs (user_id, action, table_name, record_id, old_data, new_data)
-    VALUES (current_user_id, 'UPDATE', TG_TABLE_NAME, NEW.id, to_jsonb(OLD), to_jsonb(NEW));
-    RETURN NEW;
-  ELSIF (TG_OP = 'DELETE') THEN
-    INSERT INTO audit_logs (user_id, action, table_name, record_id, old_data)
-    VALUES (current_user_id, 'DELETE', TG_TABLE_NAME, OLD.id, to_jsonb(OLD));
-    RETURN OLD;
-  END IF;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Attach audit triggers to core business tables
-DROP TRIGGER IF EXISTS audit_goals ON goals;
-CREATE TRIGGER audit_goals AFTER INSERT OR UPDATE OR DELETE ON goals FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-DROP TRIGGER IF EXISTS audit_tasks ON tasks;
-CREATE TRIGGER audit_tasks AFTER INSERT OR UPDATE OR DELETE ON tasks FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-DROP TRIGGER IF EXISTS audit_projects ON projects;
-CREATE TRIGGER audit_projects AFTER INSERT OR UPDATE OR DELETE ON projects FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-DROP TRIGGER IF EXISTS audit_knowledge_docs ON knowledge_docs;
-CREATE TRIGGER audit_knowledge_docs AFTER INSERT OR UPDATE OR DELETE ON knowledge_docs FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-DROP TRIGGER IF EXISTS audit_members ON members;
-CREATE TRIGGER audit_members AFTER INSERT OR UPDATE OR DELETE ON members FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-
--- ============================================================
--- Auto-update timestamp triggers
--- ============================================================
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Attach updated_at triggers to ALL tables with updated_at column
-DO $$
-DECLARE
-  t TEXT;
-BEGIN
-  FOR t IN SELECT unnest(ARRAY[
-    'industries','departments','kpis','matrix_cells','agents','channels',
-    'goals','tasks','projects','knowledge_docs','members',
-    'agent_configs','agent_details','announcements','approvals',
-    'automation_rules','collab_docs','contacts','docs',
-    'experiences','feature_flags','insights','meetings',
-    'notes','notifications','org_info','predictions',
-    'reports','reviews','risks','roles','schedule_events',
-    'shared_files','sprints','status_flow_rules','tags',
-    'teams','templates','workflow_instances','knowledge'
-  ]) LOOP
-    EXECUTE format('DROP TRIGGER IF EXISTS set_updated_at ON %I', t);
-    EXECUTE format('CREATE TRIGGER set_updated_at BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION update_updated_at()', t);
-  END LOOP;
-END;
-$$;
-
--- ============================================================
--- Realtime publication
--- ============================================================
-ALTER PUBLICATION supabase_realtime ADD TABLE goals;
-ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
-ALTER PUBLICATION supabase_realtime ADD TABLE members;
-ALTER PUBLICATION supabase_realtime ADD TABLE messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE team_members;
-ALTER PUBLICATION supabase_realtime ADD TABLE teams;
-ALTER PUBLICATION supabase_realtime ADD TABLE projects;
-ALTER PUBLICATION supabase_realtime ADD TABLE action_items;
-ALTER PUBLICATION supabase_realtime ADD TABLE deviation_alerts;
-ALTER PUBLICATION supabase_realtime ADD TABLE activities;
-ALTER PUBLICATION supabase_realtime ADD TABLE automation_rules;
-ALTER PUBLICATION supabase_realtime ADD TABLE bookmarks;
-ALTER PUBLICATION supabase_realtime ADD TABLE categories;
-ALTER PUBLICATION supabase_realtime ADD TABLE comments;
-ALTER PUBLICATION supabase_realtime ADD TABLE email_settings;
-ALTER PUBLICATION supabase_realtime ADD TABLE item_links;
-ALTER PUBLICATION supabase_realtime ADD TABLE knowledge;
-ALTER PUBLICATION supabase_realtime ADD TABLE notes;
-ALTER PUBLICATION supabase_realtime ADD TABLE notification_preferences;
-ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE reviews;
-ALTER PUBLICATION supabase_realtime ADD TABLE saved_views;
-ALTER PUBLICATION supabase_realtime ADD TABLE schedule_events;
-ALTER PUBLICATION supabase_realtime ADD TABLE sprints;
-ALTER PUBLICATION supabase_realtime ADD TABLE status_flow_rules;
-ALTER PUBLICATION supabase_realtime ADD TABLE tags;
-ALTER PUBLICATION supabase_realtime ADD TABLE templates;
-ALTER PUBLICATION supabase_realtime ADD TABLE agent_details;
-ALTER PUBLICATION supabase_realtime ADD TABLE agent_configs;
-ALTER PUBLICATION supabase_realtime ADD TABLE approvals;
-ALTER PUBLICATION supabase_realtime ADD TABLE collab_docs;
-ALTER PUBLICATION supabase_realtime ADD TABLE contacts;
-ALTER PUBLICATION supabase_realtime ADD TABLE docs;
-ALTER PUBLICATION supabase_realtime ADD TABLE experiences;
-ALTER PUBLICATION supabase_realtime ADD TABLE insights;
-ALTER PUBLICATION supabase_realtime ADD TABLE meetings;
-ALTER PUBLICATION supabase_realtime ADD TABLE org_info;
-ALTER PUBLICATION supabase_realtime ADD TABLE predictions;
-ALTER PUBLICATION supabase_realtime ADD TABLE reports;
-ALTER PUBLICATION supabase_realtime ADD TABLE risks;
-ALTER PUBLICATION supabase_realtime ADD TABLE roles;
-ALTER PUBLICATION supabase_realtime ADD TABLE shared_files;
-ALTER PUBLICATION supabase_realtime ADD TABLE workflow_instances;
-ALTER PUBLICATION supabase_realtime ADD TABLE user_behavior_profile;
-ALTER PUBLICATION supabase_realtime ADD TABLE team_industry_profile;
-ALTER PUBLICATION supabase_realtime ADD TABLE announcements;
-
--- ============================================================
--- Performance indexes
--- ============================================================
-
--- Reference data indexes
-CREATE INDEX IF NOT EXISTS idx_kpis_industry_dept ON kpis(industry, dept);
-CREATE INDEX IF NOT EXISTS idx_agents_industry_dept ON agents(industry, dept);
-CREATE INDEX IF NOT EXISTS idx_channels_industry_dept ON channels(industry, dept);
-
--- Core business indexes
-CREATE INDEX IF NOT EXISTS idx_goals_team_id ON goals(team_id);
-CREATE INDEX IF NOT EXISTS idx_goals_created_by ON goals(created_by);
-CREATE INDEX IF NOT EXISTS idx_tasks_team_id ON tasks(team_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_goal_id ON tasks(goal_id);
-CREATE INDEX IF NOT EXISTS idx_members_team_id ON members(team_id);
-CREATE INDEX IF NOT EXISTS idx_members_user_id ON members(user_id);
-CREATE INDEX IF NOT EXISTS idx_projects_team_id ON projects(team_id);
-
--- Action items & deviation alerts
-CREATE INDEX IF NOT EXISTS idx_action_items_team_id ON action_items(team_id);
-CREATE INDEX IF NOT EXISTS idx_action_items_status ON action_items(status);
-CREATE INDEX IF NOT EXISTS idx_action_items_goal_id ON action_items(goal_id);
-CREATE INDEX IF NOT EXISTS idx_deviation_alerts_team_id ON deviation_alerts(team_id);
-CREATE INDEX IF NOT EXISTS idx_deviation_alerts_goal_id ON deviation_alerts(goal_id);
-
--- Audit & logging
-CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_table_name ON audit_logs(table_name);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
-
--- Auth & subscription
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_usage_events_user_id ON usage_events(user_id);
-CREATE INDEX IF NOT EXISTS idx_usage_events_type ON usage_events(user_id, event_type);
-CREATE INDEX IF NOT EXISTS idx_usage_events_created ON usage_events(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id);
-CREATE INDEX IF NOT EXISTS idx_team_members_member_id ON team_members(member_id);
-
--- Messages
-CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
-
--- Agent system
-CREATE INDEX IF NOT EXISTS idx_agent_details_team_id ON agent_details(team_id);
-CREATE INDEX IF NOT EXISTS idx_agent_configs_team_id ON agent_configs(team_id);
-
--- Activity feed
-CREATE INDEX IF NOT EXISTS idx_activities_team_id ON activities(team_id);
-CREATE INDEX IF NOT EXISTS idx_activities_member_id ON activities(member_id);
-CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at DESC);
-
--- New module indexes (team_id for RLS performance, status for filtering)
-CREATE INDEX IF NOT EXISTS idx_announcements_team_id ON announcements(team_id);
-CREATE INDEX IF NOT EXISTS idx_approvals_team_id ON approvals(team_id);
-CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status);
-CREATE INDEX IF NOT EXISTS idx_automation_rules_team_id ON automation_rules(team_id);
-CREATE INDEX IF NOT EXISTS idx_bookmarks_team_id ON bookmarks(team_id);
-CREATE INDEX IF NOT EXISTS idx_categories_team_id ON categories(team_id);
-CREATE INDEX IF NOT EXISTS idx_collab_docs_team_id ON collab_docs(team_id);
-CREATE INDEX IF NOT EXISTS idx_comments_item_id ON comments(item_id, item_type);
-CREATE INDEX IF NOT EXISTS idx_comments_team_id ON comments(team_id);
-CREATE INDEX IF NOT EXISTS idx_contacts_team_id ON contacts(team_id);
-CREATE INDEX IF NOT EXISTS idx_docs_team_id ON docs(team_id);
-CREATE INDEX IF NOT EXISTS idx_experiences_team_id ON experiences(team_id);
-CREATE INDEX IF NOT EXISTS idx_insights_team_id ON insights(team_id);
-CREATE INDEX IF NOT EXISTS idx_item_links_source ON item_links(source_id, source_type);
-CREATE INDEX IF NOT EXISTS idx_item_links_target ON item_links(target_id, target_type);
-CREATE INDEX IF NOT EXISTS idx_item_links_team_id ON item_links(team_id);
-CREATE INDEX IF NOT EXISTS idx_knowledge_team_id ON knowledge(team_id);
-CREATE INDEX IF NOT EXISTS idx_knowledge_member_id ON knowledge(member_id);
-CREATE INDEX IF NOT EXISTS idx_meetings_team_id ON meetings(team_id);
-CREATE INDEX IF NOT EXISTS idx_notes_team_id ON notes(team_id);
-CREATE INDEX IF NOT EXISTS idx_notes_created_by ON notes(created_by);
-CREATE INDEX IF NOT EXISTS idx_notifications_member_id ON notifications(member_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_team_id ON notifications(team_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(member_id, read);
-CREATE INDEX IF NOT EXISTS idx_org_info_team_id ON org_info(team_id);
-CREATE INDEX IF NOT EXISTS idx_predictions_team_id ON predictions(team_id);
-CREATE INDEX IF NOT EXISTS idx_reports_team_id ON reports(team_id);
-CREATE INDEX IF NOT EXISTS idx_reviews_team_id ON reviews(team_id);
-CREATE INDEX IF NOT EXISTS idx_reviews_member_id ON reviews(member_id);
-CREATE INDEX IF NOT EXISTS idx_risks_team_id ON risks(team_id);
-CREATE INDEX IF NOT EXISTS idx_risks_status ON risks(status);
-CREATE INDEX IF NOT EXISTS idx_roles_team_id ON roles(team_id);
-CREATE INDEX IF NOT EXISTS idx_saved_views_team_id ON saved_views(team_id);
-CREATE INDEX IF NOT EXISTS idx_schedule_events_team_id ON schedule_events(team_id);
-CREATE INDEX IF NOT EXISTS idx_schedule_events_member_id ON schedule_events(member_id);
-CREATE INDEX IF NOT EXISTS idx_sprints_team_id ON sprints(team_id);
-CREATE INDEX IF NOT EXISTS idx_sprints_status ON sprints(status);
-CREATE INDEX IF NOT EXISTS idx_status_flow_rules_team_id ON status_flow_rules(team_id);
-CREATE INDEX IF NOT EXISTS idx_tags_team_id ON tags(team_id);
-CREATE INDEX IF NOT EXISTS idx_templates_team_id ON templates(team_id);
-CREATE INDEX IF NOT EXISTS idx_workflow_instances_team_id ON workflow_instances(team_id);
-CREATE INDEX IF NOT EXISTS idx_teams_owner_id ON teams(owner_id);
-CREATE INDEX IF NOT EXISTS idx_behavior_events_user_id ON behavior_events(user_id);
-CREATE INDEX IF NOT EXISTS idx_behavior_events_type ON behavior_events(user_id, event_type);
-
--- ============================================================
--- 62. API Keys (encrypted storage, replaces localStorage plaintext)
--- ============================================================
-CREATE TABLE IF NOT EXISTS api_keys (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  team_id TEXT REFERENCES teams(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL,
-  encrypted_key TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(team_id, user_id, provider)
-);
-ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can read own keys" ON api_keys FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own keys" ON api_keys FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own keys" ON api_keys FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own keys" ON api_keys FOR DELETE USING (auth.uid() = user_id);
-
--- ============================================================
--- 63. Agent Configs (replaces localStorage tbh-agent-configs)
--- ============================================================
 CREATE TABLE IF NOT EXISTS agent_configs (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  agent_id TEXT NOT NULL,
-  config JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, agent_id)
+  id text NOT NULL,
+  name text NOT NULL,
+  model text NOT NULL DEFAULT 'deepseek-chat'::text,
+  temperature real NOT NULL DEFAULT 0.7,
+  max_tokens integer NOT NULL DEFAULT 2048,
+  system_prompt text NOT NULL DEFAULT ''::text,
+  schedule text NOT NULL DEFAULT ''::text,
+  enabled boolean NOT NULL DEFAULT true,
+  sort_order integer NOT NULL DEFAULT 0,
+  team_id text,
+  member_id text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now()
 );
-ALTER TABLE agent_configs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can read own agent configs" ON agent_configs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own agent configs" ON agent_configs FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own agent configs" ON agent_configs FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own agent configs" ON agent_configs FOR DELETE USING (auth.uid() = user_id);
 
--- ============================================================
--- 64. Installed Agents (replaces localStorage tbh-installed-agents)
--- ============================================================
-CREATE TABLE IF NOT EXISTS installed_agents (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  agent_id TEXT NOT NULL,
-  installed_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, agent_id)
+CREATE TABLE IF NOT EXISTS agent_details (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  name text NOT NULL,
+  description text DEFAULT ''::text,
+  model text DEFAULT 'deepseek-v4-pro'::text,
+  status text DEFAULT 'idle'::text,
+  avatar text DEFAULT ''::text,
+  skills jsonb DEFAULT '[]'::jsonb,
+  config jsonb DEFAULT '{}'::jsonb,
+  tasks_completed integer DEFAULT 0,
+  uptime text DEFAULT '0%'::text,
+  enabled boolean DEFAULT true,
+  capabilities jsonb DEFAULT '[]'::jsonb,
+  team_id text DEFAULT '__default__'::text,
+  created_by text,
+  sort_order integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  system_prompt text NOT NULL DEFAULT ''::text
 );
-ALTER TABLE installed_agents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can read own installed agents" ON installed_agents FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own installed agents" ON installed_agents FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can delete own installed agents" ON installed_agents FOR DELETE USING (auth.uid() = user_id);
 
--- ============================================================
--- 65. Running Workflows (replaces localStorage tbh-running-workflows)
--- ============================================================
-CREATE TABLE IF NOT EXISTS running_workflows (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  workflow_id TEXT NOT NULL,
-  started_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, workflow_id)
+CREATE TABLE IF NOT EXISTS agents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  industry text NOT NULL,
+  dept text NOT NULL,
+  name text NOT NULL,
+  description text DEFAULT ''::text,
+  status text DEFAULT '在线'::text,
+  sort_order integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
 );
-ALTER TABLE running_workflows ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can read own running workflows" ON running_workflows FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own running workflows" ON running_workflows FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can delete own running workflows" ON running_workflows FOR DELETE USING (auth.uid() = user_id);
 
--- ============================================================
--- 66. MCP Status (replaces localStorage tbh-mcp-status)
--- ============================================================
-CREATE TABLE IF NOT EXISTS mcp_status (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  server_id TEXT NOT NULL,
-  status JSONB NOT NULL DEFAULT '{}',
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, server_id)
+CREATE TABLE IF NOT EXISTS ai_call_logs (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  user_id text NOT NULL,
+  call_date date NOT NULL DEFAULT CURRENT_DATE,
+  call_count integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone DEFAULT now()
 );
-ALTER TABLE mcp_status ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can read own mcp status" ON mcp_status FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own mcp status" ON mcp_status FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own mcp status" ON mcp_status FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own mcp status" ON mcp_status FOR DELETE USING (auth.uid() = user_id);
 
--- ============================================================
--- 67. Installed Packs (replaces localStorage tbh-installed-packs)
--- ============================================================
-CREATE TABLE IF NOT EXISTS installed_packs (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  pack_id TEXT NOT NULL,
-  installed_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, pack_id)
+CREATE TABLE IF NOT EXISTS ai_push_log (
+  id bigint NOT NULL DEFAULT nextval('ai_push_log_id_seq'::regclass),
+  push_type text NOT NULL,
+  target_user_id uuid,
+  target_team_id text,
+  status text DEFAULT 'sent'::text,
+  error_message text,
+  created_at timestamp with time zone DEFAULT now()
 );
-ALTER TABLE installed_packs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can read own installed packs" ON installed_packs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own installed packs" ON installed_packs FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can delete own installed packs" ON installed_packs FOR DELETE USING (auth.uid() = user_id);
 
--- ============================================================
--- 68. Automation Chains (replaces localStorage tbh-automation-chains)
--- ============================================================
-CREATE TABLE IF NOT EXISTS automation_chains (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  team_id UUID,
-  name TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  trigger_type TEXT NOT NULL,
-  trigger_config JSONB DEFAULT '{}',
-  source_dept TEXT DEFAULT '',
-  conditions JSONB DEFAULT '[]',
-  then_steps JSONB DEFAULT '[]',
-  else_steps JSONB DEFAULT '[]',
-  is_active BOOLEAN DEFAULT false,
-  priority INT DEFAULT 0,
-  auto_execute BOOLEAN DEFAULT false,
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE IF NOT EXISTS ai_suggestions (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  user_id text,
+  suggestion_type text NOT NULL DEFAULT 'general'::text,
+  context_type text,
+  context_id text,
+  content text NOT NULL DEFAULT ''::text,
+  action_payload jsonb,
+  status text NOT NULL DEFAULT 'pending'::text,
+  source text NOT NULL DEFAULT 'local'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  resolved_at timestamp with time zone
 );
-ALTER TABLE automation_chains ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Team members can read automation chains" ON automation_chains FOR SELECT TO authenticated USING (
-  created_by = auth.uid() OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager']))
-);
-CREATE POLICY "Users can create automation chains" ON automation_chains FOR INSERT TO authenticated WITH CHECK (created_by = auth.uid());
-CREATE POLICY "Users can update own automation chains" ON automation_chains FOR UPDATE TO authenticated USING (created_by = auth.uid());
-CREATE POLICY "Users can delete own automation chains" ON automation_chains FOR DELETE TO authenticated USING (created_by = auth.uid());
-CREATE INDEX IF NOT EXISTS idx_automation_chains_team ON automation_chains(team_id);
-CREATE INDEX IF NOT EXISTS idx_automation_chains_trigger ON automation_chains(trigger_type);
 
--- ============================================================
--- 69. Automation Execution Logs (replaces localStorage tbh-automation-exec-logs)
--- ============================================================
-CREATE TABLE IF NOT EXISTS automation_execution_logs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  chain_id UUID REFERENCES automation_chains(id) ON DELETE CASCADE,
-  chain_name TEXT NOT NULL,
-  trigger_type TEXT NOT NULL,
-  source_dept TEXT DEFAULT '',
-  condition_result BOOLEAN DEFAULT true,
-  steps_executed JSONB DEFAULT '[]',
-  status TEXT NOT NULL DEFAULT 'success' CHECK (status IN ('success','partial','failed')),
-  error TEXT,
-  executed_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  duration_ms INT DEFAULT 0,
-  executed_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE IF NOT EXISTS announcements (
+  id text NOT NULL DEFAULT ('an-'::text || (gen_random_uuid())::text),
+  title text NOT NULL,
+  content text DEFAULT ''::text,
+  priority text DEFAULT 'normal'::text,
+  author_id text,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
 );
-ALTER TABLE automation_execution_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Team members can read execution logs" ON automation_execution_logs FOR SELECT TO authenticated USING (
-  executed_by = auth.uid() OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager']))
-);
-CREATE POLICY "Users can create execution logs" ON automation_execution_logs FOR INSERT TO authenticated WITH CHECK (executed_by = auth.uid());
-CREATE INDEX IF NOT EXISTS idx_exec_logs_chain ON automation_execution_logs(chain_id);
-CREATE INDEX IF NOT EXISTS idx_exec_logs_time ON automation_execution_logs(executed_at DESC);
 
--- ============================================================
--- 70. Usage Alerts (replaces localStorage tbh-usage-alerts)
--- ============================================================
-CREATE TABLE IF NOT EXISTS usage_alerts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('threshold_warning','threshold_critical','downgrade_blocked','quota_exceeded')),
-  metric TEXT NOT NULL,
-  current_value INT NOT NULL DEFAULT 0,
-  limit_value INT NOT NULL DEFAULT 0,
-  plan TEXT NOT NULL DEFAULT 'free',
-  message TEXT NOT NULL DEFAULT '',
-  is_read BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE IF NOT EXISTS api_keys (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  team_id text,
+  user_id text NOT NULL,
+  provider text NOT NULL,
+  encrypted_key text NOT NULL,
+  created_at timestamp with time zone DEFAULT now()
 );
-ALTER TABLE usage_alerts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can read own usage alerts" ON usage_alerts FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own usage alerts" ON usage_alerts FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can update own usage alerts" ON usage_alerts FOR UPDATE TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can delete own usage alerts" ON usage_alerts FOR DELETE TO authenticated USING (user_id = auth.uid());
-CREATE INDEX IF NOT EXISTS idx_usage_alerts_user ON usage_alerts(user_id, is_read);
-CREATE INDEX IF NOT EXISTS idx_usage_alerts_created ON usage_alerts(created_at DESC);
 
--- ============================================================
--- 71. Reports (weekly/monthly report persistence)
--- ============================================================
-CREATE TABLE IF NOT EXISTS reports (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  team_id TEXT NOT NULL DEFAULT '__default__',
-  type TEXT NOT NULL DEFAULT 'weekly' CHECK (type IN ('weekly', 'monthly', 'custom')),
-  title TEXT NOT NULL,
-  period TEXT NOT NULL,
-  period_start DATE,
-  period_end DATE,
-  ai_summary TEXT,
-  structured_data JSONB DEFAULT '{}',
-  model TEXT DEFAULT 'deepseek',
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE IF NOT EXISTS api_tokens (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  name text NOT NULL,
+  token_hash text NOT NULL,
+  token_prefix text NOT NULL,
+  permissions jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  created_by text,
+  last_used_at timestamp with time zone
 );
-ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Team members can read reports" ON reports FOR SELECT TO authenticated USING (
-  team_id = '__default__' OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text)
-);
-CREATE POLICY "Users can create reports" ON reports FOR INSERT TO authenticated WITH CHECK (created_by = auth.uid());
-CREATE POLICY "Admin can delete reports" ON reports FOR DELETE TO authenticated USING (
-  EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager']))
-);
-CREATE INDEX IF NOT EXISTS idx_reports_team ON reports(team_id, type);
-CREATE INDEX IF NOT EXISTS idx_reports_period ON reports(period_start DESC);
 
--- ============================================================
--- 72. DSTE Seasons (replaces localStorage tbh-dste-seasons)
--- ============================================================
+CREATE TABLE IF NOT EXISTS app_config (
+  key text NOT NULL,
+  value text NOT NULL,
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS approvals (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  type text DEFAULT ''::text,
+  status text DEFAULT 'pending'::text,
+  applicant_id text DEFAULT ''::text,
+  approver_id text,
+  description text DEFAULT ''::text,
+  urgency text DEFAULT 'normal'::text,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  table_name text NOT NULL,
+  record_id text NOT NULL,
+  action text NOT NULL,
+  old_data jsonb,
+  new_data jsonb,
+  performed_by text,
+  team_id text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS automation_rules (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  name text NOT NULL,
+  enabled boolean DEFAULT true,
+  item_type text NOT NULL,
+  trigger text NOT NULL,
+  condition jsonb DEFAULT '{}'::jsonb,
+  actions jsonb DEFAULT '[]'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS behavior_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  event_type text NOT NULL,
+  entity_type text,
+  entity_id text,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS bookmarks (
+  id text NOT NULL,
+  title text NOT NULL DEFAULT ''::text,
+  url text NOT NULL DEFAULT ''::text,
+  category text NOT NULL DEFAULT ''::text,
+  icon text NOT NULL DEFAULT ''::text,
+  order integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS budgets (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  project_id text,
+  season_id text,
+  name text NOT NULL,
+  total_amount numeric NOT NULL DEFAULT 0,
+  currency text NOT NULL DEFAULT 'CNY'::text,
+  status text NOT NULL DEFAULT 'draft'::text,
+  items jsonb NOT NULL DEFAULT '[]'::jsonb,
+  approved_by text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+  id text NOT NULL,
+  name text NOT NULL,
+  color text NOT NULL DEFAULT '#3b82f6'::text,
+  icon text NOT NULL DEFAULT 'tag'::text,
+  applies_to text[] NOT NULL DEFAULT '{}'::text[],
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS channels (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  industry text NOT NULL,
+  dept text NOT NULL,
+  name text NOT NULL,
+  sort_order integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS collab_docs (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  content text DEFAULT ''::text,
+  last_editor text DEFAULT ''::text,
+  editors_count integer DEFAULT 0,
+  status text DEFAULT 'draft'::text,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS comments (
+  id text NOT NULL,
+  item_id text NOT NULL,
+  item_type text NOT NULL,
+  member_id text NOT NULL,
+  member_name text NOT NULL,
+  content text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  mentioned_member_ids jsonb DEFAULT '[]'::jsonb,
+  is_read boolean DEFAULT false,
+  follow_up_required boolean DEFAULT false,
+  follow_up_status text DEFAULT 'none'::text,
+  team_id text DEFAULT '__default__'::text,
+  parent_id text,
+  attachments jsonb DEFAULT '[]'::jsonb
+);
+
+CREATE TABLE IF NOT EXISTS contacts (
+  id text NOT NULL DEFAULT ('c-'::text || (gen_random_uuid())::text),
+  name text NOT NULL,
+  department text DEFAULT ''::text,
+  role text DEFAULT ''::text,
+  email text DEFAULT ''::text,
+  phone text DEFAULT ''::text,
+  status text DEFAULT 'offline'::text,
+  is_ai boolean DEFAULT false,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cost_entries (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  project_id text,
+  task_id text,
+  category text NOT NULL DEFAULT 'other'::text,
+  amount numeric NOT NULL DEFAULT 0,
+  description text NOT NULL DEFAULT ''::text,
+  recorded_by text,
+  recorded_at timestamp with time zone DEFAULT now(),
+  approved_by text,
+  status text NOT NULL DEFAULT 'pending'::text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS departments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  industry text,
+  name text NOT NULL,
+  sort_order integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  org_id uuid NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid,
+  parent_id uuid,
+  code text,
+  head_member_id text,
+  settings jsonb DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE IF NOT EXISTS deviation_alerts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  goal_id text,
+  task_id text,
+  alert_type text NOT NULL,
+  severity text NOT NULL DEFAULT 'warning'::text,
+  message text NOT NULL,
+  is_read boolean DEFAULT false,
+  is_resolved boolean DEFAULT false,
+  resolved_at timestamp with time zone,
+  action_item_id uuid,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS docs (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  type text DEFAULT ''::text,
+  status text DEFAULT 'draft'::text,
+  author text DEFAULT ''::text,
+  editors integer DEFAULT 0,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS dste_seasons (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  team_id TEXT NOT NULL DEFAULT '__default__' UNIQUE,
-  seasons_json JSONB NOT NULL DEFAULT '[]',
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  updated_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
-);
-ALTER TABLE dste_seasons ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Team members can read DSTE seasons" ON dste_seasons FOR SELECT TO authenticated USING (
-  team_id = '__default__' OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text)
-);
-CREATE POLICY "Admin can manage DSTE seasons" ON dste_seasons FOR ALL TO authenticated USING (
-  team_id = '__default__' OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager']))
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  team_id text NOT NULL DEFAULT '__default__'::text,
+  seasons_json jsonb NOT NULL DEFAULT '[]'::jsonb,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid
 );
 
--- ============================================================
--- 73. pg_cron: Scheduled jobs (daily digest, weekly report, risk scan)
--- ============================================================
--- NOTE: These require pg_cron and pg_net extensions enabled in Supabase Dashboard.
--- Run: CREATE EXTENSION IF NOT EXISTS pg_cron; CREATE EXTENSION IF NOT EXISTS pg_net;
--- Then execute the functions below in SQL Editor.
+CREATE TABLE IF NOT EXISTS effectiveness_metrics (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  season_id text,
+  goal_id text,
+  metric_type text NOT NULL DEFAULT 'effectiveness'::text,
+  metric_name text NOT NULL,
+  planned_value numeric,
+  actual_value numeric,
+  unit text DEFAULT ''::text,
+  period text DEFAULT ''::text,
+  measured_at timestamp with time zone DEFAULT now(),
+  created_at timestamp with time zone DEFAULT now()
+);
 
--- Daily digest: aggregate tasks/goals summary, store in reports table
-CREATE OR REPLACE FUNCTION daily_digest()
-RETURNS void AS $$
-DECLARE
-  v_today DATE := CURRENT_DATE;
-  v_period TEXT := to_char(v_today, 'YYYY-MM-DD');
-  v_summary JSONB;
-BEGIN
-  SELECT jsonb_build_object(
-    'total_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__'),
-    'completed_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__' AND status = 'done'),
-    'overdue_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__' AND status != 'done' AND due_date < v_today),
-    'total_goals', (SELECT count(*) FROM goals),
-    'at_risk_goals', (SELECT count(*) FROM goals WHERE status != 'done' AND progress < 50)
-  ) INTO v_summary;
+CREATE TABLE IF NOT EXISTS email_settings (
+  id integer NOT NULL DEFAULT 1,
+  enabled boolean DEFAULT false,
+  resend_api_key text DEFAULT ''::text,
+  from_email text DEFAULT ''::text,
+  updated_at timestamp with time zone DEFAULT now()
+);
 
-  INSERT INTO reports (team_id, type, title, period, period_start, period_end, ai_summary, structured_data)
-  VALUES ('__default__', 'daily', '每日摘要 ' || v_period, v_period, v_today, v_today, '自动生成每日摘要', v_summary);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE TABLE IF NOT EXISTS experiences (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  content text DEFAULT ''::text,
+  category text DEFAULT ''::text,
+  tags jsonb DEFAULT '[]'::jsonb,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
 
--- Weekly report generation: runs every Monday at 00:05
-CREATE OR REPLACE FUNCTION weekly_report_generate()
-RETURNS void AS $$
-DECLARE
-  v_week_start DATE := date_trunc('week', CURRENT_DATE)::date;
-  v_week_end DATE := v_week_start + 6;
-  v_period TEXT := to_char(v_week_start, 'YYYY-MM-DD') || ' ~ ' || to_char(v_week_end, 'YYYY-MM-DD');
-  v_data JSONB;
-BEGIN
-  SELECT jsonb_build_object(
-    'total_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__'),
-    'completed_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__' AND status = 'done' AND completed_at >= v_week_start),
-    'overdue_tasks', (SELECT count(*) FROM tasks WHERE team_id = '__default__' AND status != 'done' AND due_date < CURRENT_DATE),
-    'total_goals', (SELECT count(*) FROM goals),
-    'avg_goal_progress', COALESCE((SELECT avg(progress) FROM goals), 0),
-    'unresolved_alerts', (SELECT count(*) FROM deviation_alerts WHERE is_resolved = false)
-  ) INTO v_data;
+CREATE TABLE IF NOT EXISTS feature_flags (
+  key text NOT NULL,
+  enabled boolean NOT NULL DEFAULT false,
+  team_ids jsonb DEFAULT '[]'::jsonb,
+  description text DEFAULT ''::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
 
-  INSERT INTO reports (team_id, type, title, period, period_start, period_end, ai_summary, structured_data)
-  VALUES ('__default__', 'weekly', '周报 ' || v_period, v_period, v_week_start, v_week_end, '自动生成周报（AI摘要需前端手动触发）', v_data);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE TABLE IF NOT EXISTS goals (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  description text,
+  type text NOT NULL DEFAULT 'okr'::text,
+  status text NOT NULL DEFAULT 'in_progress'::text,
+  parent_id text,
+  level integer NOT NULL DEFAULT 0,
+  start_date text NOT NULL,
+  end_date text NOT NULL,
+  owner_id text,
+  key_results jsonb DEFAULT '[]'::jsonb,
+  progress integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  leader_id text,
+  supporter_ids jsonb DEFAULT '[]'::jsonb,
+  canvas_x double precision,
+  canvas_y double precision,
+  priority text NOT NULL DEFAULT 'medium'::text,
+  tags text[] NOT NULL DEFAULT '{}'::text[],
+  category text NOT NULL DEFAULT ''::text,
+  repeat_cycle text NOT NULL DEFAULT 'none'::text,
+  discussion_thread_id text,
+  summary text NOT NULL DEFAULT ''::text,
+  tracking_records jsonb DEFAULT '[]'::jsonb,
+  attachments jsonb DEFAULT '[]'::jsonb,
+  selected_kr_ids jsonb DEFAULT '[]'::jsonb,
+  team_id text DEFAULT '__default__'::text,
+  deleted_at timestamp with time zone,
+  app_type text NOT NULL DEFAULT 'personal'::text
+);
 
--- Risk auto-scan: check for overdue tasks and at-risk goals
-CREATE OR REPLACE FUNCTION risk_auto_scan()
-RETURNS void AS $$
-DECLARE
-  v_today DATE := CURRENT_DATE;
-  v_new_alerts INT := 0;
-  v_task RECORD;
-  v_goal RECORD;
-BEGIN
-  -- Scan overdue tasks (not done, past due_date)
-  FOR v_task IN SELECT id, title, due_date FROM tasks WHERE team_id = '__default__' AND status != 'done' AND due_date < v_today AND due_date >= v_today - interval '7 days'
-  LOOP
-    INSERT INTO deviation_alerts (goal_id, type, severity, message, is_resolved)
-    SELECT g.id, 'task_overdue', 'warning', '任务逾期: ' || v_task.title || ' (截止' || v_task.due_date || ')', false
-    FROM goals g WHERE g.id = (SELECT goal_id FROM tasks WHERE id = v_task.id)
-    ON CONFLICT DO NOTHING;
-    v_new_alerts := v_new_alerts + 1;
-  END LOOP;
+CREATE TABLE IF NOT EXISTS industries (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  sort_order integer DEFAULT 0,
+  color text DEFAULT '#7b6cf0'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
 
-  -- Scan at-risk goals (progress < 30% and end_date within 14 days)
-  FOR v_goal IN SELECT id, title, progress, end_date FROM goals WHERE status != 'done' AND progress < 30 AND end_date IS NOT NULL AND end_date <= v_today + interval '14 days' AND end_date >= v_today
-  LOOP
-    INSERT INTO deviation_alerts (goal_id, type, severity, message, is_resolved)
-    VALUES (v_goal.id, 'goal_at_risk', 'critical', '目标风险: ' || v_goal.title || ' (进度' || v_goal.progress || '%, 截止' || v_goal.end_date || ')', false)
-    ON CONFLICT DO NOTHING;
-    v_new_alerts := v_new_alerts + 1;
-  END LOOP;
+CREATE TABLE IF NOT EXISTS insights (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  description text DEFAULT ''::text,
+  impact text NOT NULL DEFAULT 'positive'::text,
+  kpi text DEFAULT ''::text,
+  team_id text DEFAULT 'default'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
 
-  RAISE NOTICE 'Risk auto-scan completed: % new alerts', v_new_alerts;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE TABLE IF NOT EXISTS installed_agents (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  agent_id text NOT NULL,
+  team_id text NOT NULL,
+  member_id text NOT NULL,
+  installed_at timestamp with time zone DEFAULT now()
+);
 
--- Schedule pg_cron jobs (run these in Supabase SQL Editor after enabling extensions):
--- SELECT cron.schedule('daily-digest', '0 6 * * *', $$SELECT daily_digest()$$);
--- SELECT cron.schedule('weekly-report', '5 0 * * 1', $$SELECT weekly_report_generate()$$);
--- SELECT cron.schedule('risk-scan', '30 7 * * *', $$SELECT risk_auto_scan()$$);
+CREATE TABLE IF NOT EXISTS installed_packs (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  user_id uuid,
+  pack_id text NOT NULL,
+  installed_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS item_links (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  source_id text NOT NULL,
+  source_type text NOT NULL,
+  target_id text NOT NULL,
+  target_type text NOT NULL,
+  label text,
+  created_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS knowledge (
+  id text NOT NULL,
+  title text NOT NULL,
+  content text DEFAULT ''::text,
+  tags text[] DEFAULT '{}'::text[],
+  member_id text NOT NULL,
+  related_items jsonb DEFAULT '[]'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS knowledge_docs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  type text DEFAULT '文档'::text,
+  author text DEFAULT ''::text,
+  updated text DEFAULT ''::text,
+  content text DEFAULT ''::text,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  team_id uuid
+);
+
+CREATE TABLE IF NOT EXISTS kpis (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  industry text NOT NULL,
+  dept text NOT NULL,
+  name text NOT NULL,
+  value text NOT NULL,
+  target text NOT NULL,
+  status text NOT NULL DEFAULT 'good'::text,
+  trend text NOT NULL DEFAULT 'flat'::text,
+  sort_order integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS matrix_cells (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  industry text NOT NULL,
+  dept text NOT NULL,
+  workflow jsonb DEFAULT '[]'::jsonb,
+  wf_current integer DEFAULT 0,
+  top3 jsonb DEFAULT '[]'::jsonb,
+  morning text DEFAULT ''::text,
+  ribbon text DEFAULT ''::text,
+  next_step text DEFAULT ''::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS mcp_status (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  user_id uuid,
+  server_id text NOT NULL,
+  status jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS meetings (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  time text DEFAULT ''::text,
+  duration text DEFAULT ''::text,
+  location text DEFAULT ''::text,
+  organizer text DEFAULT ''::text,
+  attendees integer DEFAULT 0,
+  status text DEFAULT 'scheduled'::text,
+  type text DEFAULT 'regular'::text,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS members (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  name text NOT NULL,
+  role text NOT NULL DEFAULT 'member'::text,
+  department text NOT NULL,
+  avatar text NOT NULL,
+  email text NOT NULL,
+  status text NOT NULL DEFAULT 'active'::text,
+  join_date text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  nickname text DEFAULT ''::text,
+  phone text DEFAULT ''::text,
+  wechat_id text DEFAULT ''::text,
+  permissions jsonb DEFAULT '[]'::jsonb,
+  updated_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text,
+  user_id uuid
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  channel text NOT NULL,
+  topic text NOT NULL,
+  sender_id uuid,
+  sender_name text NOT NULL DEFAULT ''::text,
+  extension text NOT NULL,
+  sender_type text NOT NULL DEFAULT 'user'::text,
+  payload jsonb,
+  event text,
+  content text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  private boolean DEFAULT false,
+  team_id uuid,
+  updated_at timestamp without time zone NOT NULL DEFAULT now(),
+  inserted_at timestamp without time zone NOT NULL DEFAULT now(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  binary_payload bytea
+);
+
+CREATE TABLE IF NOT EXISTS notes (
+  id text NOT NULL,
+  title text NOT NULL,
+  content text NOT NULL DEFAULT ''::text,
+  folder text NOT NULL DEFAULT ''::text,
+  color text NOT NULL DEFAULT '#ffffff'::text,
+  is_pinned boolean NOT NULL DEFAULT false,
+  linked_item_id text,
+  linked_item_type text,
+  created_by text NOT NULL,
+  updated_by text NOT NULL DEFAULT ''::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  category text DEFAULT ''::text,
+  tags jsonb DEFAULT '[]'::jsonb,
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS notification_preferences (
+  id text NOT NULL DEFAULT replace((gen_random_uuid())::text, '-'::text, ''::text),
+  member_id text NOT NULL,
+  item_id text NOT NULL,
+  item_type text NOT NULL,
+  muted boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  team_id text
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  type text NOT NULL,
+  title text NOT NULL,
+  message text NOT NULL,
+  related_id text NOT NULL,
+  related_type text NOT NULL,
+  member_id text,
+  read boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text,
+  level text DEFAULT 'normal'::text
+);
+
+CREATE TABLE IF NOT EXISTS oauth_tokens (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  member_id text NOT NULL,
+  provider text NOT NULL,
+  access_token text NOT NULL,
+  refresh_token text,
+  expires_at timestamp with time zone,
+  scope text,
+  connected_email text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS okr_seasons (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  name text NOT NULL,
+  type text NOT NULL DEFAULT 'quarter'::text,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  status text NOT NULL DEFAULT 'draft'::text,
+  team_id text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS org_info (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  name text NOT NULL DEFAULT ''::text,
+  industry text DEFAULT ''::text,
+  size text DEFAULT ''::text,
+  plan text DEFAULT 'free'::text,
+  created text DEFAULT ''::text,
+  departments jsonb DEFAULT '[]'::jsonb,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS org_members (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL,
+  department_id uuid,
+  role_id uuid,
+  user_id uuid,
+  member_id text,
+  status text DEFAULT 'active'::text,
+  joined_at timestamp with time zone DEFAULT now(),
+  left_at timestamp with time zone,
+  settings jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS org_roles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL,
+  department_id uuid,
+  name text NOT NULL,
+  level integer DEFAULT 0,
+  permissions text[] DEFAULT '{}'::text[],
+  is_default boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS organizations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text NOT NULL,
+  industry text,
+  size_range text,
+  plan text DEFAULT 'free'::text,
+  trial_ends_at timestamp with time zone,
+  settings jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS performance_reviews (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  season_id text,
+  reviewee_id text NOT NULL,
+  status text NOT NULL DEFAULT 'pending'::text,
+  self_review jsonb,
+  peer_reviews jsonb DEFAULT '[]'::jsonb,
+  manager_review jsonb,
+  direct_report_reviews jsonb DEFAULT '[]'::jsonb,
+  ai_summary text,
+  final_score numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  completed_at timestamp with time zone
+);
+
+CREATE TABLE IF NOT EXISTS predictions (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  impact text DEFAULT 'medium'::text,
+  probability real DEFAULT 0.5,
+  trend text DEFAULT 'flat'::text,
+  reason text DEFAULT ''::text,
+  suggestion text DEFAULT ''::text,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS projects (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  description text,
+  goal_id text,
+  status text NOT NULL DEFAULT 'planning'::text,
+  start_date text NOT NULL,
+  end_date text NOT NULL,
+  owner_id text,
+  member_ids jsonb DEFAULT '[]'::jsonb,
+  task_count integer NOT NULL DEFAULT 0,
+  progress integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  leader_id text,
+  supporter_ids jsonb DEFAULT '[]'::jsonb,
+  parent_id text,
+  canvas_x double precision,
+  canvas_y double precision,
+  priority text NOT NULL DEFAULT 'medium'::text,
+  category text NOT NULL DEFAULT ''::text,
+  repeat_cycle text NOT NULL DEFAULT 'none'::text,
+  discussion_thread_id text,
+  summary text NOT NULL DEFAULT ''::text,
+  tracking_records jsonb DEFAULT '[]'::jsonb,
+  attachments jsonb DEFAULT '[]'::jsonb,
+  tags jsonb DEFAULT '[]'::jsonb,
+  team_id text DEFAULT '__default__'::text,
+  deleted_at timestamp with time zone,
+  app_type text NOT NULL DEFAULT 'personal'::text
+);
+
+CREATE TABLE IF NOT EXISTS push_notifications (
+  id bigint NOT NULL DEFAULT nextval('push_notifications_id_seq'::regclass),
+  user_id uuid,
+  team_id text,
+  type text NOT NULL,
+  payload jsonb NOT NULL,
+  read boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  team_id text NOT NULL DEFAULT '__default__'::text,
+  type text NOT NULL DEFAULT 'weekly'::text,
+  title text NOT NULL,
+  period text NOT NULL,
+  period_start date,
+  period_end date,
+  ai_summary text,
+  structured_data jsonb DEFAULT '{}'::jsonb,
+  model text DEFAULT 'deepseek'::text,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+  id text NOT NULL,
+  period text,
+  period_start text,
+  period_end text,
+  member_id text,
+  content text,
+  improvements jsonb DEFAULT '[]'::jsonb,
+  metrics jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS risk_escalation_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  team_id text NOT NULL DEFAULT '__default__'::text,
+  alert_id text NOT NULL,
+  from_severity text NOT NULL,
+  to_severity text NOT NULL,
+  channels text[] NOT NULL DEFAULT '{}'::text[],
+  notification_sent boolean DEFAULT false,
+  escalation_count integer DEFAULT 1,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS risk_snapshots (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  snapshot_date date NOT NULL DEFAULT CURRENT_DATE,
+  alerts jsonb NOT NULL DEFAULT '[]'::jsonb,
+  alert_count integer NOT NULL DEFAULT 0,
+  critical_count integer NOT NULL DEFAULT 0,
+  warning_count integer NOT NULL DEFAULT 0,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS risks (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  description text DEFAULT ''::text,
+  level text NOT NULL DEFAULT 'medium'::text,
+  source text DEFAULT ''::text,
+  detected_at timestamp with time zone DEFAULT now(),
+  status text DEFAULT 'active'::text,
+  affected_kpi text,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS roles (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  name text NOT NULL,
+  key text NOT NULL,
+  members integer DEFAULT 0,
+  permissions jsonb DEFAULT '[]'::jsonb,
+  color text DEFAULT '#7b6cf0'::text,
+  description text DEFAULT ''::text,
+  sort_order integer DEFAULT 0,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS running_workflows (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  user_id uuid,
+  workflow_id text NOT NULL,
+  started_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS saved_views (
+  id text NOT NULL,
+  name text NOT NULL DEFAULT ''::text,
+  type text NOT NULL DEFAULT 'goal'::text,
+  filters jsonb DEFAULT '[]'::jsonb,
+  filter_logic text NOT NULL DEFAULT 'and'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS schedule_events (
+  id text NOT NULL,
+  title text NOT NULL,
+  description text NOT NULL DEFAULT ''::text,
+  start_date text NOT NULL,
+  end_date text NOT NULL,
+  all_day boolean NOT NULL DEFAULT false,
+  color text NOT NULL DEFAULT '#3b82f6'::text,
+  linked_item_id text,
+  linked_item_type text,
+  member_id text NOT NULL,
+  repeat_cycle text NOT NULL DEFAULT 'none'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  team_id text DEFAULT '__default__'::text,
+  type text DEFAULT 'event'::text
+);
+
+CREATE TABLE IF NOT EXISTS shared_files (
+  id text NOT NULL DEFAULT ('f-'::text || (gen_random_uuid())::text),
+  name text NOT NULL,
+  type text DEFAULT 'document'::text,
+  size_kb integer DEFAULT 0,
+  uploader_id text,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sprints (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  name text NOT NULL,
+  start_date text NOT NULL,
+  end_date text NOT NULL,
+  goal_ids jsonb DEFAULT '[]'::jsonb,
+  status text NOT NULL DEFAULT 'planning'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS status_flow_rules (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  from_status text NOT NULL,
+  to_status text NOT NULL,
+  allowed_roles jsonb DEFAULT '[]'::jsonb,
+  auto_actions jsonb DEFAULT '[]'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  plan text NOT NULL DEFAULT 'free'::text,
+  status text NOT NULL DEFAULT 'active'::text,
+  current_period_start timestamp with time zone DEFAULT now(),
+  current_period_end timestamp with time zone,
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+  id text NOT NULL,
+  name text NOT NULL DEFAULT ''::text,
+  color text NOT NULL DEFAULT '#6366f1'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  title text NOT NULL,
+  description text,
+  project_id text,
+  goal_id text,
+  status text NOT NULL DEFAULT 'todo'::text,
+  priority text NOT NULL DEFAULT 'medium'::text,
+  assignee_id text,
+  owner_id text,
+  due_date text,
+  reminder_date text,
+  completed_at timestamp with time zone,
+  subtasks jsonb DEFAULT '[]'::jsonb,
+  tags jsonb DEFAULT '[]'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  leader_id text,
+  supporter_ids jsonb DEFAULT '[]'::jsonb,
+  canvas_x double precision,
+  canvas_y double precision,
+  parent_id text,
+  category text NOT NULL DEFAULT ''::text,
+  repeat_cycle text NOT NULL DEFAULT 'none'::text,
+  discussion_thread_id text,
+  summary text NOT NULL DEFAULT ''::text,
+  tracking_records jsonb DEFAULT '[]'::jsonb,
+  attachments jsonb DEFAULT '[]'::jsonb,
+  start_date date,
+  blocked_by jsonb DEFAULT '[]'::jsonb,
+  sprint_id text,
+  team_id text DEFAULT '__default__'::text,
+  deleted_at timestamp with time zone,
+  progress integer DEFAULT 0,
+  milestone text,
+  dependency_ids uuid[] DEFAULT '{}'::uuid[],
+  subtask_ids uuid[] DEFAULT '{}'::uuid[],
+  estimated_hours numeric(6,1),
+  actual_hours numeric(6,1),
+  app_type text NOT NULL DEFAULT 'personal'::text
+);
+
+CREATE TABLE IF NOT EXISTS team_industry_profile (
+  team_id text NOT NULL,
+  industry_key text NOT NULL,
+  industry_name text NOT NULL,
+  detected_at timestamp with time zone DEFAULT now(),
+  confirmed_by text,
+  confirmed_at timestamp with time zone,
+  custom_overrides jsonb DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE IF NOT EXISTS team_members (
+  id text NOT NULL,
+  team_id text NOT NULL,
+  member_id text NOT NULL,
+  role text NOT NULL DEFAULT 'member'::text,
+  permissions jsonb DEFAULT '[]'::jsonb,
+  joined_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS team_settings (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  team_id text NOT NULL,
+  key text NOT NULL,
+  value jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS teams (
+  id text NOT NULL,
+  name text NOT NULL,
+  description text DEFAULT ''::text,
+  avatar text DEFAULT ''::text,
+  invite_code text,
+  owner_id text NOT NULL,
+  settings jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS templates (
+  id text NOT NULL,
+  title text NOT NULL,
+  description text NOT NULL DEFAULT ''::text,
+  type text NOT NULL,
+  content text NOT NULL DEFAULT ''::text,
+  created_by text NOT NULL,
+  updated_by text NOT NULL,
+  is_public boolean NOT NULL DEFAULT true,
+  category text NOT NULL DEFAULT ''::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  team_id text DEFAULT '__default__'::text
+);
+
+CREATE TABLE IF NOT EXISTS usage_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  event_type text NOT NULL,
+  detail jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS user_behavior_profile (
+  user_id text NOT NULL,
+  efficiency_score integer DEFAULT 0,
+  collaboration_score integer DEFAULT 0,
+  proactivity_score integer DEFAULT 0,
+  stability_score integer DEFAULT 0,
+  goal_alignment_score integer DEFAULT 0,
+  ai_adoption_score integer DEFAULT 0,
+  profile_tags text[] DEFAULT '{}'::text[],
+  computed_at timestamp with time zone DEFAULT now(),
+  period_days integer DEFAULT 30
+);
+
+CREATE TABLE IF NOT EXISTS workflow_instances (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  workflow_id text NOT NULL,
+  name text NOT NULL,
+  status text NOT NULL DEFAULT 'idle'::text,
+  current_step integer DEFAULT 0,
+  usage_count integer DEFAULT 0,
+  category text DEFAULT ''::text,
+  steps jsonb DEFAULT '[]'::jsonb,
+  is_built_in boolean DEFAULT false,
+  team_id text DEFAULT 'default'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+

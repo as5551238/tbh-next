@@ -146,7 +146,7 @@ export function useActionItems(goalId?: string) {
       priority: actionItem.priority,
       ...taskData,
     } as Parameters<typeof ct>[0]);
-    await updateActionItem(actionItem.id, { status: 'completed', closed_loop: true } as Parameters<typeof updateActionItem>[1]);
+    await updateActionItem(actionItem.id, { status: 'completed', closed_loop: true, completed_at: new Date().toISOString() } as Parameters<typeof updateActionItem>[1]);
     setActionItems((prev) => prev.map((a) => a.id === actionItem.id ? { ...a, status: 'completed', closed_loop: true } : a));
     return task;
   }, []);

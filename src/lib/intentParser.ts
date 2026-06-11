@@ -85,6 +85,10 @@ interface IntentRegistration {
   extractParams: (text: string) => Record<string, unknown>;
 }
 
+function isValidIntent(t: IntentType): t is Exclude<IntentType, 'unknown'> {
+  return t !== 'unknown';
+}
+
 const INTENT_REGISTRY: Record<Exclude<IntentType, 'unknown'>, IntentRegistration> = {
   create_task: {
     toolName: 'create_task',
@@ -311,7 +315,7 @@ export function detectIntentFast(userMessage: string): ParsedIntent | null {
   if (followUp) return followUp;
 
   // L0b: Keyword matching
-  for (const [intentType, reg] of Object.entries(INTENT_REGISTRY) as [string, IntentRegistration][]) {
+  for (const [intentType, reg] of Object.entries(INTENT_REGISTRY) as [Exclude<IntentType, 'unknown'>, IntentRegistration][]) {
     if (reg.keywords.some((kw) => kw.test(userMessage))) {
       const params = reg.extractParams(userMessage);
       const confidence = intentType === 'chitchat' ? 0.9 : 0.85;
@@ -400,7 +404,7 @@ ${contextBlock}
 
     const intent = (parsed.intent as IntentType) ?? 'unknown';
     const confidence = Number(parsed.confidence) ?? 0;
-    const reg = INTENT_REGISTRY[intent];
+    const reg = isValidIntent(intent) ? INTENT_REGISTRY[intent] : undefined;
     const toolName = (parsed.toolName as string) ?? reg?.toolName ?? '';
 
     return {
@@ -460,7 +464,7 @@ export async function parseAndExecute(userMessage: string, chatHistory?: Convers
 
 // --- Register new intent type (extensible) ---
 
-export function registerIntent(type: IntentType, reg: IntentRegistration): void {
+export function registerIntent(type: Exclude<IntentType, 'unknown'>, reg: IntentRegistration): void {
   INTENT_REGISTRY[type] = reg;
 }
 

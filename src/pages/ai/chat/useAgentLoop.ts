@@ -289,10 +289,10 @@ export function useAgentLoop(
           goalsTotal: goals.length,
           goalsAtRisk: goals.filter(g => g.status === 'at_risk').length,
           actionItemsOpen: actionItems.filter(a => a.status === 'open').length,
-          goalList: goals.map(g => ({ title: g.title, progress: g.progress ?? 0, status: g.status, end_date: g.end_date })),
-          atRiskGoals: atRiskGoals.map(g => ({ title: g.title, progress: g.progress ?? 0, end_date: g.end_date })),
+          goalList: goals.map(g => ({ title: g.title, progress: g.progress ?? 0, status: g.status, end_date: g.end_date ?? undefined })),
+          atRiskGoals: atRiskGoals.map(g => ({ title: g.title, progress: g.progress ?? 0, end_date: g.end_date ?? undefined })),
           taskList: tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled').slice(0, 15)
-            .map(t => ({ title: t.title, status: t.status, priority: t.priority, due_date: t.due_date })),
+            .map(t => ({ title: t.title, status: t.status, priority: t.priority, due_date: t.due_date ?? undefined })),
           overdueTasks: overdueTasks.map(t => ({ title: t.title, due_date: t.due_date!, priority: t.priority })),
           actionItemList: openActionItems.slice(0, 8).map(a => ({ title: a.title, priority: a.priority, status: a.status })),
         }));

@@ -50,13 +50,13 @@ import type { MatrixCell } from '@/matrix/data';
 describe('AI Security — No API Key in Client', () => {
   it('DEEPSEEK_API_KEY is not exported from aiPresets', async () => {
     const presets = await import('@/lib/aiPresets');
-    expect(presets.DEEPSEEK_API_KEY).toBeUndefined();
+    expect((presets as Record<string, unknown>).DEEPSEEK_API_KEY).toBeUndefined();
     expect(Object.keys(presets)).not.toContain('DEEPSEEK_API_KEY');
   });
 
   it('PROVIDER_ENDPOINTS is not exported from aiPresets', async () => {
     const presets = await import('@/lib/aiPresets');
-    expect(presets.PROVIDER_ENDPOINTS).toBeUndefined();
+    expect((presets as Record<string, unknown>).PROVIDER_ENDPOINTS).toBeUndefined();
   });
 
   it('localFallback never exposes API keys in output', async () => {
@@ -85,11 +85,12 @@ describe('AI Security — No API Key in Client', () => {
       morning: '今日3项待办',
       ribbon: '整体进度正常',
       nextStep: '关注风险项',
-      kpis: [{ name: '交付率', value: 85, target: 95, status: 'warn', trend: 'up' }],
+      kpis: [{ name: '交付率', value: '85', target: '95', status: 'warn', trend: 'up' }],
       top3: [{ level: 'danger', text: '项目X延迟' }],
       workflow: ['需求', '开发', '测试'],
       wfCurrent: 1,
-      agents: [{ id: 'a1', name: '助手', role: '决策支持', status: 'active' }],
+      agents: [{ name: '助手', desc: '决策支持', status: 'active' }],
+      channels: [],
     };
     const prompt = buildSystemPrompt(cell, 'IT业', '研发部');
     expect(prompt).not.toContain('sk-');

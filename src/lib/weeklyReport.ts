@@ -110,7 +110,7 @@ export function aggregateWeekData(
   }).length;
   const inProgressTasks = tasks.filter((t) => t.status === 'in_progress').length;
   const newTasksThisWeek = tasks.filter((t) => {
-    const created = (t as Record<string, unknown>).created_at as string | undefined;
+    const created = (t as unknown as Record<string, unknown>).created_at as string | undefined;
     return created && isThisWeek(created, start, end);
   }).length;
 

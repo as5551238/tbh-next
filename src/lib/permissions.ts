@@ -149,7 +149,7 @@ function getAppRole(): string {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy store resolution to break circular dep
     _storeRef = require('@/stores/appStore');
   }
-  return _storeRef.useAppStore.getState().authUser?.role ?? 'member';
+  return _storeRef?.useAppStore.getState().authUser?.role ?? 'member';
 }
 
 /**

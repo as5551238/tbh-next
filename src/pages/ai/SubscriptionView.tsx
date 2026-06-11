@@ -215,7 +215,7 @@ export default function SubscriptionView() {
                         } else {
                           // Production: redirect to Stripe checkout
                           if (user?.id) {
-                            const priceId = CHECKOUT_PLANS.find(cp => cp.tier === p && cp.interval === 'monthly')?.priceId;
+                            const priceId = CHECKOUT_PLANS.find(cp => cp.id.includes(p) && cp.period === 'monthly')?.priceId;
                             if (priceId) {
                               initiateCheckout(priceId, user.id, user.email ?? undefined);
                             }

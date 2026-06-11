@@ -79,10 +79,10 @@ export default function TasksContent() {
     setEditData({
       id: t.id, title: t.title, priority: t.priority, status: t.status,
       due_date: t.due_date ?? '', assignee_id: t.assignee_id ?? '',
-      milestone: (t as Record<string, unknown>).milestone ?? '',
-      tags: Array.isArray((t as Record<string, unknown>).tags) ? ((t as Record<string, unknown>).tags as string[]).join(',') : String((t as Record<string, unknown>).tags ?? ''),
-      estimated_hours: ((t as Record<string, unknown>).estimated_hours as number) ?? 0,
-      actual_hours: ((t as Record<string, unknown>).actual_hours as number) ?? 0,
+      milestone: (t as unknown as Record<string, unknown>).milestone ?? '',
+      tags: Array.isArray((t as unknown as Record<string, unknown>).tags) ? ((t as unknown as Record<string, unknown>).tags as string[]).join(',') : String((t as unknown as Record<string, unknown>).tags ?? ''),
+      estimated_hours: ((t as unknown as Record<string, unknown>).estimated_hours as number) ?? 0,
+      actual_hours: ((t as unknown as Record<string, unknown>).actual_hours as number) ?? 0,
     });
     editModal.openModal();
   }, [editModal.openModal]);
@@ -398,7 +398,7 @@ function GanttView({ tasks, onTaskClick }: GanttViewProps) {
           </div>
         </div>
         {visibleTasks.map(task => {
-          const taskStart = task.start_date || task.created_at || dateRange[0];
+          const taskStart = task.start_date || dateRange[0];
           const taskEnd = task.due_date || dateRange[totalDays - 1];
           const startIdx = Math.max(0, dateRange.indexOf(taskStart.slice(0, 10)));
           const endIdx = Math.min(totalDays - 1, dateRange.indexOf(taskEnd.slice(0, 10)));

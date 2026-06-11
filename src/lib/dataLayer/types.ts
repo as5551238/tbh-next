@@ -20,6 +20,7 @@ export interface GoalRow {
   end_date: string | null;
   start_date: string | null;
   priority?: string;
+  description?: string | null;
 }
 
 export interface TaskRow {

@@ -2,7 +2,7 @@
  * RiskEngineDashboard — 3-tab risk engine dashboard.
  *
  * Tabs: 告警 (L1 alerts) | 预测 (L2 trajectories) | 升级 (L3 escalations)
- * Reads data from riskEngine + escalationEngine + localStorage.
+ * Reads data from riskEngine + escalationEngine + Supabase (localStorage fallback).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -73,12 +73,15 @@ export default function RiskEngineDashboard() {
   // Persist risk snapshot whenever scan result changes (DR-53: data drives action)
   useEffect(() => {
     if (scanResult.alerts.length > 0) {
-      saveRiskSnapshot(scanResult.alerts);
+      saveRiskSnapshot(scanResult.alerts).catch(() => {});
     }
   }, [scanResult.alerts]);
 
-  // Load previous alerts for trajectory comparison
-  const previousAlerts = useMemo(() => getPreviousAlerts(), [scanResult.scannedAt]);
+  // Load previous alerts for trajectory comparison (Supabase-first)
+  const [previousAlerts, setPreviousAlerts] = useState<RiskAlert[]>([]);
+  useEffect(() => {
+    getPreviousAlerts().then(setPreviousAlerts).catch(() => {});
+  }, [scanResult.scannedAt]);
 
   const trajectories = useMemo(
     () => predictRiskTrajectories(scanResult.alerts, previousAlerts),

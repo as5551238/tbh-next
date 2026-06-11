@@ -130,7 +130,7 @@ export function IntentFallbackForm({ open, onClose, guessedIntent, rawText, onSu
         )}
 
         {/* Description (for create modes) */}
-        {isCreate && mode !== 'update_task' && (
+        {isCreate && (
           <ModalField label="描述">
             <textarea
               className={inputCls}

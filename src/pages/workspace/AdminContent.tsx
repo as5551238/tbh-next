@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useState } from 'react';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { Settings, Info } from 'lucide-react';

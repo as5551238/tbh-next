@@ -109,8 +109,8 @@ export default function ReviewContent() {
           selectedModelId={selectedModel?.id ?? null}
           actionItems={actionItems}
           persistedAlerts={persistedAlerts}
-          goals={goals}
-          tasks={tasks}
+          goals={goals.map(g => ({ ...g, end_date: g.end_date ?? undefined }))}
+          tasks={tasks.map(t => ({ ...t, goal_id: t.goal_id ?? undefined, due_date: t.due_date ?? undefined, completed_at: t.completed_at ?? undefined }))}
           onToggleActionItem={toggleActionItem}
           onConvertToTask={convertToTask}
           onReset={resetReview}

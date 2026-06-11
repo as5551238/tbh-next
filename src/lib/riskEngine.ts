@@ -126,14 +126,14 @@ function detectStalledTasks(tasks: TaskRow[], cfg: RiskEngineConfig, now: Date):
       if (t.status !== 'in_progress') return false;
       // Stalled = in_progress but no status change for stalledDays
       // Use updated_at from task if available, otherwise created_at
-      const lastUpdate = (t as Record<string, unknown>).updated_at as string | undefined
-        ?? (t as Record<string, unknown>).created_at as string | undefined;
+      const lastUpdate = (t as unknown as Record<string, unknown>).updated_at as string | undefined
+        ?? (t as unknown as Record<string, unknown>).created_at as string | undefined;
       if (!lastUpdate) return false;
       return daysBetween(lastUpdate, now) >= cfg.stalledDays;
     })
     .map((t) => {
-      const lastUpdate = (t as Record<string, unknown>).updated_at as string | undefined
-        ?? (t as Record<string, unknown>).created_at as string | undefined ?? '';
+      const lastUpdate = (t as unknown as Record<string, unknown>).updated_at as string | undefined
+        ?? (t as unknown as Record<string, unknown>).created_at as string | undefined ?? '';
       const daysStalled = daysBetween(lastUpdate, now);
       return {
         id: deterministicId('task_stalled', t.id, today),
@@ -288,7 +288,7 @@ export interface RiskTrajectory {
   reason: string;
 }
 
-// ─── Risk Snapshot Persistence (localStorage, DR-19: UI preference class) ───
+// ─── Risk Snapshot Persistence (Supabase-first, localStorage fallback, DR-19) ───
 
 const SNAPSHOT_KEY = 'tbh-risk-snapshots';
 const MAX_SNAPSHOTS = 14; // Keep 14 days of history
@@ -298,13 +298,34 @@ interface RiskSnapshot {
   alerts: RiskAlert[];
 }
 
-export function saveRiskSnapshot(alerts: RiskAlert[]): void {
+/** Save risk snapshot to Supabase, fallback to localStorage */
+export async function saveRiskSnapshot(alerts: RiskAlert[]): Promise<void> {
   const today = todayISO();
-  const snapshots = loadRiskSnapshots();
-  // Replace today's snapshot or add new one
+
+  // Try Supabase first
+  try {
+    const { supabase, isSupabaseConfigured } = await getSupabase();
+    if (supabase && isSupabaseConfigured && isSupabaseConfigured()) {
+      const teamId = localStorage.getItem('tbh_current_team_id') || '__default__';
+      const { error } = await supabase
+        .from('risk_snapshots')
+        .upsert({
+          snapshot_date: today,
+          team_id: teamId,
+          alerts: alerts,
+          alert_count: alerts.length,
+          critical_count: alerts.filter(a => a.severity === 'critical').length,
+          warning_count: alerts.filter(a => a.severity === 'warning').length,
+        }, { onConflict: 'snapshot_date,team_id' });
+      if (!error) return; // Supabase save succeeded
+      console.warn('[riskEngine] Supabase save failed, falling back to localStorage:', error.message);
+    }
+  } catch { /* supabase not available */ }
+
+  // Fallback: localStorage
+  const snapshots = loadRiskSnapshotsLocal();
   const filtered = snapshots.filter(s => s.date !== today);
   filtered.push({ date: today, alerts });
-  // Keep only last MAX_SNAPSHOTS days
   filtered.sort((a, b) => b.date.localeCompare(a.date));
   const trimmed = filtered.slice(0, MAX_SNAPSHOTS);
   try {
@@ -312,7 +333,34 @@ export function saveRiskSnapshot(alerts: RiskAlert[]): void {
   } catch { /* quota exceeded, ignore */ }
 }
 
-export function loadRiskSnapshots(): RiskSnapshot[] {
+/** Load risk snapshots from Supabase, fallback to localStorage */
+export async function loadRiskSnapshots(): Promise<RiskSnapshot[]> {
+  // Try Supabase first
+  try {
+    const { supabase, isSupabaseConfigured } = await getSupabase();
+    if (supabase && isSupabaseConfigured && isSupabaseConfigured()) {
+      const teamId = localStorage.getItem('tbh_current_team_id') || '__default__';
+      const { data, error } = await supabase
+        .from('risk_snapshots')
+        .select('snapshot_date, alerts')
+        .eq('team_id', teamId)
+        .order('snapshot_date', { ascending: false })
+        .limit(MAX_SNAPSHOTS);
+      if (!error && data && data.length > 0) {
+        return data.map((row: { snapshot_date: string; alerts: RiskAlert[] }) => ({
+          date: row.snapshot_date,
+          alerts: row.alerts,
+        }));
+      }
+    }
+  } catch { /* supabase not available */ }
+
+  // Fallback: localStorage
+  return loadRiskSnapshotsLocal();
+}
+
+/** Sync localStorage-only loader (for backward compat) */
+function loadRiskSnapshotsLocal(): RiskSnapshot[] {
   try {
     const raw = localStorage.getItem(SNAPSHOT_KEY);
     if (!raw) return [];
@@ -322,16 +370,28 @@ export function loadRiskSnapshots(): RiskSnapshot[] {
 
 /**
  * Get the most recent previous snapshot (before today) for trajectory comparison.
- * Returns alerts from that snapshot, or empty array if no history available.
+ * Loads from Supabase with localStorage fallback.
  */
-export function getPreviousAlerts(): RiskAlert[] {
+export async function getPreviousAlerts(): Promise<RiskAlert[]> {
   const today = todayISO();
-  const snapshots = loadRiskSnapshots();
-  // Find the most recent snapshot before today
+  const snapshots = await loadRiskSnapshots();
   const prev = snapshots.find(s => s.date < today);
   if (prev) return prev.alerts;
-  // If only today's snapshot exists, return empty
   return [];
+}
+
+// Lazy Supabase import
+let _supabase: any = null;
+let _isSupabaseConfigured: (() => boolean) | null = null;
+async function getSupabase() {
+  if (!_supabase) {
+    try {
+      const mod = await import('@/lib/supabase');
+      _supabase = mod.supabase;
+      _isSupabaseConfigured = mod.isSupabaseConfigured;
+    } catch { /* supabase not available */ }
+  }
+  return { supabase: _supabase, isSupabaseConfigured: _isSupabaseConfigured };
 }
 
 /**

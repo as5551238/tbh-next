@@ -325,6 +325,7 @@ export async function fetchAgentDetails(): Promise<AgentDetailRow[]> {
     enabled: Boolean(a.enabled ?? true),
     capabilities: Array.isArray(a.capabilities) ? a.capabilities as string[] : [],
     team_id: String(a.team_id ?? '__default__'),
+    system_prompt: String(a.system_prompt ?? ''),
     created_at: String(a.created_at ?? ''),
     updated_at: String(a.updated_at ?? ''),
   }));

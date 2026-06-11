@@ -1,6 +1,7 @@
 import { CheckCircle2, ListChecks, Zap, Lightbulb, TrendingUp, AlertTriangle } from 'lucide-react';
 import { btnPrimary } from '@/components/Modal';
-import { computePerformanceScore, getReviewSnapshot, computeReviewEffectiveness, type DeviationAlert, type ReviewSession, type DeviationAlertRow } from '@/lib/reviewEngine';
+import { computePerformanceScore, getReviewSnapshot, computeReviewEffectiveness, type DeviationAlert, type ReviewSession } from '@/lib/reviewEngine';
+import type { DeviationAlertRow } from '@/lib/dataLayer/types';
 import type { ActionItemRow } from '@/lib/dataLayer';
 import { cn } from '@/lib/utils';
 

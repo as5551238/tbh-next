@@ -1,6 +1,7 @@
 import { Sparkles, CheckCircle2, AlertTriangle, RotateCcw, ArrowRight, FileText, X } from 'lucide-react';
 import { REVIEW_MODELS } from '@/lib/reviewEngine';
-import type { DeviationAlert, DeviationAlertRow } from '@/lib/reviewEngine';
+import type { DeviationAlert } from '@/lib/reviewEngine';
+import type { DeviationAlertRow } from '@/lib/dataLayer/types';
 import { cn } from '@/lib/utils';
 
 const sevCls: Record<string, string> = {

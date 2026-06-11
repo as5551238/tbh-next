@@ -307,7 +307,7 @@ export async function localFallback(messages: ChatMessage[]): Promise<AIResponse
   // --- Try to load real data from Supabase via aiTools ---
   let metrics: Record<string, unknown> | null = null;
   let alerts: Record<string, unknown> | null = null;
-  let schedule: unknown[] | null = null;
+  let schedule: ScheduleEvent[] | null = null;
 
   try {
     const [m, a, s] = await Promise.all([
@@ -317,7 +317,7 @@ export async function localFallback(messages: ChatMessage[]): Promise<AIResponse
     ]);
     metrics = m as Record<string, unknown> | null;
     alerts = a as Record<string, unknown> | null;
-    schedule = s as ScheduleEvent[] | null;
+    schedule = (s as ScheduleEvent[] | null) ?? null;
   } catch {
     // Data not available, fall through to static response
   }
@@ -448,16 +448,28 @@ function generateLocalResponse(
     if (schedule && schedule.length > 0) {
       const now = new Date();
       const dateStr = now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
+      const urgent = schedule.filter(e => e.priority === 'urgent' || e.priority === 'high');
+      const normal = schedule.filter(e => e.priority !== 'urgent' && e.priority !== 'high');
       return [
         `📅 **${industry} · ${dept} 近期安排 — ${dateStr}**`,
         '',
-        `> 📡 ${schedule.length} 项待办`,
+        `> 📡 ${schedule.length} 项待办` + (urgent.length > 0 ? `，其中 ${urgent.length} 项紧急/高优先级` : ''),
         '',
-        ...schedule.slice(0, 8).map((e, i) =>
-          `${i + 1}. **${e.title}** — 截止: ${e.due_date ?? '未设置'} (优先级: ${e.priority}, 状态: ${e.status})`
-        ),
-        '',
-        '💡 需要调整安排可以直接说"把XX任务改为高优先级"。',
+        urgent.length > 0 ? [
+          '**🔥 紧急/高优先级**:',
+          ...urgent.slice(0, 5).map((e) =>
+            `- **${e.title}** — 截止: ${e.due_date ?? '未设置'} (状态: ${e.status})`
+          ),
+          '',
+        ].join('\n') : '',
+        normal.length > 0 ? [
+          '**📋 常规待办**:',
+          ...normal.slice(0, 5).map((e, i) =>
+            `${i + 1}. ${e.title} — 截止: ${e.due_date ?? '未设置'} (优先级: ${e.priority})`
+          ),
+          '',
+        ].join('\n') : '',
+        urgent.length > 0 ? '⚠️ 建议优先处理紧急任务，可以说"把XX任务改为进行中"来更新状态。' : '💡 需要调整安排可以直接说"把XX任务改为高优先级"。',
         '',
         '---',
         '*💡 配置AI API Key后可获得智能排程建议*',

@@ -82,6 +82,13 @@ export async function updateTask(id: string, data: Partial<Omit<TaskRow, 'id'>>)
       r.status = data.done ? 'done' : 'todo';
       delete r.done;
     }
+    // Auto-manage completed_at based on status (fixes BUG-8: stale completedAt on revert)
+    const effectiveStatus = (r.status as string) ?? data.status;
+    if (effectiveStatus === 'done' || effectiveStatus === 'completed') {
+      if (!r.completed_at) r.completed_at = new Date().toISOString();
+    } else if (effectiveStatus && effectiveStatus !== 'done' && effectiveStatus !== 'completed') {
+      r.completed_at = null;
+    }
     return r;
   })());
   const { data: result, error } = await supabase!.from('tasks').update(row).eq('id', id).select().single();
