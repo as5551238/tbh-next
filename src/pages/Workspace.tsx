@@ -6,6 +6,7 @@ import { useDeviationWatch } from '@/hooks/useDeviationWatch';
 import { RequireRole } from '@/lib/auth';
 import ModulePageStub from '@/pages/ModulePageStub';
 import { CardSkeleton } from '@/components/Skeleton';
+import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
 
 const OverviewContent = lazy(retryLazy(() => import('@/pages/workspace/OverviewContent')));
 const GoalsContent = lazy(retryLazy(() => import('@/pages/workspace/GoalsContent')));
@@ -43,10 +44,12 @@ const CommandCenterView = lazy(retryLazy(() => import('@/pages/workspace/Command
 // Modules that require admin/owner/leader role to access
 const ADMIN_ONLY_MODULES = new Set(['admin', 'roles', 'featureFlags']);
 
-const LazyWrap = ({ children }: { children: ReactNode }) => (
-  <Suspense fallback={<CardSkeleton />}>
-    {children}
-  </Suspense>
+const LazyWrap = ({ children, name }: { children: ReactNode; name?: string }) => (
+  <ModuleErrorBoundary moduleName={name}>
+    <Suspense fallback={<CardSkeleton />}>
+      {children}
+    </Suspense>
+  </ModuleErrorBoundary>
 );
 
 const WORKSPACE_MODULES: Record<string, LazyExoticComponent<FC>> = {
@@ -97,14 +100,14 @@ export default function Workspace() {
   if (Content) {
     if (ADMIN_ONLY_MODULES.has(activeModule)) {
       return (
-        <LazyWrap>
+        <LazyWrap name={activeModule}>
           <RequireRole roles={['admin']}>
             <Content />
           </RequireRole>
         </LazyWrap>
       );
     }
-    return <LazyWrap><Content /></LazyWrap>;
+    return <LazyWrap name={activeModule}><Content /></LazyWrap>;
   }
   return <ModulePageStub title={activeModule} icon='🚧' description='此模块正在开发中' />;
 }

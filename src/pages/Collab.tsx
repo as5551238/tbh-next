@@ -3,6 +3,7 @@ import { retryLazy } from '@/lib/retryLazy';
 import { useAppStore } from '@/stores/appStore';
 import ModulePageStub from '@/pages/ModulePageStub';
 import { CardSkeleton } from '@/components/Skeleton';
+import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
 
 const ChannelsView = lazy(retryLazy(() => import('@/pages/collab/ChannelsView')));
 const ApprovalsView = lazy(retryLazy(() => import('@/pages/collab/ApprovalsView')));
@@ -33,9 +34,11 @@ export default function Collab() {
 
   if (LazyComponent) {
     return (
-      <Suspense fallback={<CardSkeleton />}>
-        <LazyComponent />
-      </Suspense>
+      <ModuleErrorBoundary moduleName={activeModule}>
+        <Suspense fallback={<CardSkeleton />}>
+          <LazyComponent />
+        </Suspense>
+      </ModuleErrorBoundary>
     );
   }
 

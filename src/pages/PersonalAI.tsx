@@ -3,6 +3,7 @@ import { retryLazy } from '@/lib/retryLazy';
 import { useAppStore } from '@/stores/appStore';
 import ModulePageStub from '@/pages/ModulePageStub';
 import { CardSkeleton } from '@/components/Skeleton';
+import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
 
 const MainChatView = lazy(retryLazy(() => import('@/pages/MainChatView')));
 const MorningView = lazy(retryLazy(() => import('@/pages/ai/MorningView')));
@@ -54,9 +55,11 @@ export default function PersonalAI() {
 
   if (LazyComponent) {
     return (
-      <Suspense fallback={<CardSkeleton />}>
-        <LazyComponent />
-      </Suspense>
+      <ModuleErrorBoundary moduleName={activeModule}>
+        <Suspense fallback={<CardSkeleton />}>
+          <LazyComponent />
+        </Suspense>
+      </ModuleErrorBoundary>
     );
   }
 

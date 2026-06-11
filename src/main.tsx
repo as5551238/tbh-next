@@ -7,7 +7,7 @@ import { initSentry } from '@/lib/sentry';
 initSentry();
 
 // Use HashRouter on GitHub Pages (sub-directory hosting), BrowserRouter for local dev
-const isGHPages = window.location.hostname !== 'localhost';
+const isGHPages = !['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 const Router = isGHPages ? HashRouter : BrowserRouter;
 // basename is only needed for BrowserRouter (sub-directory hosting on GitHub Pages).
 // HashRouter handles paths inside the hash — no basename needed.
