@@ -14,7 +14,7 @@ import { sanitizeInput, validateAIOutput, recordInjectionCheck } from '@/lib/aiS
 import type { MatrixCell } from '@/matrix/data';
 import { getToolSchemas, executeToolCall } from '@/lib/aiTools';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { callSupabaseEdge, callRpcProxy, localFallback } from '@/lib/aiRoutes';
+import { callSupabaseEdge, callRpcProxy, callDirectLLM, localFallback } from '@/lib/aiRoutes';
 import { recordApiCall, recordError } from '@/lib/monitoring';
 
 // --- Types ---
@@ -125,14 +125,73 @@ export async function chatCompletion(
           signal: options?.signal,
         });
 
+        // If edge failed (fell to local), try Direct LLM
+        if (iterResp.agent === 'local') {
+          const directResp = await callDirectLLM(currentMessages, {
+            stream: false,
+            enableTools: true,
+            tools,
+            signal: options?.signal,
+          });
+          if (directResp.agent !== 'local' && (directResp.toolCalls || directResp.text)) {
+            // Direct LLM worked — continue loop with it
+            if (!directResp.toolCalls || directResp.toolCalls.length === 0) {
+              loopDone = true;
+              response = directResp;
+              if (allToolResults.length > 0) {
+                response = { ...response, toolResults: allToolResults };
+              }
+              break;
+            }
+            // Process tool calls from direct LLM
+            const iterToolResults: Array<{ tool_call_id: string; name: string; result: unknown }> = [];
+            for (const tc of directResp.toolCalls) {
+              try {
+                const args = JSON.parse(tc.arguments);
+                const result = await executeToolCall(tc.name, args);
+                iterToolResults.push({ tool_call_id: tc.id, name: tc.name, result });
+                allToolResults.push({ tool_call_id: tc.id, name: tc.name, result });
+              } catch (err) {
+                const errResult = { error: String(err) };
+                iterToolResults.push({ tool_call_id: tc.id, name: tc.name, result: errResult });
+                allToolResults.push({ tool_call_id: tc.id, name: tc.name, result: errResult });
+              }
+            }
+            currentMessages.push({
+              role: 'assistant',
+              content: directResp.text || '',
+              tool_calls: directResp.toolCalls.map((tc) => ({
+                id: tc.id,
+                type: 'function' as const,
+                function: { name: tc.name, arguments: tc.arguments },
+              })),
+            });
+            for (const tr of iterToolResults) {
+              currentMessages.push({
+                role: 'tool',
+                content: JSON.stringify(tr.result),
+                tool_call_id: tr.tool_call_id,
+              });
+            }
+            continue;
+          }
+          // Direct also failed → fall out to local
+          loopDone = true;
+          response = iterResp;
+          break;
+        }
+
         if (!iterResp.toolCalls || iterResp.toolCalls.length === 0) {
           loopDone = true;
-          if (options?.stream && options?.onChunk) {
-            response = await callSupabaseEdge(currentMessages, {
-              stream: true,
-              onChunk: options.onChunk,
-              signal: options?.signal,
-            });
+          if (options?.stream && options?.onChunk && iterResp.text) {
+            // Stream the already-available text in chunks to avoid redundant API call
+            const text = iterResp.text;
+            const chunkSize = 8;
+            for (let ci = 0; ci < text.length; ci += chunkSize) {
+              options.onChunk(text.slice(ci, ci + chunkSize), false);
+            }
+            options.onChunk('', true);
+            response = iterResp;
           } else {
             response = iterResp;
           }
@@ -199,10 +258,26 @@ export async function chatCompletion(
           route = 'rpc';
           response = await callRpcProxy(sanitizedMessages);
         }
-        // RPC also fell through → local fallback
+        // RPC also fell through → try Direct LLM
+        if (response.agent === 'local') {
+          route = 'edge';  // keep 'edge' as the logical route, Direct is a variant
+          response = await callDirectLLM(sanitizedMessages, options);
+        }
+        // Direct also fell through → local fallback (now with real data)
       } else {
-        route = 'local';
-        response = await localFallback(sanitizedMessages);
+        // No Supabase config → try Direct LLM from localStorage API key
+        const hasDirectKey = !!localStorage.getItem('tbh_deepseek_api_key');
+        if (hasDirectKey) {
+          route = 'edge';
+          response = await callDirectLLM(sanitizedMessages, options);
+          if (response.agent === 'local') {
+            route = 'local';
+            response = await localFallback(sanitizedMessages);
+          }
+        } else {
+          route = 'local';
+          response = await localFallback(sanitizedMessages);
+        }
       }
     }
 
