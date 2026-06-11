@@ -19,9 +19,11 @@ import { useGoals, useTasks, useActionItems, useDeviationAlerts, useMembers } fr
 import { loadChains, loadExecutionLogs, loadUsageAlerts } from '@/lib/automationEngine';
 import { cacheGet } from '@/lib/perfCache';
 import { recordRender } from '@/lib/monitoring';
-import { Target, CheckCircle2, AlertTriangle, Clock, Zap, Users, TrendingUp, TrendingDown, Minus, ArrowRight, Shield, GitBranch, Activity } from 'lucide-react';
+import { Target, CheckCircle2, AlertTriangle, Clock, Zap, Users, TrendingUp, TrendingDown, Minus, ArrowRight, Shield, GitBranch, Activity, Plus, X, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CardSkeleton } from '@/components/Skeleton';
+import { useToast } from '@/hooks/useToast';
+import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 
 const CACHE_KEY = 'command-center';
 
@@ -152,6 +154,40 @@ export default function CommandCenterView() {
     { icon: <Activity size={14} />, label: '复盘', module: 'review', iface: 'workspace' },
     { icon: <TrendingUp size={14} />, label: '报表', module: 'reports', iface: 'workspace' },
   ], []);
+
+  // Quick create state
+  const quickModal = useModal();
+  const [quickType, setQuickType] = useState<'task' | 'goal' | 'actionItem'>('task');
+  const [quickForm, setQuickForm] = useState({ title: '', description: '', due_date: '', priority: 'medium' });
+  const { addTask } = useTasks();
+  const { addGoal } = useGoals();
+  const { addActionItem } = useActionItems();
+  const { success } = useToast();
+
+  const openQuickCreate = useCallback((type: 'task' | 'goal' | 'actionItem') => {
+    setQuickType(type);
+    setQuickForm({ title: '', description: '', due_date: '', priority: 'medium' });
+    quickModal.openModal();
+  }, [quickModal]);
+
+  const handleQuickCreate = useCallback(async () => {
+    if (!quickForm.title.trim()) return;
+    switch (quickType) {
+      case 'task':
+        await addTask({ title: quickForm.title, status: 'todo', priority: quickForm.priority, due_date: quickForm.due_date || null, description: quickForm.description, team_id: '__default__' } as any);
+        success('任务已创建');
+        break;
+      case 'goal':
+        await addGoal({ title: quickForm.title, status: 'active', progress: 0, start_date: new Date().toISOString().slice(0, 10), end_date: quickForm.due_date || null, description: quickForm.description, team_id: '__default__' } as any);
+        success('目标已创建');
+        break;
+      case 'actionItem':
+        await addActionItem({ title: quickForm.title, status: 'open', priority: quickForm.priority, due_date: quickForm.due_date || null, team_id: '__default__' } as any);
+        success('行动项已创建');
+        break;
+    }
+    quickModal.closeModal();
+  }, [quickType, quickForm, addTask, addGoal, addActionItem, quickModal, success]);
 
   if (loading) return <CardSkeleton />;
 
@@ -300,6 +336,58 @@ export default function CommandCenterView() {
           ))}
         </div>
       </div>
+
+      {/* Quick Create */}
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Plus size={14} className="text-success" />
+          <span className="text-xs font-bold text-text">快速创建</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { type: 'task' as const, label: '新建任务', icon: <CheckCircle2 size={16} />, color: 'bg-primary/10 text-primary-2 hover:bg-primary/20' },
+            { type: 'goal' as const, label: '新建目标', icon: <Target size={16} />, color: 'bg-success/10 text-success hover:bg-success/20' },
+            { type: 'actionItem' as const, label: '新建行动项', icon: <Zap size={16} />, color: 'bg-accent/10 text-accent hover:bg-accent/20' },
+          ].map((btn) => (
+            <button key={btn.type} className={cn('flex flex-col items-center gap-1.5 rounded-xl py-4 text-[11px] font-semibold transition-colors', btn.color)} onClick={() => openQuickCreate(btn.type)}>
+              {btn.icon}
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Create Modal */}
+      <Modal open={quickModal.open} onClose={quickModal.closeModal} title={`快速创建${quickType === 'task' ? '任务' : quickType === 'goal' ? '目标' : '行动项'}`}
+        footer={
+          <div className="flex gap-2">
+            <button className={btnSecondary} onClick={quickModal.closeModal}>取消</button>
+            <button className={btnPrimary} onClick={handleQuickCreate} disabled={!quickForm.title.trim()}>
+              <span className="flex items-center gap-1"><Send size={10} />创建</span>
+            </button>
+          </div>
+        }
+      >
+        <ModalField label="标题">
+          <input className={inputCls} placeholder={`输入${quickType === 'task' ? '任务' : quickType === 'goal' ? '目标' : '行动项'}名称`} value={quickForm.title} onChange={(e) => setQuickForm((p) => ({ ...p, title: e.target.value }))} />
+        </ModalField>
+        <ModalField label="描述（可选）">
+          <textarea className={inputCls} rows={2} placeholder="简要描述..." value={quickForm.description} onChange={(e) => setQuickForm((p) => ({ ...p, description: e.target.value }))} />
+        </ModalField>
+        <ModalField label="截止日期（可选）">
+          <input type="date" className={inputCls} value={quickForm.due_date} onChange={(e) => setQuickForm((p) => ({ ...p, due_date: e.target.value }))} />
+        </ModalField>
+        {(quickType === 'task' || quickType === 'actionItem') && (
+          <ModalField label="优先级">
+            <select className={inputCls} value={quickForm.priority} onChange={(e) => setQuickForm((p) => ({ ...p, priority: e.target.value }))}>
+              <option value="low">低</option>
+              <option value="medium">中</option>
+              <option value="high">高</option>
+              <option value="critical">紧急</option>
+            </select>
+          </ModalField>
+        )}
+      </Modal>
     </div>
   );
 }

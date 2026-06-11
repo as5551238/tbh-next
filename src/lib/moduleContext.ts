@@ -60,6 +60,12 @@ const MODULE_LABELS: Record<string, string> = {
 /**
  * Build a module context string for the AI system prompt.
  * Data comes from the zustand store (already loaded by each module page).
+ * 
+ * v2: Supports entity list injection for data-grounded AI responses.
+ *   - goalList: top N goals with title + progress + status
+ *   - taskList: top N tasks with title + status + priority + due_date
+ *   - actionItemList: open action items with title + priority
+ *   - overdueTasks: overdue task details for proactive alerts
  */
 export function buildModuleContext(
   activeModule: string,
@@ -70,6 +76,12 @@ export function buildModuleContext(
     goalsAtRisk?: number;
     projectsTotal?: number;
     actionItemsOpen?: number;
+    // v2: Entity list summaries for data-grounded responses
+    goalList?: Array<{ title: string; progress: number; status: string; end_date?: string }>;
+    taskList?: Array<{ title: string; status: string; priority?: string; due_date?: string }>;
+    actionItemList?: Array<{ title: string; priority?: string; status: string }>;
+    overdueTasks?: Array<{ title: string; due_date: string; priority?: string }>;
+    atRiskGoals?: Array<{ title: string; progress: number; end_date?: string }>;
   }
 ): string {
   const label = MODULE_LABELS[activeModule] ?? activeModule;
@@ -81,6 +93,7 @@ export function buildModuleContext(
   ];
 
   if (extras) {
+    // Aggregated counts
     if (extras.tasksTotal !== undefined) {
       lines.push(`- 任务总数：${extras.tasksTotal}，其中逾期：${extras.tasksOverdue ?? 0}`);
     }
@@ -92,6 +105,44 @@ export function buildModuleContext(
     }
     if (extras.actionItemsOpen !== undefined) {
       lines.push(`- 待办行动项：${extras.actionItemsOpen}`);
+    }
+
+    // v2: Entity list summaries (capped at 10 items each to control token usage)
+    if (extras.goalList && extras.goalList.length > 0) {
+      lines.push('', '### 当前目标列表');
+      extras.goalList.slice(0, 10).forEach((g, i) => {
+        const statusLabel = g.status === 'at_risk' ? '⚠️风险' : g.status === 'completed' ? '✅完成' : '进行中';
+        lines.push(`${i + 1}. ${g.title} — 进度${g.progress}%，${statusLabel}${g.end_date ? `，截止${g.end_date}` : ''}`);
+      });
+    }
+
+    if (extras.atRiskGoals && extras.atRiskGoals.length > 0) {
+      lines.push('', '### 风险目标（需关注）');
+      extras.atRiskGoals.slice(0, 5).forEach((g, i) => {
+        lines.push(`${i + 1}. ${g.title} — 仅${g.progress}%完成${g.end_date ? `，截止${g.end_date}` : ''}`);
+      });
+    }
+
+    if (extras.taskList && extras.taskList.length > 0) {
+      lines.push('', '### 近期任务');
+      extras.taskList.slice(0, 10).forEach((t, i) => {
+        const prioLabel = t.priority === 'urgent' ? '🔴' : t.priority === 'high' ? '🟠' : '🟢';
+        lines.push(`${i + 1}. ${t.title} — ${t.status}${prioLabel}${t.due_date ? `，截止${t.due_date}` : ''}`);
+      });
+    }
+
+    if (extras.overdueTasks && extras.overdueTasks.length > 0) {
+      lines.push('', '### 逾期任务（需紧急处理）');
+      extras.overdueTasks.slice(0, 5).forEach((t, i) => {
+        lines.push(`${i + 1}. ${t.title} — 逾期至${t.due_date}${t.priority ? `，${t.priority}` : ''}`);
+      });
+    }
+
+    if (extras.actionItemList && extras.actionItemList.length > 0) {
+      lines.push('', '### 待办行动项');
+      extras.actionItemList.slice(0, 8).forEach((a, i) => {
+        lines.push(`${i + 1}. ${a.title} — ${a.status}${a.priority ? `，${a.priority}` : ''}`);
+      });
     }
   }
 

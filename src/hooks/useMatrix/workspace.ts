@@ -149,9 +149,10 @@ export function useKnowledgeDocs() {
   }, []);
 
   const removeDoc = useCallback(async (id: string) => {
-    setDocs((prev) => prev.filter((d) => d.id !== id));
-    try { await deleteDoc(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = docs;
+    setDocs((p) => p.filter((d) => d.id !== id));
+    try { await deleteDoc(id); } catch (e) { setDocs(prev); console.warn('[useKnowledgeDocs] removeDoc DB failed, rolled back', e); }
+  }, [docs]);
 
   return { docs, setDocs, loading, addDoc, editDoc, removeDoc };
 }
@@ -171,14 +172,16 @@ export function useInsights() {
   }, []);
 
   const editInsight = useCallback(async (id: string, data: InsightInput) => {
-    setInsights((prev) => prev.map((i) => i.id === id ? { ...i, ...data } : i));
-    try { await updateInsight(id, data); } catch { /* optimistic */ }
-  }, []);
+    const prev = insights;
+    setInsights((p) => p.map((i) => i.id === id ? { ...i, ...data } : i));
+    try { await updateInsight(id, data); } catch (e) { setInsights(prev); console.warn('[useInsights] editInsight DB failed, rolled back', e); }
+  }, [insights]);
 
   const removeInsight = useCallback(async (id: string) => {
-    setInsights((prev) => prev.filter((i) => i.id !== id));
-    try { await deleteInsight(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = insights;
+    setInsights((p) => p.filter((i) => i.id !== id));
+    try { await deleteInsight(id); } catch (e) { setInsights(prev); console.warn('[useInsights] removeInsight DB failed, rolled back', e); }
+  }, [insights]);
 
   return { insights, setInsights, loading, addInsight, editInsight, removeInsight };
 }
@@ -198,14 +201,16 @@ export function useWorkflowInstances() {
   }, []);
 
   const editInstance = useCallback(async (id: string, data: WorkflowInstanceInput) => {
-    setInstances((prev) => prev.map((w) => w.id === id ? { ...w, ...data } as WorkflowInstanceRow : w));
-    try { await updateWorkflowInstance(id, data); } catch { /* optimistic */ }
-  }, []);
+    const prev = instances;
+    setInstances((p) => p.map((w) => w.id === id ? { ...w, ...data } as WorkflowInstanceRow : w));
+    try { await updateWorkflowInstance(id, data); } catch (e) { setInstances(prev); console.warn('[useWorkflowInstances] editInstance DB failed, rolled back', e); }
+  }, [instances]);
 
   const removeInstance = useCallback(async (id: string) => {
-    setInstances((prev) => prev.filter((w) => w.id !== id));
-    try { await deleteWorkflowInstance(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = instances;
+    setInstances((p) => p.filter((w) => w.id !== id));
+    try { await deleteWorkflowInstance(id); } catch (e) { setInstances(prev); console.warn('[useWorkflowInstances] removeInstance DB failed, rolled back', e); }
+  }, [instances]);
 
   return { instances, setInstances, loading, addInstance, editInstance, removeInstance };
 }
@@ -230,14 +235,16 @@ export function useScheduleEvents() {
   }, []);
 
   const editEvent = useCallback(async (id: string, data: Partial<ScheduleEventRow>) => {
-    setEvents((prev) => prev.map((e) => e.id === id ? { ...e, ...data } : e));
-    try { await updateScheduleEvent(id, data as ScheduleEventInput); } catch { /* optimistic */ }
-  }, []);
+    const prev = events;
+    setEvents((p) => p.map((e) => e.id === id ? { ...e, ...data } : e));
+    try { await updateScheduleEvent(id, data as ScheduleEventInput); } catch (e) { setEvents(prev); console.warn('[useScheduleEvents] editEvent DB failed, rolled back', e); }
+  }, [events]);
 
   const removeEvent = useCallback(async (id: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-    try { await deleteScheduleEvent(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = events;
+    setEvents((p) => p.filter((e) => e.id !== id));
+    try { await deleteScheduleEvent(id); } catch (e) { setEvents(prev); console.warn('[useScheduleEvents] removeEvent DB failed, rolled back', e); }
+  }, [events]);
 
   return { events, setEvents, loading, addEvent, editEvent, removeEvent };
 }
@@ -262,14 +269,16 @@ export function useDocs() {
   }, []);
 
   const editDoc = useCallback(async (id: string, data: Partial<DocRow>) => {
-    setDocs((prev) => prev.map((d) => d.id === id ? { ...d, ...data } : d));
-    try { await updateDoc(id, data as DocInput); } catch { /* optimistic */ }
-  }, []);
+    const prev = docs;
+    setDocs((p) => p.map((d) => d.id === id ? { ...d, ...data } : d));
+    try { await updateDoc(id, data as DocInput); } catch (e) { setDocs(prev); console.warn('[useDocs] editDoc DB failed, rolled back', e); }
+  }, [docs]);
 
   const removeDoc = useCallback(async (id: string) => {
-    setDocs((prev) => prev.filter((d) => d.id !== id));
-    try { await deleteDoc(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = docs;
+    setDocs((p) => p.filter((d) => d.id !== id));
+    try { await deleteDoc(id); } catch (e) { setDocs(prev); console.warn('[useDocs] removeDoc DB failed, rolled back', e); }
+  }, [docs]);
 
   return { docs, setDocs, loading, addDoc, editDoc, removeDoc };
 }
@@ -347,9 +356,10 @@ export function useNotes() {
     return row;
   }, []);
   const removeNote = useCallback(async (id: string) => {
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-    try { await deleteNote(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = notes;
+    setNotes((p) => p.filter((n) => n.id !== id));
+    try { await deleteNote(id); } catch (e) { setNotes(prev); console.warn('[useNotes] removeNote DB failed, rolled back', e); }
+  }, [notes]);
   return { notes, setNotes, loading, addNote, editNote, removeNote };
 }
 
@@ -370,9 +380,10 @@ export function useSprints() {
     return row;
   }, []);
   const removeSprint = useCallback(async (id: string) => {
-    setSprints((prev) => prev.filter((s) => s.id !== id));
-    try { await deleteSprint(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = sprints;
+    setSprints((p) => p.filter((s) => s.id !== id));
+    try { await deleteSprint(id); } catch (e) { setSprints(prev); console.warn('[useSprints] removeSprint DB failed, rolled back', e); }
+  }, [sprints]);
   return { sprints, setSprints, loading, addSprint, editSprint, removeSprint };
 }
 
@@ -393,9 +404,10 @@ export function useTemplates() {
     return row;
   }, []);
   const removeTemplate = useCallback(async (id: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
-    try { await deleteTemplate(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = templates;
+    setTemplates((p) => p.filter((t) => t.id !== id));
+    try { await deleteTemplate(id); } catch (e) { setTemplates(prev); console.warn('[useTemplates] removeTemplate DB failed, rolled back', e); }
+  }, [templates]);
   return { templates, setTemplates, loading, addTemplate, editTemplate, removeTemplate };
 }
 
@@ -411,8 +423,9 @@ export function useBookmarks() {
     return row;
   }, []);
   const removeBookmark = useCallback(async (id: string) => {
-    setBookmarks((prev) => prev.filter((b) => b.id !== id));
-    try { await deleteBookmark(id); } catch { /* optimistic */ }
-  }, []);
+    const prev = bookmarks;
+    setBookmarks((p) => p.filter((b) => b.id !== id));
+    try { await deleteBookmark(id); } catch (e) { setBookmarks(prev); console.warn('[useBookmarks] removeBookmark DB failed, rolled back', e); }
+  }, [bookmarks]);
   return { bookmarks, setBookmarks, loading, addBookmark, removeBookmark };
 }

@@ -17,7 +17,7 @@ import { buildModuleContext } from '@/lib/moduleContext';
 import { auditStore } from '@/lib/agentHarness';
 import { createMessage, fetchMessages, type MessageRow } from '@/lib/dataLayer';
 import { executeToolCall } from '@/lib/aiTools';
-import { parseAndExecute, resolveNaturalDate, type ParsedIntent, type IntentType } from '@/lib/intentParser';
+import { parseAndExecute, resolveNaturalDate, type ParsedIntent, type IntentType, type ConversationTurn } from '@/lib/intentParser';
 import { IntentFallbackForm } from '@/components/IntentFallbackForm';
 import { fetchSubscription, fetchUsageToday, isActionAllowed, PLAN_LIMITS, type UsageSummary } from '@/lib/subscription';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -48,6 +48,12 @@ function formatToolResult(toolName: string, result: unknown[]): string {
       return items.map((t, i) => `${i + 1}. ✅ ${t.title} — ${t.status}${t.priority ? `, 优先级 ${t.priority}` : ''}${t.due_date ? `, 截止 ${t.due_date}` : ''}`).join('\n');
     case 'get_action_items':
       return items.map((a, i) => `${i + 1}. 🔧 ${a.title} — ${a.status}, 优先级 ${a.priority}`).join('\n');
+    case 'get_deviation_alerts':
+      return items.map((a, i) => `${i + 1}. ⚠️ ${a.title ?? a.description ?? '偏差项'} — 级别 ${a.severity ?? 'medium'}`).join('\n');
+    case 'get_schedule_events':
+      return items.map((e, i) => `${i + 1}. 📅 ${e.title} — ${e.start_date ?? e.event_date ?? '日期未定'}`).join('\n');
+    case 'create_action_item':
+      return items.length > 0 ? `行动项已创建: ${items[0].title}` : '行动项创建完成。';
     default:
       return JSON.stringify(result, null, 2).slice(0, 500);
   }
@@ -70,6 +76,7 @@ function MainChatView() {
   const { showPaywall: mcShow, paywallReason: mcReason, paywallFeature: mcFeat, closePaywall: mcClose, requireFeature: mcRequire } = useGateCheck();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
+  const activeModule = useAppStore((s) => s.activeModule);
   const indColor = useIndustryColor();
   const storeNavigateTo = useAppStore((s) => s.navigateTo);
   const navigate = useNavigate();
@@ -259,7 +266,7 @@ function MainChatView() {
       if (resolved) params.due_date = resolved;
     }
 
-    const toolName = intent === 'create_task' ? 'create_task' : intent === 'update_task' ? 'update_task_status' : '';
+    const toolName = intent === 'create_task' ? 'create_task' : intent === 'update_task' ? 'update_task_status' : intent === 'create_action_item' ? 'create_action_item' : '';
 
     if (!toolName) return;
 
@@ -321,9 +328,20 @@ function MainChatView() {
     });
 
     // === Intent Parser: try "对话即操作" first ===
+    // Build recent conversation context for multi-turn support
+    const recentHistory: ConversationTurn[] = messages
+      .slice(-6)
+      .filter((m) => m.role === 'user' || m.role === 'ai')
+      .map((m) => ({
+        role: m.role === 'user' ? 'user' as const : 'assistant' as const,
+        content: m.text,
+        toolName: m.toolName,
+        intentType: undefined,
+      }));
+
     const intentStartTime = Date.now();
     try {
-      const intentResult = await parseAndExecute(input);
+      const intentResult = await parseAndExecute(input, recentHistory);
       recordApiCall('intent_parse', Date.now() - intentStartTime, true);
 
       if (!intentResult.intent.fallback && intentResult.toolResult !== undefined) {
@@ -339,6 +357,9 @@ function MainChatView() {
           update_task_status: '✅ 任务已更新',
           query_progress: '📊 查询结果',
           create_goal: '🎯 目标已创建',
+          create_action_item: '🔧 行动项已创建',
+          query_risks: '⚠️ 风险概览',
+          query_schedule: '📅 日程查询',
         };
 
         const navModule = parsed.toolName === 'create_task' || parsed.toolName === 'update_task_status' ? 'tasks'
@@ -402,6 +423,14 @@ function MainChatView() {
           goalsTotal: goals.length,
           goalsAtRisk: goals.filter(g => g.status === 'at_risk').length,
           actionItemsOpen: actionItems.filter(a => a.status === 'open').length,
+          // v2: Entity list summaries for data-grounded AI responses
+          goalList: goals.map(g => ({ title: g.title, progress: g.progress ?? 0, status: g.status, end_date: g.end_date })),
+          atRiskGoals: atRiskGoals.map(g => ({ title: g.title, progress: g.progress ?? 0, end_date: g.end_date })),
+          taskList: tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled').slice(0, 15)
+            .map(t => ({ title: t.title, status: t.status, priority: t.priority, due_date: t.due_date })),
+          overdueTasks: overdueTasks.map(t => ({ title: t.title, due_date: t.due_date!, priority: t.priority })),
+          actionItemList: openActionItems.slice(0, 8)
+            .map(a => ({ title: a.title, priority: a.priority, status: a.status })),
         }));
 
     const aiMessages: ChatMessage[] = [

@@ -4,10 +4,15 @@
  * Paradigm shift: "对话即操作" (Conversation-as-Action).
  * User speaks naturally → we extract intent → execute via aiTools → refresh UI.
  *
- * Architecture (v2 — Token-efficient):
+ * Architecture (v3 — Multi-turn context):
  * - L0 快速路径: 本地关键词匹配, 零 Token 消耗
- * - L1 AI 路径: 仅在 L0 无法确定时调用, 1 次 AI 调用
+ * - L1 AI 路径: 仅在 L0 无法确定时调用, 1 次 AI 调用, 支持多轮上下文
  * - L2 兜底路径: AI 置信度低 → 显示表单, 0 Token 额外消耗
+ *
+ * Multi-turn: parseAndExecute accepts recent chat history for context resolution.
+ *   - Anaphora resolution: "把它改成高优先级" → resolves "它" from recent task/goal context
+ *   - Follow-up: "再加一个截止日期" → adds due_date to last-created task
+ *   - Correction: "不对，改为明天" → updates the last operation's params
  *
  * Fallback: When parsing fails, returns a fallback flag so UI can show a form.
  */
@@ -16,7 +21,7 @@ import { executeToolCall, isValidTool } from '@/lib/aiTools';
 
 // --- Types ---
 
-export type IntentType = 'create_task' | 'update_task' | 'query_progress' | 'create_goal' | 'chitchat' | 'unknown';
+export type IntentType = 'create_task' | 'update_task' | 'query_progress' | 'create_goal' | 'create_action_item' | 'query_risks' | 'query_schedule' | 'chitchat' | 'unknown';
 
 export interface ParsedIntent {
   intent: IntentType;
@@ -31,6 +36,45 @@ export interface IntentResult {
   intent: ParsedIntent;
   toolResult?: unknown;
   error?: string;
+}
+
+// --- Multi-turn context types ---
+
+export interface ConversationTurn {
+  role: 'user' | 'assistant';
+  content: string;
+  toolName?: string;   // if this was a tool execution, what tool
+  intentType?: string; // if this was an intent parse, what intent
+}
+
+// Track recent intent context for anaphora resolution
+let recentIntentContext: {
+  lastIntentType: IntentType;
+  lastToolName: string;
+  lastParams: Record<string, unknown>;
+  lastToolResult?: unknown;
+  timestamp: number;
+} | null = null;
+
+/** Update recent context after a successful intent execution */
+export function updateIntentContext(intent: ParsedIntent, toolResult?: unknown): void {
+  if (intent.intent === 'chitchat' || intent.intent === 'unknown') return;
+  recentIntentContext = {
+    lastIntentType: intent.intent,
+    lastToolName: intent.toolName,
+    lastParams: intent.params,
+    lastToolResult: toolResult,
+    timestamp: Date.now(),
+  };
+}
+
+/** Get recent context for multi-turn resolution (max 5 min TTL) */
+export function getRecentContext(): typeof recentIntentContext {
+  if (recentIntentContext && Date.now() - recentIntentContext.timestamp < 5 * 60 * 1000) {
+    return recentIntentContext;
+  }
+  recentIntentContext = null;
+  return null;
 }
 
 // --- Registry-based Intent → Tool mapping ---
@@ -129,11 +173,144 @@ const INTENT_REGISTRY: Record<Exclude<IntentType, 'unknown'>, IntentRegistration
     ],
     extractParams: () => ({}),
   },
+  // --- Multi-turn follow-up patterns ---
+  create_action_item: {
+    toolName: 'create_action_item',
+    keywords: [
+      /(?:创建|新建|添加).*(?:行动项|纠正措施|改进项|action\s*item)/,
+      /(?:加一个|补充).*(?:行动项|纠正)/,
+    ],
+    extractParams: (text) => {
+      const params: Record<string, unknown> = {};
+      let title = text
+        .replace(/^(帮我|请)?(创建|新建|添加|加一个|补充)\s*/g, '')
+        .replace(/(行动项|纠正措施|改进项|action\s*item)\s*$/i, '')
+        .replace(/[，。！？,.!]*$/, '')
+        .trim();
+      if (title) params.title = title;
+      if (/紧急|urgent/i.test(text)) params.priority = 'urgent';
+      else if (/高优先|重要|high/i.test(text)) params.priority = 'high';
+      else params.priority = 'medium';
+      return params;
+    },
+  },
+  query_risks: {
+    toolName: 'get_deviation_alerts',
+    keywords: [
+      /(?:查询|查看|看看).*(?:风险|偏差|预警|告警|超期)/,
+      /(?:有什么).*(?:风险|问题|阻塞|超期|overdue)/,
+      /(?:风险|偏差).*(?:报告|概览|列表)/,
+    ],
+    extractParams: () => ({}),
+  },
+  query_schedule: {
+    toolName: 'get_schedule_events',
+    keywords: [
+      /(?:查询|查看|看看|今天).*(?:日程|安排|日历|会议|schedule)/,
+      /(?:今天|明天|本周).*(?:有什么|安排|日程)/,
+    ],
+    extractParams: () => ({}),
+  },
 };
+
+// --- Multi-turn: Anaphora & follow-up resolution ---
+
+// Patterns that suggest follow-up to a previous action
+const FOLLOWUP_PATTERNS: RegExp[] = [
+  /(?:把|将)?(?:它|这个|那个|上面|刚才).*(?:改|改|更新|设置为?)/,
+  /(?:加上|补充|追加|额外).*(?:截止|日期|标签|备注|描述)/,
+  /(?:不对|不是|算了|撤销|取消刚才)/,
+  /(?:优先级)?改为?(?:紧急|高|中|低)/,
+  /(?:截止|日期).*(?:改|设|调整|推迟|提前)/,
+  /^再?(?:加|建|创)一个/,
+  /(?:还有|另外|然后)(?:呢)?$/,
+];
+
+/** Check if message is a follow-up to recent context */
+export function detectFollowUp(userMessage: string): ParsedIntent | null {
+  const ctx = getRecentContext();
+  if (!ctx) return null;
+
+  const isFollowUp = FOLLOWUP_PATTERNS.some((p) => p.test(userMessage));
+  if (!isFollowUp) return null;
+
+  // Resolve what the user is referring to
+  const params: Record<string, unknown> = { ...ctx.lastParams };
+
+  // Cancel/correction
+  if (/不对|不是|算了|撤销|取消刚才/.test(userMessage)) {
+    return {
+      intent: 'chitchat',
+      confidence: 0.8,
+      toolName: '',
+      params: { _cancelled: true },
+      fallback: false,
+      rawText: userMessage,
+    };
+  }
+
+  // Priority change
+  const prioMatch = userMessage.match(/改为?(紧急|高|中|低)/);
+  if (prioMatch) {
+    const prioMap: Record<string, string> = { '紧急': 'urgent', '高': 'high', '中': 'medium', '低': 'low' };
+    params.priority = prioMap[prioMatch[1]] ?? 'medium';
+    return {
+      intent: 'update_task',
+      confidence: 0.75,
+      toolName: 'update_task_status',
+      params,
+      fallback: false,
+      rawText: userMessage,
+    };
+  }
+
+  // Due date change
+  const dateMatch = userMessage.match(/(?:截止|日期).*(?:改|设|调整|推迟|提前).*(今天|明天|后天|下周一|下周二|下周三|下周四|下周五|本周[一二三四五]|这周[一二三四五]|\d{4}-\d{2}-\d{2})/);
+  if (dateMatch) {
+    const resolved = resolveNaturalDate(dateMatch[1]);
+    if (resolved) params.due_date = resolved;
+    return {
+      intent: 'update_task',
+      confidence: 0.75,
+      toolName: 'update_task_status',
+      params,
+      fallback: false,
+      rawText: userMessage,
+    };
+  }
+
+  // Generic follow-up — update the same entity with new info
+  if (/加上|补充|追加|额外/.test(userMessage)) {
+    let extra = userMessage.replace(/^(加上|补充|追加|额外)\s*/g, '').trim();
+    // Try to extract specific field
+    if (/截止|日期/.test(extra)) {
+      const dm = extra.match(/(今天|明天|后天|下周一|下周二|下周三|下周四|下周五|本周[一二三四五]|\d{4}-\d{2}-\d{2})/);
+      if (dm) params.due_date = resolveNaturalDate(dm[1]);
+    }
+    if (/备注|描述|说明/.test(extra)) {
+      params.description = extra.replace(/(截止|日期|备注|描述|说明).*?(今天|明天|后天|下周一|下周二|下周三|下周四|下周五|本周[一二三四五]|\d{4}-\d{2}-\d{2})?\s*/g, '').trim() || extra;
+    }
+    return {
+      intent: ctx.lastIntentType,
+      confidence: 0.7,
+      toolName: ctx.lastToolName,
+      params,
+      fallback: false,
+      rawText: userMessage,
+    };
+  }
+
+  return null;
+}
 
 // --- L0: Fast keyword-based intent detection (zero Token cost) ---
 
 export function detectIntentFast(userMessage: string): ParsedIntent | null {
+  // L0a: Check for multi-turn follow-up first
+  const followUp = detectFollowUp(userMessage);
+  if (followUp) return followUp;
+
+  // L0b: Keyword matching
   for (const [intentType, reg] of Object.entries(INTENT_REGISTRY) as [string, IntentRegistration][]) {
     if (reg.keywords.some((kw) => kw.test(userMessage))) {
       const params = reg.extractParams(userMessage);
@@ -169,24 +346,40 @@ async function getAI() {
   return { chatCompletion: _chatCompletion, buildModuleContext: _buildModuleContext };
 }
 
-export async function parseIntentAI(userMessage: string): Promise<ParsedIntent> {
+export async function parseIntentAI(userMessage: string, chatHistory?: ConversationTurn[]): Promise<ParsedIntent> {
   const { chatCompletion: cc, buildModuleContext: bmc } = await getAI();
   const moduleCtx = bmc!(useAppStore.getState().activeModule);
+
+  // Build multi-turn context summary from recent history (last 6 turns)
+  let contextBlock = '';
+  if (chatHistory && chatHistory.length > 0) {
+    const recent = chatHistory.slice(-6);
+    const ctx = getRecentContext();
+    contextBlock = `\n\n近期对话上下文:\n${recent.map((t) => `  [${t.role}] ${t.content.slice(0, 100)}`).join('\n')}`;
+    if (ctx) {
+      contextBlock += `\n\n上次操作: intent=${ctx.lastIntentType}, tool=${ctx.lastToolName}, params=${JSON.stringify(ctx.lastParams)}`;
+    }
+    contextBlock += `\n\n注意: 如果用户用了代词("它""这个""那个""刚才")或省略了主语，请参考上下文推断指代对象。`;
+  }
 
   const systemPrompt = `你是一个意图解析器。用户用自然语言描述需求，你需要提取结构化意图。
 
 ${moduleCtx}
+${contextBlock}
 
-输出JSON: { "intent": "create_task|update_task|query_progress|create_goal|chitchat", "confidence": 0-1, "toolName": "工具名", "params": {} }
+输出JSON: { "intent": "create_task|update_task|query_progress|create_goal|create_action_item|query_risks|query_schedule|chitchat", "confidence": 0-1, "toolName": "工具名", "params": {} }
 
 意图→工具映射:
 - create_task → "create_task", 参数: {title, priority?, due_date?}
-- update_task → "update_task_status", 参数: {task_id?, status?}
+- update_task → "update_task_status", 参数: {task_id?, status?, priority?, due_date?}
 - query_progress → "get_team_metrics"|"get_tasks"|"get_goals"
 - create_goal → "update_goal_progress"
+- create_action_item → "create_action_item", 参数: {title, priority?}
+- query_risks → "get_deviation_alerts"
+- query_schedule → "get_schedule_events"
 - chitchat → 无工具
 
-规则: 只输出JSON; 无法确定→confidence<0.5; 日期用自然语言`;
+规则: 只输出JSON; 无法确定→confidence<0.5; 日期用自然语言; 支持代词解析(用"它"指代上文的任务/目标)`;
 
   try {
     const response = await cc!([
@@ -241,17 +434,28 @@ export async function executeIntent(parsed: ParsedIntent): Promise<IntentResult>
 
 // --- Main entry: L0 fast → L1 AI → fallback ---
 // Key optimization: avoids double AI call by using keyword fast-path first
+// v3: Accepts chatHistory for multi-turn context resolution
 
-export async function parseAndExecute(userMessage: string): Promise<IntentResult> {
+export async function parseAndExecute(userMessage: string, chatHistory?: ConversationTurn[]): Promise<IntentResult> {
   // L0: Try fast keyword detection first (zero Token cost)
   const fastResult = detectIntentFast(userMessage);
   if (fastResult) {
-    return executeIntent(fastResult);
+    const result = await executeIntent(fastResult);
+    // Update context on successful execution
+    if (!result.intent.fallback && result.toolResult !== undefined) {
+      updateIntentContext(fastResult, result.toolResult);
+    }
+    return result;
   }
 
-  // L1: AI-based parsing for ambiguous inputs (1 AI call)
-  const aiParsed = await parseIntentAI(userMessage);
-  return executeIntent(aiParsed);
+  // L1: AI-based parsing for ambiguous inputs (1 AI call), with multi-turn context
+  const aiParsed = await parseIntentAI(userMessage, chatHistory);
+  const result = await executeIntent(aiParsed);
+  // Update context on successful execution
+  if (!result.intent.fallback && result.toolResult !== undefined) {
+    updateIntentContext(aiParsed, result.toolResult);
+  }
+  return result;
 }
 
 // --- Register new intent type (extensible) ---

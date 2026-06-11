@@ -378,7 +378,7 @@ export async function loadReportsFromDB(limit = 20): Promise<SavedReport[]> {
         .order('created_at', { ascending: false })
         .limit(limit);
       if (!error && data && data.length > 0) {
-        return data.map((row: Record<string, unknown>) => ({
+        const dbReports: SavedReport[] = data.map((row: Record<string, unknown>) => ({
           id: row.id as string,
           type: (row.type as string) || 'weekly',
           title: row.title as string,
@@ -388,8 +388,37 @@ export async function loadReportsFromDB(limit = 20): Promise<SavedReport[]> {
           generatedAt: (row.created_at as string) ?? '',
           model: (row.model as string) ?? 'deepseek',
         }));
+        // Conflict resolution: merge DB + localStorage, dedupe by period, keep newest
+        return mergeReports(dbReports, loadSavedReports(), limit);
       }
     }
   } catch { /* fallback to local */ }
   return loadSavedReports();
+}
+
+/**
+ * Merge DB and local reports: dedupe by period, keep the one with latest generatedAt.
+ * DB reports take precedence when timestamps are equal.
+ */
+function mergeReports(dbReports: SavedReport[], localReports: SavedReport[], limit: number): SavedReport[] {
+  const byPeriod = new Map<string, SavedReport>();
+  // Insert local first
+  for (const r of localReports) {
+    const key = r.period;
+    const existing = byPeriod.get(key);
+    if (!existing || r.generatedAt > existing.generatedAt) {
+      byPeriod.set(key, r);
+    }
+  }
+  // DB overrides if newer
+  for (const r of dbReports) {
+    const key = r.period;
+    const existing = byPeriod.get(key);
+    if (!existing || r.generatedAt >= existing.generatedAt) {
+      byPeriod.set(key, r);
+    }
+  }
+  return Array.from(byPeriod.values())
+    .sort((a, b) => b.generatedAt.localeCompare(a.generatedAt))
+    .slice(0, limit);
 }
