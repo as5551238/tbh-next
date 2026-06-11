@@ -1,14 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
-import { useRisks, useMatrixCell, useActionItems } from '@/hooks/useMatrix';
+import { useRisks, useMatrixCell, useActionItems, useDeviationAlerts } from '@/hooks/useMatrix';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { AlertTriangle, Clock, TrendingDown, Shield, Plus, Trash2, Zap } from 'lucide-react';
+import { AlertTriangle, Clock, TrendingDown, Shield, Plus, Trash2, Zap, Scan, RefreshCw, Settings } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
+import { scanRisks, alertToDeviationInput, type RiskAlert, type RiskScanResult, type RiskEngineConfig } from '@/lib/riskEngine';
+import { useGoals, useTasks } from '@/hooks/useMatrix';
+import { createDeviationAlert } from '@/lib/dataLayer/crud';
 
 const LEVEL_STYLES: Record<string, string> = {
   critical: 'bg-danger/10 text-danger border-l-danger',
@@ -19,56 +22,181 @@ const LEVEL_STYLES: Record<string, string> = {
 
 const LEVEL_DOT: Record<string, string> = { critical: 'bg-danger', high: 'bg-warn', medium: 'bg-primary-2', low: 'bg-text-3' };
 
+const SEVERITY_STYLE: Record<string, string> = {
+  critical: 'bg-danger/10 text-danger border-l-danger',
+  warning: 'bg-warn/10 text-warn border-l-warn',
+  info: 'bg-primary/10 text-primary-2 border-l-primary',
+};
+
+const SEVERITY_DOT: Record<string, string> = { critical: 'bg-danger', warning: 'bg-warn', info: 'bg-primary-2' };
+
+const SEVERITY_LABEL: Record<string, string> = { critical: '紧急', warning: '警告', info: '提示' };
+
+const SOURCE_LABEL: Record<string, string> = {
+  task_overdue: '任务逾期',
+  task_stalled: '任务停滞',
+  goal_at_risk: '目标风险',
+  goal_overdue: '目标逾期',
+  action_item_overdue: '行动项逾期',
+  milestone_overdue: '里程碑逾期',
+};
+
 export default function RiskView() {
   const [showPaywall, setShowPaywall] = useState(false);
   const { risks, loading, addRisk, editRisk, removeRisk } = useRisks();
   const { cell } = useMatrixCell();
-  const { addActionItem } = useActionItems();
+  const { actionItems, addActionItem } = useActionItems();
+  const { alerts: deviationAlerts } = useDeviationAlerts();
+  const { goals } = useGoals();
+  const { tasks } = useTasks();
   const { triggerFeedback } = useMLOOFeedback();
   const industry = useAppStore((s) => s.industry);
   const addModal = useModal();
   const detailModal = useModal();
-    const { toasts } = useToast();
-const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(null);
+  const configModal = useModal();
+  const { toasts } = useToast();
+  const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(null);
   const [form, setForm] = useState({ title: '', level: 'medium' as 'critical' | 'high' | 'medium' | 'low', description: '', source: '', affected_kpi: '', status: 'active' as 'active' | 'watching' | 'resolved' });
+
+  // ── Proactive risk scanning state ──
+  const [scanResult, setScanResult] = useState<RiskScanResult | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [autoScanEnabled, setAutoScanEnabled] = useState(true);
+  const [selectedAlert, setSelectedAlert] = useState<RiskAlert | null>(null);
+  const [alertDetailOpen, setAlertDetailOpen] = useState(false);
+  const [engineConfig, setEngineConfig] = useState<RiskEngineConfig>({
+    autoScan: true,
+    overdueCriticalDays: 3,
+    overdueWarningDays: 1,
+    stalledDays: 7,
+    goalAtRiskProgress: 30,
+    goalAtRiskDaysBeforeEnd: 7,
+  });
+
+  // ── Auto-scan on mount (DR-51: toggle-gated) ──
+  useEffect(() => {
+    if (!autoScanEnabled || tasks.length === 0) return;
+    const result = scanRisks(tasks, goals, actionItems, deviationAlerts, engineConfig);
+    setScanResult(result);
+  }, [tasks, goals, actionItems, deviationAlerts, autoScanEnabled]);
+
+  // ── Manual scan trigger ──
+  const handleManualScan = useCallback(async () => {
+    setScanning(true);
+    try {
+      const result = scanRisks(tasks, goals, actionItems, deviationAlerts, engineConfig);
+      setScanResult(result);
+      // Persist new alerts to deviation_alerts (DR-53: data drives action)
+      for (const alert of result.alerts.slice(0, 10)) {
+        try {
+          await createDeviationAlert(alertToDeviationInput(alert));
+        } catch { /* non-blocking — alert still shown in UI */ }
+      }
+    } finally {
+      setScanning(false);
+    }
+  }, [tasks, goals, actionItems, deviationAlerts, engineConfig]);
+
+  // ── Generate action item from auto-detected alert ──
+  const handleAlertToAction = useCallback((alert: RiskAlert) => {
+    addActionItem({
+      title: alert.title,
+      description: alert.description,
+      source: 'deviation',
+      source_id: alert.id,
+      goal_id: alert.goalId ?? null,
+      assignee_id: null,
+      priority: alert.severity === 'critical' ? 'critical' : alert.severity === 'warning' ? 'high' : 'medium',
+      status: 'open',
+      closed_loop: false,
+    });
+    setAlertDetailOpen(false);
+  }, [addActionItem]);
 
   const activeRisks = risks.filter((r) => r.status !== 'resolved');
   const criticalCount = risks.filter((r) => r.level === 'critical' && r.status === 'active').length;
 
   if (loading) {
-    return (
-      <CardSkeleton />
-    );
+    return <CardSkeleton />;
   }
+
+  const autoAlertCount = scanResult?.summary.total ?? 0;
+  const autoCriticalCount = scanResult?.summary.critical ?? 0;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <ToastOverlay toasts={toasts} />
+      {/* ── Header ── */}
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <Shield size={16} className="text-primary-2" />
         <span className="text-sm font-bold">风险预警</span>
-        {criticalCount > 0 && <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">{criticalCount} 紧急</span>}
-        <span className="text-[10px] text-text-3">{activeRisks.length} 活跃风险</span>
+        {criticalCount > 0 && <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">{criticalCount} 手动紧急</span>}
+        {autoCriticalCount > 0 && <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">{autoCriticalCount} 自动检测</span>}
+        <span className="text-[10px] text-text-3">{activeRisks.length} 手动 / {autoAlertCount} 自动</span>
+
+        {/* Proactive scan controls */}
+        <button className={cn('flex items-center gap-1 rounded-lg px-3 py-1 text-[11px] font-semibold hover:opacity-80', scanning ? 'bg-surface-2 text-text-3' : 'bg-accent/10 text-accent')} onClick={handleManualScan} disabled={scanning}>
+          {scanning ? <RefreshCw size={12} className="animate-spin" /> : <Scan size={12} />}
+          {scanning ? '扫描中...' : '主动扫描'}
+        </button>
+        <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-3 py-1 text-[11px] font-semibold text-text-3 hover:text-text" onClick={() => setAutoScanEnabled((v) => !v)}>
+          <Settings size={12} />
+          {autoScanEnabled ? '自动:开' : '自动:关'}
+        </button>
+
         <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { setForm({ title: '', level: 'medium', description: '', source: '', affected_kpi: '', status: 'active' }); addModal.openModal(); }}>
           <Plus size={12} />上报风险
         </button>
       </div>
 
-      {/* AI Summary — generated from actual risk data */}
+      {/* ── Auto-detected alerts section ── */}
+      {scanResult && scanResult.alerts.length > 0 && (
+        <div className="border-b border-border">
+          <div className="flex items-center gap-2 px-4 py-2 bg-warn/5">
+            <Scan size={14} className="text-warn" />
+            <span className="text-xs font-semibold text-warn">主动检测 ({scanResult.summary.total})</span>
+            <span className="text-[10px] text-text-3 ml-2">紧急 {scanResult.summary.critical} / 警告 {scanResult.summary.warning} / 提示 {scanResult.summary.info}</span>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {scanResult.alerts.map((alert) => (
+              <div key={alert.id} onClick={() => { setSelectedAlert(alert); setAlertDetailOpen(true); }} className={cn('flex items-center gap-3 px-4 py-2.5 border-b border-border/50 cursor-pointer hover:bg-surface-2 transition-colors', SEVERITY_STYLE[alert.severity])} style={{ borderLeftWidth: 3 }}>
+                <div className={cn('h-2 w-2 rounded-full shrink-0', SEVERITY_DOT[alert.severity])} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-text truncate">{alert.title}</span>
+                    <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold shrink-0', SEVERITY_STYLE[alert.severity].split(' ').slice(0, 2).join(' '))}>
+                      {SEVERITY_LABEL[alert.severity]}
+                    </span>
+                    <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[8px] text-text-3">{SOURCE_LABEL[alert.source] ?? alert.source}</span>
+                  </div>
+                  <p className="text-[10px] text-text-3 truncate mt-0.5">{alert.description}</p>
+                </div>
+                <span className="text-[9px] text-text-3 shrink-0">评分: {alert.score}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Summary — generated from actual risk data ── */}
       <div className="mx-4 mt-3 rounded-xl border border-warn/20 bg-warn/5 p-3 md:p-4">
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-warn mb-1">
           <AlertTriangle size={14} />风险概览
         </div>
         <p className="text-[11px] text-text-2 leading-relaxed">
-          {activeRisks.length === 0
+          {activeRisks.length === 0 && autoAlertCount === 0
             ? '暂无活跃风险。'
-            : criticalCount > 0
-              ? `当前有 ${criticalCount} 个紧急风险需立即处理，${activeRisks.length} 个活跃风险待关注。建议优先处理紧急项。`
-              : `当前共 ${activeRisks.length} 个活跃风险，其中高优先级 ${risks.filter((r) => r.level === 'high' && r.status !== 'resolved').length} 个。建议持续监控。`}
+            : autoCriticalCount > 0
+              ? `自动检测发现 ${autoCriticalCount} 个紧急风险，${activeRisks.length} 个手动录入风险。建议立即处理自动检测到的紧急项。`
+              : criticalCount > 0
+                ? `当前有 ${criticalCount} 个紧急风险需立即处理，${activeRisks.length} 个活跃风险待关注。`
+                : `当前共 ${activeRisks.length} 个手动 + ${autoAlertCount} 个自动检测风险，建议持续监控。`}
         </p>
       </div>
 
+      {/* ── Manually reported risks ── */}
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
+        <div className="text-[10px] font-semibold text-text-3 mb-1">手动上报 ({risks.length})</div>
         {risks.map((risk) => (
           <div key={risk.id} onClick={() => { setSelectedRisk(risk); detailModal.openModal(); }} className={cn('rounded-xl border border-border border-l-2 bg-surface p-4 transition-all hover:shadow-lg cursor-pointer', LEVEL_STYLES[risk.level].split(' ').pop(),
             risk.status === 'resolved' && 'opacity-40'
@@ -93,7 +221,39 @@ const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(nu
         ))}
       </div>
 
-      {/* Create Risk Modal */}
+      {/* ── Alert Detail Modal ── */}
+      <Modal open={alertDetailOpen} onClose={() => setAlertDetailOpen(false)} title="风险预警详情"
+        footer={
+          selectedAlert ? (
+            <div className="flex flex-wrap gap-2">
+              <button className={btnSecondary} onClick={() => setAlertDetailOpen(false)}>关闭</button>
+              <button className="flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1.5 text-[11px] font-semibold text-accent hover:bg-accent/20" onClick={() => handleAlertToAction(selectedAlert)}>
+                <Zap size={10} />生成行动项
+              </button>
+            </div>
+          ) : undefined
+        }>
+        {selectedAlert && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className={cn('h-2 w-2 rounded-full', SEVERITY_DOT[selectedAlert.severity])} />
+              <span className="text-sm font-semibold text-text">{selectedAlert.title}</span>
+              <span className={cn('ml-auto rounded-full px-2 py-0.5 text-[8px] font-bold', SEVERITY_STYLE[selectedAlert.severity].split(' ').slice(0, 2).join(' '))}>
+                {SEVERITY_LABEL[selectedAlert.severity]}
+              </span>
+            </div>
+            <p className="text-xs text-text-2 leading-relaxed">{selectedAlert.description}</p>
+            <div className="flex flex-wrap gap-3 text-[10px] text-text-3">
+              <span>来源: {SOURCE_LABEL[selectedAlert.source] ?? selectedAlert.source}</span>
+              <span>风险评分: {selectedAlert.score}/100</span>
+              {selectedAlert.taskId && <span>关联任务</span>}
+              {selectedAlert.goalId && <span>关联目标</span>}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Create Risk Modal ── */}
       <Modal open={addModal.open} onClose={addModal.closeModal} title="上报风险"
         footer={
           <div className="flex flex-wrap gap-2">
@@ -123,7 +283,7 @@ const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(nu
         </ModalField>
       </Modal>
 
-      {/* Risk Detail / Edit / Delete Modal */}
+      {/* ── Risk Detail / Edit / Delete Modal ── */}
       <Modal open={detailModal.open} onClose={detailModal.closeModal} title="风险详情"
         footer={
           selectedRisk ? (
@@ -160,8 +320,8 @@ const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(nu
           </div>
         )}
       </Modal>
-    
+
       <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="风险分析需要专业版或企业版" feature="ai_risk_analysis" />
-</div>
+    </div>
   );
 }

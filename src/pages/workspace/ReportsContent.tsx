@@ -1,18 +1,19 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
-import { hasFeature } from '@/lib/subscription'; // gate: Pro feature check
+import { hasFeature } from '@/lib/subscription';
 import { useState, useCallback } from 'react';
-import { useReports, useGoals, useTasks, useRisks } from '@/hooks/useMatrix';
+import { useReports, useGoals, useTasks, useRisks, useActionItems, useDeviationAlerts } from '@/hooks/useMatrix';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { chatCompletion } from '@/lib/aiService';
 import { usePermission } from '@/hooks/usePermission';
-import { BarChart3, Download, Plus, Sparkles } from 'lucide-react';
+import { BarChart3, Download, Plus, Sparkles, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import type { ReportInput, ReportUpdate } from '@/contracts/dataContracts';
 import { CardSkeleton } from '@/components/Skeleton';
+import { aggregateWeekData, generateWeeklyReport, reportToMarkdown, type WeeklyReportResult, type WeekDataAggregate } from '@/lib/weeklyReport';
 
 const TYPE_STYLES: Record<string, string> = { weekly: 'bg-primary/10 text-primary-2', monthly: 'bg-accent/10 text-accent', custom: 'bg-success/10 text-success' };
 
@@ -22,6 +23,8 @@ export default function ReportsContent() {
   const { goals } = useGoals();
   const { tasks } = useTasks();
   const { risks } = useRisks();
+  const { actionItems } = useActionItems();
+  const { alerts: deviationAlerts } = useDeviationAlerts();
   const { user } = useAuth();
   const { can } = usePermission();
   const { toasts, error } = useToast();
@@ -31,6 +34,35 @@ export default function ReportsContent() {
   const [form, setForm] = useState({ title: '', type: 'weekly' });
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiSummarizing, setAiSummarizing] = useState(false);
+
+  // ── Weekly report state ──
+  const [weeklyReport, setWeeklyReport] = useState<WeeklyReportResult | null>(null);
+  const [weeklyGenerating, setWeeklyGenerating] = useState(false);
+  const [weeklyExpanded, setWeeklyExpanded] = useState(true);
+  const [weeklyData, setWeeklyData] = useState<WeekDataAggregate | null>(null);
+
+  // ── One-click weekly report generation (DR-53: data drives action) ──
+  const handleGenerateWeeklyReport = useCallback(async () => {
+    if (weeklyGenerating) return;
+    setWeeklyGenerating(true);
+    try {
+      const data = aggregateWeekData(tasks, goals, actionItems, deviationAlerts);
+      setWeeklyData(data);
+      const result = await generateWeeklyReport(data);
+      setWeeklyReport(result);
+      // Persist as a report row (DR-53)
+      addReport({
+        title: result.title,
+        type: 'weekly',
+        generated_at: data.period,
+        status: 'ready',
+      } as ReportInput).catch(() => { /* non-blocking */ });
+    } catch {
+      error('周报生成失败，请重试');
+    } finally {
+      setWeeklyGenerating(false);
+    }
+  }, [tasks, goals, actionItems, deviationAlerts, addReport, weeklyGenerating, error]);
 
   const handleOpenGen = useCallback(() => {
     setForm({ title: '', type: 'weekly' });
@@ -51,7 +83,7 @@ export default function ReportsContent() {
       }, 2000);
     }).catch((err) => { console.error('[reports]', err); error('报表创建失败，请重试'); });
     genModal.closeModal();
-  }, [form, genModal.closeModal, addReport, editReport]);
+  }, [form, genModal.closeModal, addReport, editReport, error]);
 
   const handleExport = useCallback((report: typeof reports[number]) => {
     const now = new Date();
@@ -88,6 +120,19 @@ export default function ReportsContent() {
     URL.revokeObjectURL(url);
   }, [goals, tasks, risks]);
 
+  // ── Export weekly report ──
+  const handleExportWeeklyReport = useCallback(() => {
+    if (!weeklyReport) return;
+    const md = reportToMarkdown(weeklyReport);
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${weeklyReport.title}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [weeklyReport]);
+
   const handleAiSummary = useCallback(async () => {
     if (aiSummarizing) return;
     setAiSummarizing(true);
@@ -106,24 +151,30 @@ export default function ReportsContent() {
   }, [goals, tasks, risks, aiSummarizing]);
 
   if (loading) {
-    return (
-      <CardSkeleton />
-    );
+    return <CardSkeleton />;
   }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <ToastOverlay toasts={toasts} />
+      {/* ── Header ── */}
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <BarChart3 size={16} className="text-primary-2" />
         <span className="text-sm font-bold">报表中心</span>
         {can('ai:chat') && (
         <button className="flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1 text-[11px] font-semibold text-accent hover:bg-accent/20 disabled:opacity-50" onClick={handleAiSummary} disabled={aiSummarizing}><Sparkles size={12} />{aiSummarizing ? '生成中...' : 'AI摘要'}</button>
         )}
+        {/* One-click weekly report (DR-53) */}
+        <button className={cn('flex items-center gap-1 rounded-lg px-3 py-1 text-[11px] font-semibold hover:opacity-80', weeklyGenerating ? 'bg-surface-2 text-text-3' : 'bg-primary-2/10 text-primary-2')} onClick={handleGenerateWeeklyReport} disabled={weeklyGenerating}>
+          <FileText size={12} />
+          {weeklyGenerating ? '生成中...' : '一键周报'}
+        </button>
         <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:opacity-80" onClick={() => { if (!rpRequire('customReports', '自定义报表需要专业版或企业版')) return; handleOpenGen(); }}>
           <Plus size={12} />生成报表
         </button>
       </div>
+
+      {/* ── AI Summary card ── */}
       {aiSummary && (
         <div className="mx-3 md:mx-4 mt-2 rounded-lg border border-accent/20 bg-accent/5 p-3 text-xs text-text-2">
           <div className="flex items-start justify-between gap-2">
@@ -133,6 +184,81 @@ export default function ReportsContent() {
           <button className="mt-1 text-[9px] text-text-3 hover:text-text" onClick={() => setAiSummary(null)}>关闭</button>
         </div>
       )}
+
+      {/* ── Weekly Report Card (new) ── */}
+      {weeklyReport && (
+        <div className="mx-3 md:mx-4 mt-3 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setWeeklyExpanded((v) => !v)}>
+            <FileText size={14} className="text-primary-2" />
+            <span className="text-sm font-semibold text-primary-2">{weeklyReport.title}</span>
+            <span className="text-[10px] text-text-3">{new Date(weeklyReport.generatedAt).toLocaleString('zh-CN')}</span>
+            <div className="ml-auto flex items-center gap-2">
+              <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-1 text-[10px] text-text-3 hover:text-text" onClick={(e) => { e.stopPropagation(); handleExportWeeklyReport(); }}>
+                <Download size={10} />导出
+              </button>
+              {weeklyExpanded ? <ChevronUp size={14} className="text-text-3" /> : <ChevronDown size={14} className="text-text-3" />}
+            </div>
+          </div>
+          {weeklyExpanded && (
+            <div className="px-4 pb-4 space-y-3">
+              {/* AI Summary */}
+              <div className="rounded-lg bg-surface p-3">
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-accent mb-1"><Sparkles size={10} />AI 生成摘要</div>
+                <p className="text-xs text-text-2 leading-relaxed whitespace-pre-wrap">{weeklyReport.aiSummary}</p>
+              </div>
+              {/* Structured stats */}
+              {weeklyData && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="rounded-lg bg-surface p-2 text-center">
+                    <div className="text-lg font-bold text-primary-2">{weeklyData.taskCompletionRate}%</div>
+                    <div className="text-[9px] text-text-3">任务完成率</div>
+                  </div>
+                  <div className="rounded-lg bg-surface p-2 text-center">
+                    <div className="text-lg font-bold text-accent">{weeklyData.avgGoalProgress}%</div>
+                    <div className="text-[9px] text-text-3">目标平均进度</div>
+                  </div>
+                  <div className="rounded-lg bg-surface p-2 text-center">
+                    <div className={cn('text-lg font-bold', weeklyData.overdueTasks > 0 ? 'text-danger' : 'text-success')}>{weeklyData.overdueTasks}</div>
+                    <div className="text-[9px] text-text-3">逾期任务</div>
+                  </div>
+                  <div className="rounded-lg bg-surface p-2 text-center">
+                    <div className={cn('text-lg font-bold', weeklyData.criticalAlerts > 0 ? 'text-danger' : 'text-success')}>{weeklyData.criticalAlerts}</div>
+                    <div className="text-[9px] text-text-3">紧急预警</div>
+                  </div>
+                </div>
+              )}
+              {/* Top overdue */}
+              {weeklyData && weeklyData.topOverdueTasks.length > 0 && (
+                <div>
+                  <div className="text-[10px] font-semibold text-text-3 mb-1">逾期任务 TOP5</div>
+                  {weeklyData.topOverdueTasks.map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[11px] py-1">
+                      <span className="text-danger font-semibold w-4 text-right">{i + 1}.</span>
+                      <span className="text-text truncate flex-1">{t.title}</span>
+                      <span className="text-text-3 shrink-0">逾期{t.daysLate}天</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Top at-risk goals */}
+              {weeklyData && weeklyData.topAtRiskGoals.length > 0 && (
+                <div>
+                  <div className="text-[10px] font-semibold text-text-3 mb-1">高风险目标</div>
+                  {weeklyData.topAtRiskGoals.map((g, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[11px] py-1">
+                      <span className="text-warn font-semibold w-4 text-right">{i + 1}.</span>
+                      <span className="text-text truncate flex-1">{g.title}</span>
+                      <span className="text-text-3 shrink-0">进度{g.progress}% / 剩{g.daysLeft}天</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Report list ── */}
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
         {reports.map((report) => (
           <div key={report.id} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg cursor-pointer',
