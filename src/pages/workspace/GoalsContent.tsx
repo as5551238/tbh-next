@@ -1,6 +1,6 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useGoals, useTasks } from '@/hooks/useMatrix';
 import { cn, safeStr } from '@/lib/utils';
 import { Target, CheckCircle2, Zap, Plus } from 'lucide-react';
@@ -13,10 +13,15 @@ import { exportToCSV, exportToJSON, formatDateForExport } from '@/lib/export';
 import BulkActionBar from '@/components/BulkActionBar';
 import { t } from '@/lib/i18n';
 import { usePermission } from '@/hooks/usePermission';
+import { recordRender } from '@/lib/monitoring';
 
 export default function GoalsContent() {
   const { goals, loading, addGoal, editGoal, removeGoal } = useGoals();
   const { showPaywall, paywallReason, paywallFeature, closePaywall, requireLimit } = useGateCheck();
+
+  // ── Monitor: render timing ─────────────────────────────────────────
+  const _mountT0 = useMemo(() => performance.now(), []);
+  useEffect(() => { return () => { recordRender('GoalsContent', performance.now() - _mountT0); }; }, [_mountT0]);
   const { can } = usePermission();
   const { tasks } = useTasks();
   const goalModal = useModal();

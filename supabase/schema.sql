@@ -1542,3 +1542,82 @@ ALTER TABLE installed_packs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can read own installed packs" ON installed_packs FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own installed packs" ON installed_packs FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete own installed packs" ON installed_packs FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================
+-- 68. Automation Chains (replaces localStorage tbh-automation-chains)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS automation_chains (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  team_id UUID,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  trigger_type TEXT NOT NULL,
+  trigger_config JSONB DEFAULT '{}',
+  source_dept TEXT DEFAULT '',
+  conditions JSONB DEFAULT '[]',
+  then_steps JSONB DEFAULT '[]',
+  else_steps JSONB DEFAULT '[]',
+  is_active BOOLEAN DEFAULT false,
+  priority INT DEFAULT 0,
+  auto_execute BOOLEAN DEFAULT false,
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE automation_chains ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Team members can read automation chains" ON automation_chains FOR SELECT TO authenticated USING (
+  created_by = auth.uid() OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager']))
+);
+CREATE POLICY "Users can create automation chains" ON automation_chains FOR INSERT TO authenticated WITH CHECK (created_by = auth.uid());
+CREATE POLICY "Users can update own automation chains" ON automation_chains FOR UPDATE TO authenticated USING (created_by = auth.uid());
+CREATE POLICY "Users can delete own automation chains" ON automation_chains FOR DELETE TO authenticated USING (created_by = auth.uid());
+CREATE INDEX IF NOT EXISTS idx_automation_chains_team ON automation_chains(team_id);
+CREATE INDEX IF NOT EXISTS idx_automation_chains_trigger ON automation_chains(trigger_type);
+
+-- ============================================================
+-- 69. Automation Execution Logs (replaces localStorage tbh-automation-exec-logs)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS automation_execution_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  chain_id UUID REFERENCES automation_chains(id) ON DELETE CASCADE,
+  chain_name TEXT NOT NULL,
+  trigger_type TEXT NOT NULL,
+  source_dept TEXT DEFAULT '',
+  condition_result BOOLEAN DEFAULT true,
+  steps_executed JSONB DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'success' CHECK (status IN ('success','partial','failed')),
+  error TEXT,
+  executed_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  duration_ms INT DEFAULT 0,
+  executed_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE automation_execution_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Team members can read execution logs" ON automation_execution_logs FOR SELECT TO authenticated USING (
+  executed_by = auth.uid() OR EXISTS (SELECT 1 FROM members m WHERE m.id = auth.uid()::text AND m.role = ANY(ARRAY['admin','manager']))
+);
+CREATE POLICY "Users can create execution logs" ON automation_execution_logs FOR INSERT TO authenticated WITH CHECK (executed_by = auth.uid());
+CREATE INDEX IF NOT EXISTS idx_exec_logs_chain ON automation_execution_logs(chain_id);
+CREATE INDEX IF NOT EXISTS idx_exec_logs_time ON automation_execution_logs(executed_at DESC);
+
+-- ============================================================
+-- 70. Usage Alerts (replaces localStorage tbh-usage-alerts)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS usage_alerts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('threshold_warning','threshold_critical','downgrade_blocked','quota_exceeded')),
+  metric TEXT NOT NULL,
+  current_value INT NOT NULL DEFAULT 0,
+  limit_value INT NOT NULL DEFAULT 0,
+  plan TEXT NOT NULL DEFAULT 'free',
+  message TEXT NOT NULL DEFAULT '',
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE usage_alerts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can read own usage alerts" ON usage_alerts FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own usage alerts" ON usage_alerts FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can update own usage alerts" ON usage_alerts FOR UPDATE TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can delete own usage alerts" ON usage_alerts FOR DELETE TO authenticated USING (user_id = auth.uid());
+CREATE INDEX IF NOT EXISTS idx_usage_alerts_user ON usage_alerts(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_usage_alerts_created ON usage_alerts(created_at DESC);

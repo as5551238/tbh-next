@@ -14,7 +14,7 @@
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-export interface RenderMetric {
+interface RenderMetric {
   componentName: string;
   avgMs: number;
   maxMs: number;
@@ -22,7 +22,7 @@ export interface RenderMetric {
   lastRenderAt: string;
 }
 
-export interface ApiCallMetric {
+interface ApiCallMetric {
   endpoint: string;
   successCount: number;
   failureCount: number;
@@ -30,7 +30,7 @@ export interface ApiCallMetric {
   lastCallAt: string;
 }
 
-export interface ErrorRecord {
+interface ErrorRecord {
   id: string;
   source: string;
   message: string;
@@ -240,7 +240,7 @@ export const APP_VERSION = '2.8.0';
 export const VERSION_DATE = '2026-06-11';
 export const VERSION_LABEL = 'TBH-Next Enterprise Edition';
 
-export interface ChangelogEntry {
+interface ChangelogEntry {
   version: string;
   date: string;
   changes: string[];

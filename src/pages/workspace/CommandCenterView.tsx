@@ -17,6 +17,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useGoals, useTasks, useActionItems, useDeviationAlerts, useMembers } from '@/hooks/useMatrix';
 import { loadChains, loadExecutionLogs, loadUsageAlerts } from '@/lib/automationEngine';
 import { cacheGet } from '@/lib/perfCache';
+import { recordRender } from '@/lib/monitoring';
 import { Target, CheckCircle2, AlertTriangle, Clock, Zap, Users, TrendingUp, TrendingDown, Minus, ArrowRight, Shield, GitBranch, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -38,6 +39,10 @@ export default function CommandCenterView() {
   const { tasks, loading: tasksLoading } = useTasks();
   const { actionItems, loading: aiLoading } = useActionItems();
   const { alerts, loading: alertsLoading } = useDeviationAlerts();
+
+  // ── Monitor: render timing ──────────────────────────────────────────
+  const _mountT0 = useMemo(() => performance.now(), []);
+  useEffect(() => { return () => { recordRender('CommandCenterView', performance.now() - _mountT0); }; }, [_mountT0]);
   const { members, loading: membersLoading } = useMembers();
 
   const loading = goalsLoading || tasksLoading || aiLoading || alertsLoading || membersLoading;

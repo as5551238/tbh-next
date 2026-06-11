@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { useRisks, useMatrixCell, useActionItems, useDeviationAlerts } from '@/hooks/useMatrix';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
@@ -10,6 +10,7 @@ import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 import { scanRisks, alertToDeviationInput, type RiskAlert, type RiskScanResult, type RiskEngineConfig } from '@/lib/riskEngine';
+import { recordRender } from '@/lib/monitoring';
 import { useGoals, useTasks } from '@/hooks/useMatrix';
 import { createDeviationAlert } from '@/lib/dataLayer/crud';
 
@@ -45,6 +46,10 @@ export default function RiskView() {
   const [showPaywall, setShowPaywall] = useState(false);
   const { risks, loading, addRisk, editRisk, removeRisk } = useRisks();
   const { cell } = useMatrixCell();
+
+  // ── Monitor: render timing ─────────────────────────────────────────
+  const _mountT0 = useMemo(() => performance.now(), []);
+  useEffect(() => { return () => { recordRender('RiskView', performance.now() - _mountT0); }; }, [_mountT0]);
   const { actionItems, addActionItem } = useActionItems();
   const { alerts: deviationAlerts } = useDeviationAlerts();
   const { goals } = useGoals();

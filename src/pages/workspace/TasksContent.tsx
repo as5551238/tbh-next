@@ -1,6 +1,6 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
-import { useState, useCallback, type MouseEvent } from 'react';
+import { useState, useCallback, type MouseEvent, useMemo, useEffect } from 'react';
 import { useTasks } from '@/hooks/useMatrix';
 import type { TaskRow } from '@/lib/dataLayer';
 import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
@@ -14,10 +14,15 @@ import PageHeader from '@/components/PageHeader';
 import { t } from '@/lib/i18n';
 import { exportToCSV, exportToJSON } from '@/lib/export';
 import { usePermission } from '@/hooks/usePermission';
+import { recordRender } from '@/lib/monitoring';
 
 export default function TasksContent() {
   const { can } = usePermission();
   const { tasks, loading, addTask, editTask, removeTask } = useTasks();
+
+  // ── Monitor: render timing ─────────────────────────────────────────
+  const _mountT0 = useMemo(() => performance.now(), []);
+  useEffect(() => { return () => { recordRender('TasksContent', performance.now() - _mountT0); }; }, [_mountT0]);
   const { showPaywall: tpShow, paywallReason: tpReason, paywallFeature: tpFeat, closePaywall: tpClose, requireLimit: tpLimit } = useGateCheck();
   const { triggerFeedback } = useMLOOFeedback();
   const editModal = useModal();
