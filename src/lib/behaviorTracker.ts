@@ -95,7 +95,9 @@ async function persistBatch(events: BehaviorEvent[]): Promise<void> {
   const rows = events.map((e) => ({
     user_id: e.user_id,
     event_type: e.event_type,
-    detail: e.detail,
+    entity_type: (e.detail.entity_type as string) ?? null,
+    entity_id: (e.detail.entity_id as string) ?? null,
+    metadata: e.detail,
     created_at: e.timestamp,
   }));
 
@@ -150,9 +152,9 @@ export async function fetchBehaviorEvents(limit = 100): Promise<BehaviorEvent[]>
         .order('created_at', { ascending: false })
         .limit(limit);
       if (!error && data) {
-        return (data as unknown as Array<{ event_type: string; detail: Record<string, unknown>; created_at: string; user_id: string | null }>).map((row) => ({
+        return (data as unknown as Array<{ event_type: string; metadata: Record<string, unknown>; created_at: string; user_id: string | null }>).map((row) => ({
           event_type: row.event_type as BehaviorEventType,
-          detail: row.detail ?? {},
+          detail: row.metadata ?? {},
           timestamp: row.created_at,
           user_id: row.user_id,
         }));
