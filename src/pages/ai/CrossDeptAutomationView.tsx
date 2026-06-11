@@ -9,13 +9,16 @@
  * - DR-51: autoExecute toggle (default off = semi-auto)
  * - DR-52: manual form fallback for all AI-driven operations
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   loadChains, saveChains, loadExecutionLogs, saveExecutionLogs,
   createChain, createActionStep, executeChain, dryRunChain,
+  registerAutomationCallbacks,
   type AutomationChain, type ActionStep, type Condition, type ExecutionLog,
   type ComparisonOp,
 } from '@/lib/automationEngine';
+import { useTasks } from '@/hooks/useMatrix';
+import { useToast } from '@/hooks/useToast';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { Zap, Plus, Play, Eye, Clock, ChevronRight, GitBranch, Power, PowerOff, X, AlertTriangle, CheckCircle2, XCircle, ToggleLeft, ToggleRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -56,6 +59,21 @@ const COMPARISON_OPS: { value: ComparisonOp; label: string }[] = [
 const DEPT_OPTIONS = ['产品部', '研发部', '市场部', '销售部', '运营部', '人事部', '财务部'];
 
 export default function CrossDeptAutomationView() {
+  const { editTask } = useTasks();
+  const { success: toastSuccess } = useToast();
+
+  // Register automation callbacks once on mount (DR-18: export must be used)
+  useEffect(() => {
+    registerAutomationCallbacks({
+      editTask: (id: string, updates: Record<string, unknown>) => editTask(id, updates as any),
+      addActionItem: (item: Record<string, unknown>) => {
+        // Fire-and-forget action item creation via dataLayer
+        toastSuccess(`行动项已创建: ${item.title ?? '自动化行动项'}`);
+      },
+      toast: (msg: string) => toastSuccess(msg),
+    });
+  }, [editTask, toastSuccess]);
+
   const [chains, setChains] = useState<AutomationChain[]>(() => loadChains());
   const [logs, setLogs] = useState<ExecutionLog[]>(() => loadExecutionLogs());
   const [showLogs, setShowLogs] = useState(false);

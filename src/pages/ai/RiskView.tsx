@@ -59,7 +59,7 @@ export default function RiskView() {
   const addModal = useModal();
   const detailModal = useModal();
   const configModal = useModal();
-  const { toasts } = useToast();
+  const { toasts, success, error: toastError } = useToast();
   const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(null);
   const [form, setForm] = useState({ title: '', level: 'medium' as 'critical' | 'high' | 'medium' | 'low', description: '', source: '', affected_kpi: '', status: 'active' as 'active' | 'watching' | 'resolved' });
 
@@ -92,15 +92,31 @@ export default function RiskView() {
       const result = scanRisks(tasks, goals, actionItems, deviationAlerts, engineConfig);
       setScanResult(result);
       // Persist new alerts to deviation_alerts (DR-53: data drives action)
+      let persisted = 0;
       for (const alert of result.alerts.slice(0, 10)) {
         try {
           await createDeviationAlert(alertToDeviationInput(alert));
+          persisted++;
         } catch { /* non-blocking — alert still shown in UI */ }
+      }
+      // P2-3: Show toast notification for critical/warning alerts
+      if (result.alerts.length > 0) {
+        const criticals = result.alerts.filter((a: RiskAlert) => a.severity === 'critical').length;
+        const warnings = result.alerts.filter((a: RiskAlert) => a.severity === 'warning').length;
+        if (criticals > 0) {
+          toastError(`发现 ${criticals} 个紧急风险！请立即处理`);
+        } else if (warnings > 0) {
+          success(`风险扫描完成：${warnings} 个警告，${persisted} 条已入库`);
+        } else {
+          success(`风险扫描完成：${result.alerts.length} 条提示`);
+        }
+      } else {
+        success('风险扫描完成：未发现新风险');
       }
     } finally {
       setScanning(false);
     }
-  }, [tasks, goals, actionItems, deviationAlerts, engineConfig]);
+  }, [tasks, goals, actionItems, deviationAlerts, engineConfig, success, toastError]);
 
   // ── Generate action item from auto-detected alert ──
   const handleAlertToAction = useCallback((alert: RiskAlert) => {
