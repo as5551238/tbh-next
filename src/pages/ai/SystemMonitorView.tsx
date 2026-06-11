@@ -16,7 +16,7 @@ import {
   APP_VERSION, VERSION_DATE, VERSION_LABEL, CHANGELOG,
   type SystemHealthSnapshot,
 } from '@/lib/monitoring';
-import { cacheStats, cacheClear } from '@/lib/perfCache';
+import { cacheStats, cacheClear, cacheDelete } from '@/lib/perfCache';
 import { getFeatureFlagOverrides, FLAG_KEY_TO_FEATURE } from '@/lib/subscription';
 import { getCurrentPlan, PLAN_LIMITS } from '@/lib/subscription';
 import { Activity, Monitor, ToggleLeft, ToggleRight, Trash2, Download, CheckCircle2, AlertTriangle, XCircle, Package, Clock, Cpu, HardDrive } from 'lucide-react';
@@ -40,6 +40,7 @@ export default function SystemMonitorView() {
   const handleReset = () => {
     resetMetrics();
     cacheClear();
+    cacheDelete('command-center');
     setSnapshot(null);
   };
 

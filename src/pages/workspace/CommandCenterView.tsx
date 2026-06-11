@@ -16,7 +16,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useGoals, useTasks, useActionItems, useDeviationAlerts, useMembers } from '@/hooks/useMatrix';
 import { loadChains, loadExecutionLogs, loadUsageAlerts } from '@/lib/automationEngine';
-import { cacheGet, cacheSet } from '@/lib/perfCache';
+import { cacheGet } from '@/lib/perfCache';
 import { Target, CheckCircle2, AlertTriangle, Clock, Zap, Users, TrendingUp, TrendingDown, Minus, ArrowRight, Shield, GitBranch, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CardSkeleton } from '@/components/Skeleton';

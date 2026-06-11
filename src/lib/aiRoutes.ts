@@ -11,6 +11,7 @@ import { getActiveModel, DEEPSEEK_API_KEY, PROVIDER_ENDPOINTS } from '@/lib/aiPr
 import type { ChatMessage } from '@/lib/aiService';
 import type { AIResponse, StreamCallback } from '@/lib/aiService';
 import { getToolSchemas } from '@/lib/aiTools';
+import { recordApiCall, recordError } from '@/lib/monitoring';
 
 // --- Route 1: Supabase Edge Function ---
 
@@ -141,7 +142,8 @@ export async function callSupabaseEdge(
     }
 
     return { text: data.text ?? '', agent: 'edge', usage: data.usage, toolCalls };
-  } catch {
+  } catch (err) {
+    recordError('ai_edge', (err as Error)?.message ?? String(err));
     return directLLMFallback(messages);
   }
 }
@@ -176,6 +178,8 @@ export async function directLLMFallback(messages: ChatMessage[]): Promise<AIResp
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
       console.warn('[aiService] Direct LLM call failed:', res.status, errText);
+      recordApiCall('ai_direct', 0, false);
+      recordError('ai_direct', `HTTP ${res.status}: ${errText.slice(0, 100)}`);
       return localFallback(messages);
     }
 
@@ -188,6 +192,7 @@ export async function directLLMFallback(messages: ChatMessage[]): Promise<AIResp
     return { text, agent: 'direct', usage };
   } catch (err) {
     console.warn('[aiService] Direct LLM error:', err);
+    recordError('ai_direct', (err as Error)?.message ?? String(err));
     return localFallback(messages);
   }
 }

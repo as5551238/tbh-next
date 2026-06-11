@@ -14,6 +14,7 @@ import { getToolSchemas, executeToolCall } from '@/lib/aiTools';
 import { DEEPSEEK_API_KEY } from '@/lib/aiPresets';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { callSupabaseEdge, directLLMFallback } from '@/lib/aiRoutes';
+import { recordApiCall, recordError } from '@/lib/monitoring';
 
 // --- Types ---
 
@@ -251,6 +252,8 @@ export async function chatCompletion(
       status: 'success',
     });
 
+    recordApiCall(`ai_${route}`, Date.now() - startTime, true);
+
     return response;
   } catch (err) {
     harness.audit({
@@ -262,6 +265,8 @@ export async function chatCompletion(
       executionTimeMs: Date.now() - startTime,
       status: 'error',
     });
+    recordApiCall(`ai_${route}`, Date.now() - startTime, false);
+    recordError('ai_chat', (err as Error)?.message ?? String(err));
     throw err;
   }
 }

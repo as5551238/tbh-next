@@ -21,6 +21,7 @@ import { parseAndExecute, resolveNaturalDate, type ParsedIntent, type IntentType
 import { IntentFallbackForm } from '@/components/IntentFallbackForm';
 import { fetchSubscription, fetchUsageToday, isActionAllowed, PLAN_LIMITS, type UsageSummary } from '@/lib/subscription';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { recordApiCall, recordError, recordRender } from '@/lib/monitoring';
 
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY ?? '';
 
@@ -90,6 +91,14 @@ function MainChatView() {
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // ── Monitor: record mount/render timing ────────────────────────────
+  useEffect(() => {
+    const t0 = performance.now();
+    return () => {
+      recordRender('MainChatView', performance.now() - t0);
+    };
+  }, []);
+
   // --- Smart context for "功能找人" ---
   const overdueTasks = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -140,6 +149,7 @@ function MainChatView() {
       };
       setMessages((prev) => [...prev, resultMsg]);
     } catch {
+      recordError('tool_execute', toolName + ': execution failed');
       setMessages((prev) => [...prev, {
         id: Date.now() + 1, role: 'ai', text: '操作失败，请稍后重试。', time: now, agentIcon: '⚠️',
       }]);
@@ -279,6 +289,7 @@ function MainChatView() {
       setMessages((prev) => [...prev, resultMsg]);
       scrollToBottom();
     } catch {
+      recordError('tool_execute_fallback', toolName + ': fallback execution failed');
       setMessages((prev) => [...prev, {
         id: Date.now() + 1, role: 'ai', text: '操作失败，请稍后重试。', time: now, agentIcon: '⚠️',
       }]);
@@ -310,8 +321,10 @@ function MainChatView() {
     });
 
     // === Intent Parser: try "对话即操作" first ===
+    const intentStartTime = Date.now();
     try {
       const intentResult = await parseAndExecute(input);
+      recordApiCall('intent_parse', Date.now() - intentStartTime, true);
 
       if (!intentResult.intent.fallback && intentResult.toolResult !== undefined) {
         // Intent parsed successfully — tool was executed, show result
@@ -370,6 +383,8 @@ function MainChatView() {
       }
     } catch (err) {
       console.error('[MainChatView] Intent parse failed, falling back to chat:', err);
+      recordApiCall('intent_parse', Date.now() - intentStartTime, false);
+      recordError('intent_parse', (err as Error)?.message ?? String(err));
       // Fall through to regular chat
     }
 
@@ -417,6 +432,7 @@ function MainChatView() {
     abortRef.current = abort;
 
     let fullText = '';
+    const callStartTime = Date.now();
 
     chatCompletion(aiMessages, {
       stream: true,
@@ -431,6 +447,7 @@ function MainChatView() {
           );
           setIsTyping(false);
           scrollToBottom();
+          recordApiCall('ai_chat', Date.now() - callStartTime, true);
           // Persist AI response after streaming completes
           createMessage({
             channel: AI_ASSISTANT_CHANNEL,
@@ -450,6 +467,8 @@ function MainChatView() {
       },
     }).catch((err) => {
       if (err?.name === 'AbortError') return;
+      recordApiCall('ai_chat', Date.now() - callStartTime, false);
+      recordError('ai_chat', err?.message ?? 'Unknown AI error');
       setMessages((prev) =>
         prev.map((m) =>
           m.id === aiMsgId
