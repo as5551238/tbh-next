@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/useToast';
-import { Database, Bell, Shield, Palette, Globe, Plug, Save, Plus, Trash2 } from 'lucide-react';
+import { Database, Bell, Shield, Palette, Globe, Plug, Save, Plus, Trash2, Cpu } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { checkSupabaseHealth, fetchApiKeys, createApiKey, deleteApiKey } from '@/lib/dataLayer';
 import { maskKey, encodeKey, decodeKey, migrateLocalStorageKeys, type ApiKeyEntry, type ConfigItem } from './helpers';
@@ -9,6 +9,7 @@ export default function GeneralTab() {
   const emailModal = useModal();
   const apiModal = useModal();
   const genericModal = useModal();
+  const aiModal = useModal();
 
   const [genericTitle, setGenericTitle] = useState('');
   const [genericField, setGenericField] = useState<{ label: string; value: string }[]>([]);
@@ -16,7 +17,7 @@ export default function GeneralTab() {
   const [resendKey, setResendKey] = useState(() => { try { return localStorage.getItem('tbh_resend_key') ?? ''; } catch { return ''; } });
   const [senderEmail, setSenderEmail] = useState(() => { try { return localStorage.getItem('tbh_sender_email') ?? ''; } catch { return ''; } });
   const [smtpServer, setSmtpServer] = useState(() => { try { return localStorage.getItem('tbh_smtp_server') ?? ''; } catch { return ''; } });
-
+  const [deepseekKey, setDeepseekKey] = useState(() => { try { return localStorage.getItem('tbh_deepseek_api_key') ?? ''; } catch { return ''; } });
   const [apiKeys, setApiKeys] = useState<ApiKeyEntry[]>([]);
   const [keysLoading, setKeysLoading] = useState(true);
 
@@ -59,6 +60,12 @@ export default function GeneralTab() {
       ],
     },
     {
+      title: 'AI服务',
+      items: [
+        { icon: <Cpu size={15} />, label: 'DeepSeek AI', value: deepseekKey ? 'API Key · 已配置' : 'API Key · 未配置', status: deepseekKey ? 'ok' : 'warn' },
+      ],
+    },
+    {
       title: '安全',
       items: [
         { icon: <Shield size={15} />, label: '登录方式', value: '密码 + Supabase Auth', status: 'ok' },
@@ -90,6 +97,7 @@ export default function GeneralTab() {
   function onItemClick(item: ConfigItem) {
     if (item.label === '邮件推送') return emailModal.openModal();
     if (item.label === 'API密钥管理') return apiModal.openModal();
+    if (item.label === 'DeepSeek AI') return aiModal.openModal();
 
     const fieldMap: Record<string, { label: string; value: string }[]> = {
       '数据库连接': [{ label: '连接类型', value: 'Supabase' }, { label: '项目 URL', value: import.meta.env.VITE_SUPABASE_URL || '(环境变量)' }, { label: '状态', value: dbStatus === 'ok' ? '已连接' : dbStatus === 'error' ? '连接失败' : '检测中…' }],
@@ -135,6 +143,14 @@ export default function GeneralTab() {
     emailModal.closeModal();
   }
 
+  function saveAiConfig() {
+    try {
+      localStorage.setItem('tbh_deepseek_api_key', deepseekKey);
+    } catch { /* ignore */ }
+    aiModal.closeModal();
+    toast('DeepSeek API Key 已保存', 'success');
+  }
+
   return (
     <>
       {/* System Health */}
@@ -149,6 +165,7 @@ export default function GeneralTab() {
             { label: 'API', status: 'ok' as string },
             { label: '部署', status: 'ok' as string },
             { label: '邮件', status: resendKey ? 'ok' : 'warn' },
+            { label: 'AI', status: deepseekKey ? 'ok' : 'warn' },
           ].map((h) => (
             <div key={h.label} className="text-center">
               <div className={`mx-auto mb-1 h-2 w-2 rounded-full ${h.status === 'ok' ? 'bg-success' : 'bg-warn'}`} />
@@ -204,6 +221,22 @@ export default function GeneralTab() {
           <input className={inputCls} placeholder="smtp.resend.com:465" value={smtpServer} onChange={(e) => setSmtpServer(e.target.value)} />
         </ModalField>
         <p className="text-[10px] text-text-3 mt-2">配置后将通过 Resend API 发送告警与通知邮件。API Key 将存储于环境变量中。</p>
+      </Modal>
+
+      {/* DeepSeek AI 配置 Modal */}
+      <Modal open={aiModal.open} onClose={aiModal.closeModal} title="DeepSeek AI 配置"
+        footer={
+          <>
+            <button onClick={aiModal.closeModal} className={btnSecondary}>取消</button>
+            <button onClick={saveAiConfig} className={`${btnPrimary} flex items-center gap-1.5`}>
+              <Save size={12} /> 保存
+            </button>
+          </>
+        }>
+        <ModalField label="DeepSeek API Key">
+          <input type="password" className={inputCls} placeholder="sk-xxxxxxxxxxxxxxxx" value={deepseekKey} onChange={(e) => setDeepseekKey(e.target.value)} />
+        </ModalField>
+        <p className="text-[10px] text-text-3 mt-2">配置后 AI 助手将直连 DeepSeek API，无需服务端代理。Key 仅存储于浏览器本地，不会上传至服务器。</p>
       </Modal>
 
       {/* API密钥管理 Modal */}
