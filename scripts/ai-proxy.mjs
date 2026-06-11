@@ -13,10 +13,10 @@ import https from 'https';
 const PORT = 3789;
 
 const PROVIDERS = {
-  deepseek: { endpoint: 'https://api.deepseek.com', key: 'sk-4b9f9700f9924aeeb165a4f63678d396' },
-  doubao: { endpoint: 'https://ark.cn-beijing.volces.com/api/v3', key: 'api-key-20260606235421' },
-  openai: { endpoint: 'https://api.openai.com', key: '' },
-  qwen: { endpoint: 'https://dashscope.aliyuncs.com/compatible-mode', key: '' },
+  deepseek: { endpoint: 'https://api.deepseek.com', key: process.env.DEEPSEEK_API_KEY || '' },
+  doubao: { endpoint: 'https://ark.cn-beijing.volces.com/api/v3', key: process.env.DOUBAO_API_KEY || '' },
+  openai: { endpoint: 'https://api.opensi.com', key: process.env.OPENAI_API_KEY || '' },
+  qwen: { endpoint: 'https://dashscope.aliyuncs.com/compatible-mode', key: process.env.QWEN_API_KEY || '' },
 };
 
 function detectProvider(model) {
