@@ -288,6 +288,52 @@ export interface RiskTrajectory {
   reason: string;
 }
 
+// ─── Risk Snapshot Persistence (localStorage, DR-19: UI preference class) ───
+
+const SNAPSHOT_KEY = 'tbh-risk-snapshots';
+const MAX_SNAPSHOTS = 14; // Keep 14 days of history
+
+interface RiskSnapshot {
+  date: string;        // YYYY-MM-DD
+  alerts: RiskAlert[];
+}
+
+export function saveRiskSnapshot(alerts: RiskAlert[]): void {
+  const today = todayISO();
+  const snapshots = loadRiskSnapshots();
+  // Replace today's snapshot or add new one
+  const filtered = snapshots.filter(s => s.date !== today);
+  filtered.push({ date: today, alerts });
+  // Keep only last MAX_SNAPSHOTS days
+  filtered.sort((a, b) => b.date.localeCompare(a.date));
+  const trimmed = filtered.slice(0, MAX_SNAPSHOTS);
+  try {
+    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(trimmed));
+  } catch { /* quota exceeded, ignore */ }
+}
+
+export function loadRiskSnapshots(): RiskSnapshot[] {
+  try {
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as RiskSnapshot[];
+  } catch { return []; }
+}
+
+/**
+ * Get the most recent previous snapshot (before today) for trajectory comparison.
+ * Returns alerts from that snapshot, or empty array if no history available.
+ */
+export function getPreviousAlerts(): RiskAlert[] {
+  const today = todayISO();
+  const snapshots = loadRiskSnapshots();
+  // Find the most recent snapshot before today
+  const prev = snapshots.find(s => s.date < today);
+  if (prev) return prev.alerts;
+  // If only today's snapshot exists, return empty
+  return [];
+}
+
 /**
  * Predict risk trajectory based on historical alert patterns
  * Uses simple heuristics: if a task/goal has been flagged multiple times
@@ -297,18 +343,23 @@ export function predictRiskTrajectories(
   currentAlerts: RiskAlert[],
   previousAlerts: RiskAlert[] = [],
 ): RiskTrajectory[] {
-  const previousMap = new Map<string, RiskAlert>();
-  previousAlerts.forEach(a => previousMap.set(a.id, a));
+  // Match by source+entityId (not alert ID, which includes date)
+  const previousByEntity = new Map<string, RiskAlert>();
+  previousAlerts.forEach(a => {
+    const key = `${a.source}:${a.taskId ?? a.goalId ?? a.actionItemId ?? ''}`;
+    previousByEntity.set(key, a);
+  });
 
   return currentAlerts.map(alert => {
-    const prev = previousMap.get(alert.id);
+    const entityKey = `${alert.source}:${alert.taskId ?? alert.goalId ?? alert.actionItemId ?? ''}`;
+    const prev = previousByEntity.get(entityKey);
     const scoreDelta = prev ? alert.score - prev.score : 0;
 
-    // Score velocity (points per day, rough estimate from alert age)
-    const daysSinceDetection = Math.max(1,
-      (Date.now() - new Date(alert.detectedAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const velocity = scoreDelta / daysSinceDetection;
+    // Days between previous and current detection
+    const daysBetweenAlerts = prev
+      ? Math.max(1, (Date.now() - new Date(prev.detectedAt).getTime()) / (1000 * 60 * 60 * 24))
+      : 1;
+    const velocity = prev ? scoreDelta / daysBetweenAlerts : 0;
 
     // Predict 7-day score
     const predictedScore = Math.min(100, Math.max(0, alert.score + velocity * 7));
@@ -331,7 +382,7 @@ export function predictRiskTrajectories(
       predictedScore: Math.round(predictedScore),
       daysToCritical,
       trend,
-      confidence: Math.min(1, 0.3 + (previousAlerts.length > 0 ? 0.4 : 0) + (daysSinceDetection > 1 ? 0.3 : 0)),
+      confidence: Math.min(1, 0.3 + (prev ? 0.4 : 0) + (daysBetweenAlerts >= 2 ? 0.3 : 0)),
       reason,
     };
   });

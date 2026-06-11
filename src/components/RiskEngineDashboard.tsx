@@ -5,14 +5,14 @@
  * Reads data from riskEngine + escalationEngine + localStorage.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
   AlertTriangle, Activity, ArrowUpRight, ArrowRight, ArrowDownRight,
   Minus, Shield, TrendingUp, ChevronRight,
 } from 'lucide-react';
 import type { RiskAlert, RiskTrajectory } from '@/lib/riskEngine';
-import { predictRiskTrajectories } from '@/lib/riskEngine';
+import { predictRiskTrajectories, saveRiskSnapshot, getPreviousAlerts } from '@/lib/riskEngine';
 import {
   checkEscalations, computeRiskPortfolio, DEFAULT_POLICIES,
   type EscalationAction, type RiskPortfolioSummary,
@@ -70,9 +70,19 @@ export default function RiskEngineDashboard() {
     [tasks, goals, actionItems, deviationAlerts],
   );
 
+  // Persist risk snapshot whenever scan result changes (DR-53: data drives action)
+  useEffect(() => {
+    if (scanResult.alerts.length > 0) {
+      saveRiskSnapshot(scanResult.alerts);
+    }
+  }, [scanResult.alerts]);
+
+  // Load previous alerts for trajectory comparison
+  const previousAlerts = useMemo(() => getPreviousAlerts(), [scanResult.scannedAt]);
+
   const trajectories = useMemo(
-    () => predictRiskTrajectories(scanResult.alerts),
-    [scanResult.alerts],
+    () => predictRiskTrajectories(scanResult.alerts, previousAlerts),
+    [scanResult.alerts, previousAlerts],
   );
 
   const escalations = useMemo(
@@ -157,11 +167,17 @@ function AlertsTab({ alerts }: { alerts: RiskAlert[] }) {
 }
 
 function PredictTab({ trajectories }: { trajectories: RiskTrajectory[] }) {
+  const hasHistory = trajectories.some(t => t.confidence > 0.3);
   if (trajectories.length === 0) {
     return <div className="py-8 text-center text-xs text-text-3">暂无预测数据</div>;
   }
   return (
     <div className="space-y-1.5 max-h-96 overflow-y-auto">
+      {!hasHistory && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] text-primary-2 mb-2">
+          预测精度随使用时间提升。当前缺少历史快照，趋势分析将在明日首次对比后生效。
+        </div>
+      )}
       {trajectories.map(t => (
         <div key={t.alertId} className="rounded-lg border border-border p-2">
           <div className="flex items-center gap-2 mb-1">
