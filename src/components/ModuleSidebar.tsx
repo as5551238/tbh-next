@@ -127,6 +127,7 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
     { group: '设置', items: [
       { icon: '👑', name: '订阅管理', id: 'subscription' },
       { icon: '🔌', name: 'MCP & A2A', id: 'mcpA2a', ai: true },
+      { icon: '📊', name: '行为追踪', id: 'behaviorTracker' },
     ]},
   ];
 }

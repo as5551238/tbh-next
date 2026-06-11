@@ -16,6 +16,7 @@ const SubscriptionView = lazy(retryLazy(() => import('@/pages/ai/SubscriptionVie
 const AgentMarketView = lazy(retryLazy(() => import('@/pages/ai/AgentMarketView')));
 const KnowledgeOSPView = lazy(retryLazy(() => import('@/pages/ai/KnowledgeOSPView')));
 const MCPA2AView = lazy(retryLazy(() => import('@/pages/ai/MCPA2AView')));
+const BehaviorTrackerView = lazy(retryLazy(() => import('@/pages/ai/BehaviorTrackerView')));
 
 // Lazy component lookup (must be outside render to avoid re-creation)
 const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
@@ -31,6 +32,7 @@ const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
   agentMarket: AgentMarketView,
   knowledgeOSP: KnowledgeOSPView,
   mcpA2a: MCPA2AView,
+  behaviorTracker: BehaviorTrackerView,
 };
 
 export default function PersonalAI() {

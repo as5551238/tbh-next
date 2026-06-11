@@ -80,7 +80,16 @@ export interface ScheduleEventRow {
 export interface OrgInfoRow {
   id: string; name: string; industry: string; size: string;
   plan: string; created: string;
-  departments: Array<{ name: string; head: string; members: number; goals: number; color: string }>;
+  /** 4-level hierarchy: company → department → team → individual */
+  departments: Array<{
+    name: string; head: string; members: number; goals: number; color: string;
+    /** Sub-teams within a department */
+    teams?: Array<{
+      name: string; lead: string; members: number; goals: number;
+      /** Individual members in this team */
+      individuals?: Array<{ id: string; name: string; role: string }>;
+    }>;
+  }>;
 }
 export interface RoleRow {
   id: string; name: string; key: string; members: number;
@@ -309,11 +318,28 @@ export function localOrgInfo(): OrgInfoRow {
     plan: '专业版',
     created: '2025-03-15',
     departments: [
-      { name: '产品部', head: '赵PM', members: 5, goals: 4, color: 'var(--brand-accent)' },
-      { name: '研发部', head: '张工', members: 12, goals: 6, color: '#00d4aa' },
-      { name: '设计部', head: '刘设计', members: 3, goals: 2, color: '#ffc44d' },
-      { name: '运营部', head: '待定', members: 4, goals: 3, color: '#ff5c6a' },
-      { name: 'AI团队', head: 'AI同事', members: 1, goals: 0, color: '#00d4aa' },
+      { name: '产品部', head: '赵PM', members: 5, goals: 4, color: 'var(--brand-accent)', teams: [
+        { name: '产品规划组', lead: '赵PM', members: 3, goals: 2, individuals: [
+          { id: 'm1', name: '赵PM', role: 'manager' },
+          { id: 'm2', name: '小李', role: 'member' },
+          { id: 'm3', name: '小王', role: 'member' },
+        ]},
+        { name: '用户研究组', lead: '小陈', members: 2, goals: 2, individuals: [
+          { id: 'm4', name: '小陈', role: 'leader' },
+          { id: 'm5', name: '小刘', role: 'member' },
+        ]},
+      ]},
+      { name: '研发部', head: '张工', members: 12, goals: 6, color: '#00d4aa', teams: [
+        { name: '前端组', lead: '张工', members: 5, goals: 2, individuals: [
+          { id: 'm6', name: '张工', role: 'leader' },
+          { id: 'm7', name: '小孙', role: 'member' },
+        ]},
+        { name: '后端组', lead: '老钱', members: 4, goals: 2, individuals: [] },
+        { name: 'QA组', lead: '小周', members: 3, goals: 2, individuals: [] },
+      ]},
+      { name: '设计部', head: '刘设计', members: 3, goals: 2, color: '#ffc44d', teams: [] },
+      { name: '运营部', head: '待定', members: 4, goals: 3, color: '#ff5c6a', teams: [] },
+      { name: 'AI团队', head: 'AI同事', members: 1, goals: 0, color: '#00d4aa', teams: [] },
     ],
   };
 }

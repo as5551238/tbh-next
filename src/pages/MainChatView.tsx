@@ -8,6 +8,7 @@ import type { ActionItemRow } from '@/lib/dataLayer';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/lib/auth';
 import { useRealtime } from '@/hooks/useRealtime';
+import { trackEvent } from '@/lib/behaviorTracker';
 import { cn } from '@/lib/utils';
 import { Send, Bot, User, TrendingUp, TrendingDown, Minus, ChevronRight, Zap, Target, ListTodo, PlusCircle, ShieldAlert, ArrowRight, AlertTriangle, CheckCircle2, Brain } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
@@ -297,6 +298,9 @@ function MainChatView() {
     setMessages((prev) => [...prev, userMsg]);
     setChatInput('');
 
+    // Track AI chat event
+    trackEvent('ai_chat', { input_length: input.length, channel: AI_ASSISTANT_CHANNEL });
+
     // Persist user message
     createMessage({
       channel: AI_ASSISTANT_CHANNEL,
@@ -312,6 +316,7 @@ function MainChatView() {
       if (!intentResult.intent.fallback && intentResult.toolResult !== undefined) {
         // Intent parsed successfully — tool was executed, show result
         const parsed = intentResult.intent;
+        trackEvent('ai_tool_call', { intent: parsed.intent, tool: parsed.toolName });
         // Resolve natural dates for display
         let resultText = formatToolResult(parsed.toolName, intentResult.toolResult as unknown[]);
 
