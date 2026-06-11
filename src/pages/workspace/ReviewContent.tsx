@@ -3,7 +3,6 @@ import { useAppStore } from '@/stores/appStore';
 import { CardSkeleton } from '@/components/Skeleton';
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
-import { hasFeature } from '@/lib/subscription';
 import { REVIEW_MODELS } from '@/lib/reviewEngine';
 import { useGoals, useTasks } from '@/hooks/useMatrix';
 import { useReviewAlerts } from './review/useReviewAlerts';
@@ -13,17 +12,6 @@ import { ReviewPickPhase } from './review/ReviewPickPhase';
 import { ReviewGuidePhase } from './review/ReviewGuidePhase';
 import { ReviewDraftPhase } from './review/ReviewDraftPhase';
 import { ReviewDonePhase } from './review/ReviewDonePhase';
-import { useEffect } from 'react';
-
-const PRO_FEATURES = {
-  deepReview: hasFeature('customWorkflows' as never),
-  customReport: hasFeature('advancedAnalytics' as never),
-  automation: hasFeature('customWorkflows' as never),
-  prediction: hasFeature('advancedAnalytics' as never),
-  statusFlow: hasFeature('customWorkflows' as never),
-  knowledge: hasFeature('advancedAnalytics' as never),
-  aiQuery: hasFeature('advancedAnalytics' as never),
-};
 
 export default function ReviewContent() {
   const { showPaywall: rvShow, paywallReason: rvReason, paywallFeature: rvFeat, closePaywall: rvClose, requireFeature: rvRequire } = useGateCheck();
@@ -34,7 +22,7 @@ export default function ReviewContent() {
 
   const { alerts, persistedAlerts, autoProgressMap, computeAlerts, markAlertRead } = useReviewAlerts(goals, tasks, goalsLoading);
   const {
-    phase, selectedModel, selectedAlert, setSelectedAlert, setSelectedModel,
+    phase, selectedModel, selectedAlert, setSelectedAlert,
     session, isGenerating, isSavingActions, actionItems,
     startReview, pickModel, handleStepInput, nextStep, prevStep, generateDraft,
     completeReview, loadActionItems, toggleActionItem, convertToTask, resetReview,
@@ -71,7 +59,6 @@ export default function ReviewContent() {
           onManualStart={(modelId) => {
             const model = REVIEW_MODELS.find((m) => m.id === modelId) ?? REVIEW_MODELS[0];
             setSelectedAlert(null);
-            setSelectedModel(model);
             pickModel(model);
           }}
           requireFeature={rvRequire}
