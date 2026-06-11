@@ -25,7 +25,9 @@
         "./src/*"
       ]
     },
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "6.0",
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": [
     "src"

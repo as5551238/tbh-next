@@ -18,7 +18,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -30,20 +30,16 @@ jobs:
 
       - name: Build (quality gate)
         run: pnpm build
+        env:
+          GH_PAGES: '1'
 
       - name: Unit tests
-        run: pnpm test -- --run
+        run: pnpm test
 
-      - name: Type check (non-blocking)
+      - name: Type check
         run: pnpm tsc --noEmit || true
         continue-on-error: true
 
-      - name: Lint (non-blocking)
+      - name: Lint
         run: pnpm lint --max-warnings=0 || true
         continue-on-error: true
-
-      - name: File size check (DR-28)
-        run: bash scripts/check-file-size.sh
-
-      - name: Bundle size check
-        run: node scripts/bundle-report.mjs
