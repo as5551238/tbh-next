@@ -128,6 +128,8 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
       { icon: '👑', name: '订阅管理', id: 'subscription' },
       { icon: '🔌', name: 'MCP & A2A', id: 'mcpA2a', ai: true },
       { icon: '📊', name: '行为追踪', id: 'behaviorTracker' },
+      { icon: '🏆', name: 'DSTE赛季', id: 'dste' },
+      { icon: '🧙', name: '模板向导', id: 'templateWizard' },
     ]},
   ];
 }

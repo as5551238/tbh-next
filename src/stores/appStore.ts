@@ -45,7 +45,7 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
   agentList: 'ai', agentConfig: 'ai', industryView: 'ai',
   workflows: 'ai', kpiDash: 'ai', subscription: 'ai',
   agentMarket: 'ai', knowledgeOSP: 'ai', mcpA2a: 'ai',
-  behaviorTracker: 'ai',
+  behaviorTracker: 'ai', dste: 'ai', templateWizard: 'ai',
 };
 
 /** 根据 module 名推断其所属 interface */
