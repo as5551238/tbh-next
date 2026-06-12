@@ -42,7 +42,7 @@ vi.mock('@/lib/aiSecurity', () => ({
   recordInjectionCheck: vi.fn(),
 }));
 
-import { localFallback } from '@/lib/aiRoutes';
+import { localFallback } from '@/lib/aiLocalFallback';
 import { chatCompletion, buildSystemPrompt } from '@/lib/aiService';
 import type { ChatMessage } from '@/lib/aiService';
 import type { MatrixCell } from '@/matrix/data';

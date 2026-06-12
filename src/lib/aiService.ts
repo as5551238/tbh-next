@@ -14,7 +14,8 @@ import { sanitizeInput, validateAIOutput, recordInjectionCheck } from '@/lib/aiS
 import type { MatrixCell } from '@/matrix/data';
 import { getToolSchemas, executeToolCall } from '@/lib/aiTools';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { callSupabaseEdge, callRpcProxy, callDirectLLM, localFallback } from '@/lib/aiRoutes';
+import { callSupabaseEdge, callRpcProxy, callDirectLLM } from '@/lib/aiRoutes';
+import { localFallback } from '@/lib/aiLocalFallback';
 import { recordApiCall, recordError } from '@/lib/monitoring';
 
 // --- Types ---
