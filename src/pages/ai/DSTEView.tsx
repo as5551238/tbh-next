@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   createSeason, canAdvancePhase, getNextPhase, computeSeasonProgress,
   getCurrentQuarter, getNextQuarter, loadSeasons, loadSeasonsFromDB, saveSeasons,
+  deleteSeasonFromDB,
   PHASE_ORDER, PHASE_LABELS, PHASE_DESCRIPTIONS, PHASE_COLORS,
   type OKRSeason, type SeasonPhase, type SeasonMilestone,
 } from '@/lib/dsteEngine';
@@ -115,6 +116,14 @@ export default function DSTEView() {
       return { ...s, goals: [...s.goals, goalId], updatedAt: new Date().toISOString() };
     }));
   }, [updateSeasons]);
+
+  const handleDeleteSeason = useCallback((seasonId: string) => {
+    updateSeasons((prev) => prev.filter((s) => s.id !== seasonId));
+    deleteSeasonFromDB(seasonId);
+    if (selectedSeason?.id === seasonId) setSelectedSeason(null);
+    trackEvent('season_delete', { seasonId });
+    success('赛季已删除');
+  }, [updateSeasons, selectedSeason, success]);
 
   const activeSeason = seasons[0]; // latest season
 
@@ -298,7 +307,8 @@ export default function DSTEView() {
                   <Trophy size={13} className="text-text-3" />
                   <span className="text-[11px] text-text-2">{s.name}</span>
                   <span className="text-[9px] text-text-3">{s.period}</span>
-                  <span className="ml-auto text-[9px] text-success">{PHASE_LABELS[s.phase]}</span>
+                  <span className="text-[9px] text-success">{PHASE_LABELS[s.phase]}</span>
+                  <button className="ml-auto text-[9px] text-red-400 hover:text-red-600 transition-colors" onClick={() => handleDeleteSeason(s.id)}>删除</button>
                 </div>
               ))}
             </div>

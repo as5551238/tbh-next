@@ -15,6 +15,8 @@
  * DR-53: Season completion auto-triggers review + report
  */
 
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
 // ─── Types ───
 
 export type SeasonPhase = 'define' | 'strategy' | 'track' | 'review' | 'evolve';
@@ -172,7 +174,6 @@ export function loadSeasons(): OKRSeason[] {
 /** Async Supabase-first load with localStorage fallback */
 export async function loadSeasonsFromDB(): Promise<OKRSeason[]> {
   try {
-    const { supabase, isSupabaseConfigured } = require('@/lib/supabase') as { supabase: any; isSupabaseConfigured: () => boolean };
     if (isSupabaseConfigured() && supabase) {
       const { data, error } = await supabase
         .from('dste_seasons')
@@ -194,17 +195,35 @@ export function saveSeasons(seasons: OKRSeason[]): void {
   localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(seasons));
   // Async Supabase dual-write (fire-and-forget, non-blocking)
   try {
-    const { supabase, isSupabaseConfigured } = require('@/lib/supabase') as { supabase: any; isSupabaseConfigured: () => boolean };
     if (isSupabaseConfigured() && supabase) {
       const teamId = '__default__';
-      supabase
+      void supabase
         .from('dste_seasons')
         .upsert(
           { team_id: teamId, seasons_json: seasons, updated_at: new Date().toISOString() },
           { onConflict: 'team_id' }
-        )
-        .then(() => { /* fire-and-forget */ })
-        .catch(() => { /* silently fail, localStorage is source of truth */ });
+        );
+    }
+  } catch { /* supabase module not available */ }
+}
+
+/** Delete a season by ID from both localStorage and Supabase */
+export function deleteSeasonFromDB(seasonId: string): void {
+  // Remove from localStorage
+  try {
+    const current = loadSeasons().filter((s) => s.id !== seasonId);
+    saveSeasons(current);
+  } catch { /* ignore */ }
+  // Remove from Supabase by re-saving the filtered list
+  try {
+    if (isSupabaseConfigured() && supabase) {
+      const current = loadSeasons().filter((s) => s.id !== seasonId);
+      void supabase
+        .from('dste_seasons')
+        .upsert(
+          { team_id: '__default__', seasons_json: current, updated_at: new Date().toISOString() },
+          { onConflict: 'team_id' }
+        );
     }
   } catch { /* supabase module not available */ }
 }

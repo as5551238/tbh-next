@@ -3,6 +3,7 @@ import { ChatMessage, chatCompletion } from '@/lib/aiService';
 import { REVIEW_MODELS, recommendModels, buildReviewDraftPrompt, snapshotGoalProgress, getReviewSnapshot, computeReviewEffectiveness, computePerformanceScore, type ReviewModel, type ReviewSession, type DeviationAlert, type ReviewEffectiveness } from '@/lib/reviewEngine';
 import { createActionItem, fetchActionItems, updateActionItem, createTask, type ActionItemRow } from '@/lib/dataLayer';
 import { linkReviewToSeason } from '@/lib/dsteEngine';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 type Phase = 'alerts' | 'pick' | 'guide' | 'draft' | 'done';
 
@@ -197,6 +198,18 @@ export function useReviewDraft(
       }
       linkReviewToSeason(session.id, session.targetId || undefined);
       saveActionItems(session.draft, session.targetId, session.id);
+      // Persist session to Supabase for history
+      try {
+        if (isSupabaseConfigured() && supabase) {
+          void supabase.from('behavior_events').insert({
+            event_type: 'review_session_completed',
+            entity_type: 'review',
+            entity_id: session.id,
+            metadata: { modelId: session.modelId, targetId: session.targetId, targetTitle: session.targetTitle, draft: session.draft, inputs: session.inputs, status: 'completed' },
+            team_id: '__default__',
+          });
+        }
+      } catch { /* ignore */ }
     }
     setPhase('done');
   }, [session, goals, saveActionItems]);
