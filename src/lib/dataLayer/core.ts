@@ -157,6 +157,8 @@ export async function fetchGoals(): Promise<GoalRow[]> {
     leader_id: g.leader_id ? String(g.leader_id) : null,
     end_date: g.end_date ? String(g.end_date) : null,
     start_date: g.start_date ? String(g.start_date) : null,
+    priority: g.priority ? String(g.priority) : undefined,
+    description: g.description ? String(g.description) : null,
   }));
   });
 }
@@ -176,6 +178,24 @@ export async function fetchTasks(): Promise<TaskRow[]> {
     status: String(t.status ?? 'todo'),
     done: String(t.status) === 'done',
     goal_id: t.goal_id ? String(t.goal_id) : null,
+    completed_at: t.completed_at ? String(t.completed_at) : null,
+    project_id: t.project_id ? String(t.project_id) : null,
+    owner_id: t.owner_id ? String(t.owner_id) : null,
+    category: t.category ? String(t.category) : null,
+    start_date: t.start_date ? String(t.start_date) : null,
+    progress: t.progress != null ? Number(t.progress) : undefined,
+    parent_id: t.parent_id ? String(t.parent_id) : null,
+    subtasks: t.subtasks,
+    blocked_by: t.blocked_by,
+    sprint_id: t.sprint_id ? String(t.sprint_id) : null,
+    team_id: t.team_id ? String(t.team_id) : null,
+    milestone: t.milestone ? String(t.milestone) : null,
+    dependency_ids: Array.isArray(t.dependency_ids) ? t.dependency_ids.map(String) : undefined,
+    subtask_ids: Array.isArray(t.subtask_ids) ? t.subtask_ids.map(String) : undefined,
+    description: t.description ? String(t.description) : null,
+    tags: Array.isArray(t.tags) ? t.tags.map(String) : undefined,
+    estimated_hours: t.estimated_hours != null ? Number(t.estimated_hours) : null,
+    actual_hours: t.actual_hours != null ? Number(t.actual_hours) : null,
   }));
   });
 }
