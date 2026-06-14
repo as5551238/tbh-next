@@ -24,30 +24,27 @@ export const SIMPLE_DEFAULT_MODULES: Record<string, string> = {
 
 /** module → interface 的反向映射（从各页面的 MODULE_MAP 反向生成） */
 export const MODULE_TO_INTERFACE: Record<string, string> = {
-  // workspace modules
+  // workspace A/B-grade modules
   overview: 'workspace', goals: 'workspace', tasks: 'workspace',
   projects: 'workspace', knowledge: 'workspace', schedule: 'workspace',
   notifications: 'workspace', insight: 'workspace', reports: 'workspace',
-  prediction: 'workspace', docs: 'workspace', experience: 'workspace',
-  members: 'workspace', roles: 'workspace', org: 'workspace',
-  admin: 'workspace', review: 'workspace', alignment: 'workspace',
-  actionItems: 'workspace',
-  activities: 'workspace', notes: 'workspace', sprints: 'workspace',
-  templates: 'workspace', bookmarks: 'workspace',
-  tags: 'workspace', categories: 'workspace', statusFlow: 'workspace',
+  members: 'workspace', org: 'workspace',
+  admin: 'workspace', review: 'workspace',
+  actionItems: 'workspace', tags: 'workspace',
   mywork: 'workspace',
   commandCenter: 'workspace',
+  // C-grade FROZEN (W14): prediction, docs, experience, roles, alignment,
+  //   activities, notes, sprints, templates, bookmarks, categories, statusFlow
   // collab modules
   channels: 'collab', teamCal: 'collab', approvals: 'collab',
   announcements: 'collab', collabDocs: 'collab', meetings: 'collab',
   directory: 'collab', aiAgents: 'collab',
-  // ai modules
-  main: 'ai', morning: 'ai', risk: 'ai',
-  agentList: 'ai', agentConfig: 'ai', industryView: 'ai',
-  workflows: 'ai', kpiDash: 'ai', subscription: 'ai',
-  knowledgeOSP: 'ai', mcpA2a: 'ai',
-  behaviorTracker: 'ai', dste: 'ai', templateWizard: 'ai',
-  usageAlerts: 'ai', systemMonitor: 'ai',
+  // ai A-grade modules
+  main: 'ai', risk: 'ai',
+  agentConfig: 'ai', industryView: 'ai',
+  subscription: 'ai', dste: 'ai',
+  // C-grade AI FROZEN (W14): morning, agentList, workflows, kpiDash, knowledgeOSP,
+  //   mcpA2a, behaviorTracker, templateWizard, usageAlerts, systemMonitor
 };
 
 /** 根据 module 名推断其所属 interface */
@@ -58,7 +55,7 @@ export function getInterfaceForModule(mod: string): string {
 /** Modules restricted to cockpit viewMode (admin/manager only)
  *  Only truly admin-level modules; DSTE/goals/insight etc. are available to all roles */
 export const ADMIN_ONLY_MODULES = new Set([
-  'admin', 'roles', 'org', 'statusFlow',
+  'admin', 'org',
 ]);
 
 /** 根据 role 推导默认 viewMode — admin/owner/leader/manager → cockpit, 其他 → simple */

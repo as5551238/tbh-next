@@ -28,8 +28,8 @@ export function QuickActionCards({ onToolAction, onNavTo, onSetInput, isTyping }
       <button onClick={() => onNavTo('workspace', 'overview')} className="flex flex-col items-center gap-1 rounded-lg border border-border p-2 transition-all hover:border-accent/50 hover:bg-accent/5 disabled:opacity-50" disabled={isTyping}>
         <Brain size={14} className="text-accent" /><span className="text-[9px] text-text-3">今日聚焦</span>
       </button>
-      <button onClick={() => onNavTo('ai', 'kpiDash')} className="flex flex-col items-center gap-1 rounded-lg border border-border p-2 transition-all hover:border-primary/50 hover:bg-primary/5 disabled:opacity-50" disabled={isTyping}>
-        <TrendingUp size={14} className="text-primary-2" /><span className="text-[9px] text-text-3">KPI看板</span>
+      <button onClick={() => onNavTo('ai', 'industryView')} className="flex flex-col items-center gap-1 rounded-lg border border-border p-2 transition-all hover:border-primary/50 hover:bg-primary/5 disabled:opacity-50" disabled={isTyping}>
+        <TrendingUp size={14} className="text-primary-2" /><span className="text-[9px] text-text-3">行业洞察</span>
       </button>
       <button onClick={() => onNavTo('workspace', 'review')} className="flex flex-col items-center gap-1 rounded-lg border border-border p-2 transition-all hover:border-success/50 hover:bg-success/5 disabled:opacity-50" disabled={isTyping}>
         <Zap size={14} className="text-success" /><span className="text-[9px] text-text-3">发起复盘</span>

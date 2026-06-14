@@ -169,3 +169,4 @@ export function getMigrationStatus(): {
     migrationComplete: isMigrationComplete(),
   };
 }
+// FROZEN (W14) — 0 active consumers; kept for potential M2 reactivation

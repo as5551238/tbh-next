@@ -610,3 +610,54 @@ export async function deleteRole(id: string): Promise<void> {
   const { error } = await supabase!.from('roles').delete().eq('id', id);
   if (error) throw new Error(`deleteRole: ${error.message}`);
 }
+
+// ======== Review Sessions CRUD ========
+
+import type { ReviewSessionRow } from './types';
+
+export async function fetchReviewSessions(status?: string): Promise<ReviewSessionRow[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  let query = supabase!.from('review_sessions').select('*').order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return (data as unknown as Record<string, unknown>[]).map((r) => ({
+    id: String(r.id ?? ''),
+    model_id: String(r.model_id ?? 'grai'),
+    target_type: String(r.target_type ?? 'goal'),
+    target_id: String(r.target_id ?? ''),
+    target_title: String(r.target_title ?? ''),
+    current_step: Number(r.current_step ?? 0),
+    inputs: (r.inputs ?? {}) as Record<string, string>,
+    status: String(r.status ?? 'in_progress') as ReviewSessionRow['status'],
+    draft: String(r.draft ?? ''),
+    action_items: Array.isArray(r.action_items) ? r.action_items : [],
+    effectiveness_score: r.effectiveness_score != null ? Number(r.effectiveness_score) : null,
+    performance_score: r.performance_score != null ? Number(r.performance_score) : null,
+    team_id: String(r.team_id ?? '__default__'),
+    created_at: String(r.created_at ?? ''),
+    updated_at: String(r.updated_at ?? ''),
+  }));
+}
+
+export async function createReviewSession(data: Omit<ReviewSessionRow, 'created_at' | 'updated_at'>): Promise<ReviewSessionRow> {
+  if (!isSupabaseConfigured() || !supabase) return { created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...data };
+  const row = filterColumns('review_sessions', { ...data } as Record<string, unknown>);
+  const { data: result, error } = await supabase!.from('review_sessions').insert(row).select().single();
+  if (error) throw new Error(`createReviewSession: ${error.message}`);
+  return result as ReviewSessionRow;
+}
+
+export async function updateReviewSession(id: string, data: Partial<Omit<ReviewSessionRow, 'id' | 'created_at'>>): Promise<ReviewSessionRow> {
+  if (!isSupabaseConfigured() || !supabase) return { id, created_at: '', updated_at: new Date().toISOString(), ...data } as ReviewSessionRow;
+  const row = filterColumns('review_sessions', { ...data, updated_at: new Date().toISOString() } as Record<string, unknown>);
+  const { data: result, error } = await supabase!.from('review_sessions').update(row).eq('id', id).select().single();
+  if (error) throw new Error(`updateReviewSession: ${error.message}`);
+  return result as ReviewSessionRow;
+}
+
+export async function deleteReviewSession(id: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const { error } = await supabase!.from('review_sessions').delete().eq('id', id);
+  if (error) throw new Error(`deleteReviewSession: ${error.message}`);
+}

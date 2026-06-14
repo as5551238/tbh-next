@@ -206,6 +206,12 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
     'review_count', 'tags', 'system_prompt', 'capabilities',
     'is_official', 'price', 'team_id',
   ]),
+  review_sessions: new Set([
+    'id', 'model_id', 'target_type', 'target_id', 'target_title',
+    'current_step', 'inputs', 'status', 'draft', 'action_items',
+    'effectiveness_score', 'performance_score', 'team_id',
+    'created_at', 'updated_at',
+  ]),
 };
 
 const FK_COLUMNS = new Set([

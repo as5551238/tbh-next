@@ -23,7 +23,6 @@ const QUICK_ITEMS = [
   { icon: '🎯', labelKey: 'nav.goals', module: 'goals', iface: 'workspace' },
   { icon: '✅', labelKey: 'nav.tasks', module: 'tasks', iface: 'workspace' },
   { icon: '📁', labelKey: 'nav.projects', module: 'projects', iface: 'workspace' },
-  { icon: '💡', labelKey: 'nav.insight', module: 'insight', iface: 'workspace' },
   { icon: '📚', labelKey: 'nav.knowledge', module: 'knowledge', iface: 'workspace' },
   { icon: '⚙️', labelKey: 'nav.admin', module: 'admin', iface: 'workspace' },
 ];

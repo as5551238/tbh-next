@@ -8,6 +8,7 @@ import ModulePageStub from '@/pages/ModulePageStub';
 import { CardSkeleton } from '@/components/Skeleton';
 import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
 
+// A-grade modules (active, core loops)
 const OverviewContent = lazy(retryLazy(() => import('@/pages/workspace/OverviewContent')));
 const GoalsContent = lazy(retryLazy(() => import('@/pages/workspace/GoalsContent')));
 const TasksContent = lazy(retryLazy(() => import('@/pages/workspace/TasksContent')));
@@ -15,33 +16,25 @@ const ProjectsContent = lazy(retryLazy(() => import('@/pages/workspace/ProjectsC
 const KnowledgeContent = lazy(retryLazy(() => import('@/pages/workspace/KnowledgeContent')));
 const ScheduleContent = lazy(retryLazy(() => import('@/pages/workspace/ScheduleContent')));
 const NotificationsContent = lazy(retryLazy(() => import('@/pages/workspace/NotificationsContent')));
-const InsightContent = lazy(retryLazy(() => import('@/pages/workspace/InsightContent')));
 const ReportsContent = lazy(retryLazy(() => import('@/pages/workspace/ReportsContent')));
-const PredictionContent = lazy(retryLazy(() => import('@/pages/workspace/PredictionContent')));
-const DocsContent = lazy(retryLazy(() => import('@/pages/workspace/DocsContent')));
-const ExperienceContent = lazy(retryLazy(() => import('@/pages/workspace/ExperienceContent')));
 const MembersContent = lazy(retryLazy(() => import('@/pages/workspace/MembersContent')));
-const RolesContent = lazy(retryLazy(() => import('@/pages/workspace/RolesContent')));
 const OrgContent = lazy(retryLazy(() => import('@/pages/workspace/OrgContent')));
 const AdminContent = lazy(retryLazy(() => import('@/pages/workspace/AdminContent')));
 const ReviewContent = lazy(retryLazy(() => import('@/pages/workspace/ReviewContent')));
-const PenetrationView = lazy(retryLazy(() => import('@/pages/workspace/PenetrationView')));
 const ActionItemsContent = lazy(retryLazy(() => import('@/pages/workspace/ActionItemsContent')));
-const ActivitiesContent = lazy(retryLazy(() => import('@/pages/workspace/ActivitiesContent')));
-const NotesContent = lazy(retryLazy(() => import('@/pages/workspace/NotesContent')));
-const SprintsContent = lazy(retryLazy(() => import('@/pages/workspace/SprintsContent')));
-const TemplatesContent = lazy(retryLazy(() => import('@/pages/workspace/TemplatesContent')));
-const BookmarksContent = lazy(retryLazy(() => import('@/pages/workspace/BookmarksContent')));
 const TagsContent = lazy(retryLazy(() => import('@/pages/workspace/TagsContent')));
-const CategoriesContent = lazy(retryLazy(() => import('@/pages/workspace/CategoriesContent')));
-// DEPRECATED modules removed from routes (W9):
-// FeatureFlagsContent, SavedViewsContent, AutomationContent — see .temp/w8-stub-disposition.md
-const StatusFlowContent = lazy(retryLazy(() => import('@/pages/workspace/StatusFlowContent')));
 const MyWorkView = lazy(retryLazy(() => import('@/pages/MyWorkView')));
 const CommandCenterView = lazy(retryLazy(() => import('@/pages/workspace/CommandCenterView')));
+// B-grade modules (kept for M2 close-out)
+const InsightContent = lazy(retryLazy(() => import('@/pages/workspace/InsightContent')));
+// C-grade modules FROZEN (W14): PredictionContent, DocsContent, ExperienceContent, RolesContent,
+// ActivitiesContent, NotesContent, SprintsContent, TemplatesContent, BookmarksContent,
+// CategoriesContent, StatusFlowContent, PenetrationView
+// DEPRECATED modules removed from routes (W9):
+// FeatureFlagsContent, SavedViewsContent, AutomationContent — see .temp/w8-stub-disposition.md
 
 // Modules that require admin/owner/leader role to access
-const ADMIN_ONLY_MODULES = new Set(['admin', 'roles']);
+const ADMIN_ONLY_MODULES = new Set(['admin', 'org']);
 
 const LazyWrap = ({ children, name }: { children: ReactNode; name?: string }) => (
   <ModuleErrorBoundary moduleName={name}>
@@ -61,26 +54,16 @@ const WORKSPACE_MODULES: Record<string, LazyExoticComponent<FC>> = {
   notifications: NotificationsContent,
   insight: InsightContent,
   reports: ReportsContent,
-  prediction: PredictionContent,
-  docs: DocsContent,
-  experience: ExperienceContent,
   members: MembersContent,
-  roles: RolesContent,
   org: OrgContent,
   admin: AdminContent,
   review: ReviewContent,
-  alignment: PenetrationView,
   actionItems: ActionItemsContent,
-  activities: ActivitiesContent,
-  notes: NotesContent,
-  sprints: SprintsContent,
-  templates: TemplatesContent,
-  bookmarks: BookmarksContent,
   tags: TagsContent,
-  categories: CategoriesContent,
-  statusFlow: StatusFlowContent,
   mywork: MyWorkView as LazyExoticComponent<FC>,
   commandCenter: CommandCenterView,
+  // C-grade FROZEN (W14): prediction, docs, experience, roles, alignment,
+  //   activities, notes, sprints, templates, bookmarks, categories, statusFlow
 };
 
 export default function Workspace() {

@@ -813,6 +813,24 @@ CREATE TABLE IF NOT EXISTS reviews (
   team_id text DEFAULT '__default__'::text
 );
 
+CREATE TABLE IF NOT EXISTS review_sessions (
+  id text NOT NULL PRIMARY KEY,
+  model_id text NOT NULL DEFAULT 'grai',
+  target_type text NOT NULL DEFAULT 'goal',
+  target_id text NOT NULL DEFAULT '',
+  target_title text NOT NULL DEFAULT '',
+  current_step integer NOT NULL DEFAULT 0,
+  inputs jsonb DEFAULT '{}'::jsonb,
+  status text NOT NULL DEFAULT 'in_progress',
+  draft text DEFAULT '',
+  action_items jsonb DEFAULT '[]'::jsonb,
+  effectiveness_score numeric(5,2),
+  performance_score numeric(5,2),
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS risk_escalation_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   team_id text NOT NULL DEFAULT '__default__'::text,

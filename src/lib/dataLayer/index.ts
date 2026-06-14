@@ -7,6 +7,7 @@ export type {
   AuditLogRow, SubscriptionRow, UsageEventRow,
   NotificationRow, KnowledgePackRow, MarketplaceAgentRow,
   AgentConfigRow, InstalledAgentRow, RunningWorkflowRow, McpStatusRow, InstalledPackRow,
+  ReviewSessionRow,
 } from './types';
 
 export type {
@@ -81,6 +82,7 @@ export {
   createPrediction, updatePrediction, deletePrediction,
   createExperience, updateExperience, deleteExperience,
   createRole, updateRole, deleteRole,
+  fetchReviewSessions, createReviewSession, updateReviewSession, deleteReviewSession,
 } from './crud';
 
 // Extended entities

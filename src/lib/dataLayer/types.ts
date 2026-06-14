@@ -309,3 +309,21 @@ export interface InstalledPackRow {
   pack_id: string;
   installed_at: string;
 }
+
+export interface ReviewSessionRow {
+  id: string;
+  model_id: string;
+  target_type: string;
+  target_id: string;
+  target_title: string;
+  current_step: number;
+  inputs: Record<string, string>;
+  status: 'in_progress' | 'draft_ready' | 'completed';
+  draft: string;
+  action_items: unknown[];
+  effectiveness_score: number | null;
+  performance_score: number | null;
+  team_id: string;
+  created_at: string;
+  updated_at: string;
+}

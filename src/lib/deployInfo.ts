@@ -21,3 +21,4 @@ export function getDeployInfo() {
 if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).__TBH_INFO = getDeployInfo();
 }
+// FROZEN (W14) — 0 active consumers; kept for potential M2 reactivation

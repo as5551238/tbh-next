@@ -24,12 +24,11 @@ export default function ReviewContent() {
   const {
     phase, selectedModel, selectedAlert, setSelectedAlert,
     session, isGenerating, isSavingActions, actionItems,
+    recentSessions,
     startReview, pickModel, handleStepInput, nextStep, prevStep, generateDraft,
-    completeReview, loadActionItems, toggleActionItem, convertToTask, resetReview,
+    completeReview, toggleActionItem, convertToTask, resetReview,
+    resumeSession,
   } = useReviewDraft(industry, dept, goals, tasks);
-
-  // Load action items on mount
-  useEffect(() => { loadActionItems(); }, [loadActionItems]);
 
   const paywallSlot = <PaywallModal open={rvShow} onClose={rvClose} reason={rvReason} feature={rvFeat} />;
 
@@ -53,7 +52,8 @@ export default function ReviewContent() {
           persistedAlerts={persistedAlerts}
           autoProgressMap={apm}
           goals={goals}
-          onStartReview={startReview}
+          recentSessions={recentSessions}
+          onStartTimeReview={startReview}
           onComputeAlerts={computeAlerts}
           onMarkRead={markAlertRead}
           onManualStart={(modelId) => {
@@ -61,6 +61,7 @@ export default function ReviewContent() {
             setSelectedAlert(null);
             pickModel(model);
           }}
+          onResumeSession={resumeSession}
           requireFeature={rvRequire}
           paywallSlot={paywallSlot}
         />

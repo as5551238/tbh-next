@@ -1,11 +1,48 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { ChatMessage, chatCompletion } from '@/lib/aiService';
 import { REVIEW_MODELS, recommendModels, buildReviewDraftPrompt, snapshotGoalProgress, getReviewSnapshot, computeReviewEffectiveness, computePerformanceScore, type ReviewModel, type ReviewSession, type DeviationAlert, type ReviewEffectiveness } from '@/lib/reviewEngine';
-import { createActionItem, fetchActionItems, updateActionItem, createTask, type ActionItemRow } from '@/lib/dataLayer';
+import { createActionItem, fetchActionItems, updateActionItem, createTask, type ActionItemRow, createReviewSession, updateReviewSession, fetchReviewSessions, type ReviewSessionRow } from '@/lib/dataLayer';
 import { linkReviewToSeason } from '@/lib/dsteEngine';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 type Phase = 'alerts' | 'pick' | 'guide' | 'draft' | 'done';
+
+/** Convert ReviewSession (app type) → ReviewSessionRow (DB type) */
+function toRow(s: ReviewSession): Omit<ReviewSessionRow, 'created_at' | 'updated_at'> {
+  return {
+    id: s.id,
+    model_id: s.modelId,
+    target_type: s.targetType,
+    target_id: s.targetId,
+    target_title: s.targetTitle,
+    current_step: s.currentStep,
+    inputs: s.inputs,
+    status: s.status,
+    draft: s.draft,
+    action_items: s.actionItems,
+    effectiveness_score: null,
+    performance_score: null,
+    team_id: '__default__',
+  };
+}
+
+/** Convert ReviewSessionRow (DB type) → ReviewSession (app type) */
+function fromRow(r: ReviewSessionRow): ReviewSession {
+  return {
+    id: r.id,
+    modelId: r.model_id as ReviewModel['id'],
+    targetType: r.target_type as ReviewSession['targetType'],
+    targetId: r.target_id,
+    targetTitle: r.target_title,
+    currentStep: r.current_step,
+    inputs: r.inputs,
+    status: r.status,
+    draft: r.draft,
+    actionItems: Array.isArray(r.action_items) ? r.action_items : [],
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
 
 export function useReviewDraft(
   industry: string,
@@ -20,6 +57,57 @@ export function useReviewDraft(
   const [isGenerating, setIsGenerating] = useState(false);
   const [actionItems, setActionItems] = useState<ActionItemRow[]>([]);
   const [isSavingActions, setIsSavingActions] = useState(false);
+  const [recentSessions, setRecentSessions] = useState<ReviewSessionRow[]>([]);
+
+  // Debounced persist to Supabase — avoids writing on every keystroke
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistToDb = useCallback((s: ReviewSession) => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(async () => {
+      try {
+        await updateReviewSession(s.id, toRow(s));
+      } catch { /* silent — offline resilience */ }
+    }, 2000);
+  }, []);
+
+  // Immediate persist (for phase transitions — no debounce)
+  const persistNow = useCallback(async (s: ReviewSession) => {
+    try {
+      await updateReviewSession(s.id, toRow(s));
+    } catch { /* silent */ }
+  }, []);
+
+  // Load recent sessions for history display
+  const loadRecentSessions = useCallback(async () => {
+    try {
+      const rows = await fetchReviewSessions();
+      setRecentSessions(rows);
+    } catch { /* silent */ }
+  }, []);
+
+  // Resume an existing session from DB
+  const resumeSession = useCallback((row: ReviewSessionRow) => {
+    const s = fromRow(row);
+    setSession(s);
+    const model = REVIEW_MODELS.find((m) => m.id === s.modelId) ?? REVIEW_MODELS[0];
+    setSelectedModel(model);
+    if (s.status === 'completed') {
+      setPhase('done');
+    } else if (s.status === 'draft_ready') {
+      setPhase('draft');
+    } else if (s.status === 'in_progress' && s.currentStep > 0) {
+      setPhase('guide');
+    } else {
+      setPhase('pick');
+    }
+  }, []);
+
+  // Load action items on mount
+  useEffect(() => {
+    void loadActionItems();
+    void loadRecentSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 加载已有 ActionItem
   const loadActionItems = useCallback(async () => {
@@ -124,8 +212,8 @@ export function useReviewDraft(
     setPhase('pick');
   }, []);
 
-  // 手动选择模型
-  const pickModel = useCallback((model: ReviewModel) => {
+  // 手动选择模型 → 创建 session 并写入 Supabase
+  const pickModel = useCallback(async (model: ReviewModel) => {
     setSelectedModel(model);
     const s: ReviewSession = {
       id: `rev_${Date.now()}`,
@@ -143,12 +231,22 @@ export function useReviewDraft(
     };
     setSession(s);
     setPhase('guide');
-  }, [selectedAlert]);
+    // Persist to Supabase
+    try {
+      await createReviewSession({ ...toRow(s), created_at: s.createdAt, updated_at: s.updatedAt });
+      void loadRecentSessions();
+    } catch { /* offline resilience */ }
+  }, [selectedAlert, loadRecentSessions]);
 
-  // 分步引导
+  // 分步引导 — debounced persist
   const handleStepInput = useCallback((stepId: string, value: string) => {
-    setSession((prev) => prev ? { ...prev, inputs: { ...prev.inputs, [stepId]: value } } : null);
-  }, []);
+    setSession((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, inputs: { ...prev.inputs, [stepId]: value } };
+      persistToDb(updated);
+      return updated;
+    });
+  }, [persistToDb]);
 
   const nextStep = useCallback(() => {
     if (!session || !selectedModel) return;
@@ -156,14 +254,24 @@ export function useReviewDraft(
     if (nextIdx >= selectedModel.steps.length) {
       generateDraft();
     } else {
-      setSession((prev) => prev ? { ...prev, currentStep: nextIdx } : null);
+      setSession((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, currentStep: nextIdx };
+        void persistNow(updated);
+        return updated;
+      });
     }
-  }, [session, selectedModel]);
+  }, [session, selectedModel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const prevStep = useCallback(() => {
     if (!session) return;
-    setSession((prev) => prev ? { ...prev, currentStep: Math.max(0, prev.currentStep - 1) } : null);
-  }, [session]);
+    setSession((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, currentStep: Math.max(0, prev.currentStep - 1) };
+      void persistNow(updated);
+      return updated;
+    });
+  }, [session, persistNow]);
 
   // AI生成复盘草稿
   const generateDraft = useCallback(async () => {
@@ -176,20 +284,30 @@ export function useReviewDraft(
         { role: 'user', content: prompt },
       ];
       const res = await chatCompletion(messages);
-      setSession((prev) => prev ? { ...prev, draft: res.text, status: 'draft_ready' } : null);
+      setSession((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, draft: res.text, status: 'draft_ready' as const };
+        void persistNow(updated);
+        return updated;
+      });
       setPhase('draft');
     } catch {
       const fallback = selectedModel.steps
         .map((s) => `## ${s.title}\n${session.inputs[s.id] || '（未填写）'}`)
         .join('\n\n');
-      setSession((prev) => prev ? { ...prev, draft: fallback, status: 'draft_ready' } : null);
+      setSession((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, draft: fallback, status: 'draft_ready' as const };
+        void persistNow(updated);
+        return updated;
+      });
       setPhase('draft');
     } finally {
       setIsGenerating(false);
     }
-  }, [session, selectedModel, industry, dept]);
+  }, [session, selectedModel, industry, dept, persistNow]);
 
-  // 完成复盘
+  // 完成复盘 — primary persist via review_sessions table
   const completeReview = useCallback(() => {
     if (session && session.draft) {
       if (session.targetId) {
@@ -198,21 +316,14 @@ export function useReviewDraft(
       }
       linkReviewToSeason(session.id, session.targetId || undefined);
       saveActionItems(session.draft, session.targetId, session.id);
-      // Persist session to Supabase for history
-      try {
-        if (isSupabaseConfigured() && supabase) {
-          void supabase.from('behavior_events').insert({
-            event_type: 'review_session_completed',
-            entity_type: 'review',
-            entity_id: session.id,
-            metadata: { modelId: session.modelId, targetId: session.targetId, targetTitle: session.targetTitle, draft: session.draft, inputs: session.inputs, status: 'completed' },
-            team_id: '__default__',
-          });
-        }
-      } catch { /* ignore */ }
+      // Persist completed session to Supabase (primary store, replaces behavior_events side channel)
+      const updated = { ...session, status: 'completed' as const };
+      void persistNow(updated);
+      setSession(updated);
+      void loadRecentSessions();
     }
     setPhase('done');
-  }, [session, goals, saveActionItems]);
+  }, [session, goals, saveActionItems, persistNow, loadRecentSessions]);
 
   // 更新行动项状态
   const toggleActionItem = useCallback(async (ai: ActionItemRow) => {
@@ -244,6 +355,7 @@ export function useReviewDraft(
 
   // 重置
   const resetReview = useCallback(() => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
     setPhase('alerts');
     setSession(null);
     setSelectedAlert(null);
@@ -251,8 +363,9 @@ export function useReviewDraft(
 
   return {
     phase, setPhase, selectedModel, selectedAlert, setSelectedAlert, setSelectedModel,
-    session, isGenerating, isSavingActions, actionItems,
+    session, isGenerating, isSavingActions, actionItems, recentSessions,
     startReview, pickModel, handleStepInput, nextStep, prevStep, generateDraft,
     completeReview, loadActionItems, toggleActionItem, convertToTask, resetReview,
+    resumeSession, loadRecentSessions,
   };
 }

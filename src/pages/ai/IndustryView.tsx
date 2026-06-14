@@ -196,7 +196,7 @@ export default function IndustryView() {
   };
 
   const navigateToKpi = () => {
-    navigate(navigateTo('ai', 'kpiDash'));
+    navigate(navigateTo('ai', 'risk'));
   };
 
   return (

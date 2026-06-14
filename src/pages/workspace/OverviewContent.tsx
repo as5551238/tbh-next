@@ -273,14 +273,14 @@ export default function OverviewContent() {
           </div>
 
           <button
-            onClick={() => navigate(navigateTo('ai', 'morning'))}
+            onClick={() => navigate(navigateTo('ai', 'risk'))}
             className="w-full group flex items-center justify-between rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-primary/30 hover:shadow-lg"
           >
             <div className="flex items-center gap-2">
-              <span className="text-lg">📊</span>
+              <span className="text-lg">⚠️</span>
               <div>
-                <div className="text-xs font-semibold text-text">AI周报 & 晨间简报</div>
-                <div className="text-[10px] text-text-3 mt-0.5">一键生成，可导出PDF</div>
+                <div className="text-xs font-semibold text-text">AI风险预警</div>
+                <div className="text-[10px] text-text-3 mt-0.5">智能风险识别与预警</div>
               </div>
             </div>
             <ArrowRight size={16} className="text-text-3 transition-transform group-hover:translate-x-1" />

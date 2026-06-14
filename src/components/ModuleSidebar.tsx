@@ -26,9 +26,9 @@ const PRIMARY_MODULES: Record<string, Set<string>> = {
     'insight', 'review', 'knowledge', 'members', 'admin',
   ]),
   // simple view keeps its own set (already compact)
-  simple: new Set(['mywork', 'schedule', 'notifications', 'goals', 'tasks', 'actionItems', 'knowledge', 'docs', 'notes']),
+  simple: new Set(['mywork', 'schedule', 'notifications', 'goals', 'tasks', 'actionItems', 'knowledge']),
   collab: new Set(['channels', 'teamCal', 'approvals']),
-  ai: new Set(['main', 'morning', 'risk', 'agentList']),
+  ai: new Set(['main', 'risk', 'agentConfig']),
 };
 
 function getModules(iface: string, industry: string, dept: string, deviationAlertCount: number, viewMode: 'cockpit' | 'simple'): ModuleGroup[] {
@@ -44,39 +44,25 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
         { icon: '🎯', name: '目标 OKR', id: 'goals' },
         { icon: '📁', name: '项目管理', id: 'projects', badge: '2' },
         { icon: '✅', name: '任务中心', id: 'tasks', badge: '5' },
-        { icon: '🔗', name: '穿透视图', id: 'alignment' },
       ]},
       { group: 'MLOO闭环', items: [
         { icon: '⚡', name: '行动项', id: 'actionItems' },
         { icon: '🔄', name: '隐性复盘', id: 'review', ai: true, badge: deviationAlertCount > 0 ? String(deviationAlertCount) : undefined },
-        { icon: '🏃', name: 'Sprint', id: 'sprints' },
       ]},
       { group: '智能分析', items: [
         { icon: '💡', name: '数据洞察', id: 'insight', ai: true },
         { icon: '📊', name: '报表中心', id: 'reports' },
-        { icon: '🔮', name: '预测引擎', id: 'prediction', ai: true },
       ]},
       { group: '知识沉淀', items: [
         { icon: '📚', name: '知识库', id: 'knowledge' },
-        { icon: '📝', name: '文档协作', id: 'docs' },
-        { icon: '🏷️', name: '经验库', id: 'experience', ai: true },
-        { icon: '📋', name: '模板库', id: 'templates' },
-        { icon: '🗒️', name: '便签', id: 'notes' },
-      ]},
-      { group: '动态与收藏', items: [
-        { icon: '📡', name: '动态流', id: 'activities' },
-        { icon: '🔖', name: '收藏夹', id: 'bookmarks' },
       ]},
       { group: '管理', items: [
         { icon: '👥', name: '成员管理', id: 'members' },
-        { icon: '🔐', name: '角色权限', id: 'roles' },
         { icon: '🏢', name: '组织设置', id: 'org' },
         { icon: '⚙️', name: '系统配置', id: 'admin' },
       ]},
       { group: '配置中心', items: [
         { icon: '🏷️', name: '标签管理', id: 'tags' },
-        { icon: '📂', name: '分类管理', id: 'categories' },
-        { icon: '🔀', name: '状态流转', id: 'statusFlow' },
       ]},
     ];
 
@@ -95,8 +81,6 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
         ]},
         { group: '知识', items: [
           { icon: '📚', name: '知识库', id: 'knowledge' },
-          { icon: '📝', name: '文档协作', id: 'docs' },
-          { icon: '🗒️', name: '便签', id: 'notes' },
         ]},
       ];
     }
@@ -149,27 +133,15 @@ function getModules(iface: string, industry: string, dept: string, deviationAler
   const allAiGroups: ModuleGroup[] = [
     { group: 'AI对话', items: [
       { icon: '🧠', name: '工作助手', id: 'main' },
-      { icon: '☀️', name: '晨间聚焦', id: 'morning', ai: true },
       { icon: '⚠️', name: '风险预警', id: 'risk', badge: '2', ai: true },
-    ]},
-    { group: 'AI同事', items: [
-      { icon: '🤖', name: 'Agent列表', id: 'agentList', ai: true },
-      { icon: '🔧', name: 'Agent配置', id: 'agentConfig' },
     ]},
     { group: '行业视角', items: [
       { icon: '🏭', name: '行业视图', id: 'industryView', ai: true },
-      { icon: '📐', name: '工作流模板', id: 'workflows' },
-      { icon: '📈', name: 'KPI仪表盘', id: 'kpiDash' },
-      { icon: '📚', name: '行业知识库', id: 'knowledgeOSP', ai: true },
+      { icon: '🔧', name: 'Agent配置', id: 'agentConfig' },
     ]},
     { group: '设置', items: [
       { icon: '👑', name: '订阅管理', id: 'subscription' },
-      { icon: '🔌', name: 'MCP & A2A', id: 'mcpA2a', ai: true },
-      { icon: '📊', name: '行为追踪', id: 'behaviorTracker' },
       { icon: '🏆', name: 'DSTE赛季', id: 'dste' },
-      { icon: '🧙', name: '模板向导', id: 'templateWizard' },
-      { icon: '🛡️', name: '用量预警', id: 'usageAlerts' },
-      { icon: '📊', name: '系统监控', id: 'systemMonitor' },
     ]},
   ];
   const primarySet = PRIMARY_MODULES.ai;

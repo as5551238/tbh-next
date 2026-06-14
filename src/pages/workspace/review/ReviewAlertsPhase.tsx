@@ -1,7 +1,7 @@
-import { Sparkles, CheckCircle2, AlertTriangle, RotateCcw, ArrowRight, FileText, X } from 'lucide-react';
+import { Sparkles, CheckCircle2, AlertTriangle, RotateCcw, ArrowRight, FileText, X, Clock, Play } from 'lucide-react';
 import { REVIEW_MODELS } from '@/lib/reviewEngine';
 import type { DeviationAlert } from '@/lib/reviewEngine';
-import type { DeviationAlertRow } from '@/lib/dataLayer/types';
+import type { DeviationAlertRow, ReviewSessionRow } from '@/lib/dataLayer/types';
 import { cn } from '@/lib/utils';
 
 const sevCls: Record<string, string> = {
@@ -16,17 +16,25 @@ interface AlertPhaseProps {
   persistedAlerts: DeviationAlertRow[];
   autoProgressMap: Record<string, number>;
   goals: { id: string; title: string; progress: number }[];
-  onStartReview: (alert: DeviationAlert) => void;
+  recentSessions: ReviewSessionRow[];
+  onStartTimeReview: (alert: DeviationAlert) => void;
   onComputeAlerts: () => void;
   onMarkRead: (alert: DeviationAlert) => void;
   onManualStart: (modelId: string) => void;
+  onResumeSession: (session: ReviewSessionRow) => void;
   requireFeature: (feature: string, reason: string) => boolean;
   paywallSlot: React.ReactNode;
 }
 
+const statusLabel: Record<string, string> = {
+  in_progress: '进行中',
+  draft_ready: '草稿已生成',
+  completed: '已完成',
+};
+
 export function ReviewAlertsPhase({
-  alerts, persistedAlerts, autoProgressMap, goals,
-  onStartReview, onComputeAlerts, onMarkRead, onManualStart, requireFeature, paywallSlot,
+  alerts, persistedAlerts, autoProgressMap, goals, recentSessions,
+  onStartTimeReview, onComputeAlerts, onMarkRead, onManualStart, onResumeSession, requireFeature, paywallSlot,
 }: AlertPhaseProps) {
   return (
     <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
@@ -83,7 +91,7 @@ export function ReviewAlertsPhase({
           <div className="space-y-2">
             {alerts.map((a) => (
               <div key={a.id} onClick={() => { if (!requireFeature('customWorkflows', '深度复盘模式需要专业版或企业版')) return; onStartReview(a); }}
-                className={`rounded-xl border p-3 cursor-pointer transition-all hover:shadow-lg ${sevCls[a.severity]}`}>
+                 className={`rounded-xl border p-3 cursor-pointer transition-all hover:shadow-lg ${sevCls[a.severity]}`}>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <AlertTriangle size={13} className={sevIcon[a.severity]} />
                   <span className="text-xs font-semibold text-text flex-1">{a.targetTitle}</span>
@@ -130,6 +138,27 @@ export function ReviewAlertsPhase({
           ))}
         </div>
       </div>
+
+      {/* Recent Sessions — resume capability */}
+      {recentSessions.length > 0 && (
+        <div className="border-t border-border pt-3">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <Clock size={13} className="text-text-3" />
+            <span className="text-xs font-bold text-text-3 uppercase tracking-wider">历史复盘</span>
+          </div>
+          <div className="space-y-1.5">
+            {recentSessions.slice(0, 5).map((rs) => (
+              <div key={rs.id} onClick={() => onResumeSession(rs)}
+                className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 cursor-pointer hover:border-primary/40 transition-all">
+                <span className="text-[11px] font-medium text-text flex-1 truncate">{rs.target_title}</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-surface-2 text-text-3">{statusLabel[rs.status] ?? rs.status}</span>
+                <span className="text-[9px] text-text-3">{REVIEW_MODELS.find(m => m.id === rs.model_id)?.name ?? rs.model_id}</span>
+                {rs.status !== 'completed' && <Play size={11} className="text-primary-2" />}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {paywallSlot}
     </div>

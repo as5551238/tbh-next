@@ -149,8 +149,8 @@ export default function CommandCenterView() {
     { icon: <CheckCircle2 size={14} />, label: '任务中心', module: 'tasks', iface: 'workspace' },
     { icon: <AlertTriangle size={14} />, label: '风险预警', module: 'risk', iface: 'ai' },
     { icon: <Zap size={14} />, label: '行动项', module: 'actionItems', iface: 'workspace' },
-    { icon: <GitBranch size={14} />, label: '跨部门自动化', module: 'crossDeptAutomation', iface: 'ai' },
-    { icon: <Shield size={14} />, label: '用量预警', module: 'usageAlerts', iface: 'ai' },
+    { icon: <GitBranch size={14} />, label: 'DSTE赛季', module: 'dste', iface: 'ai' },
+    { icon: <Shield size={14} />, label: '风险预警', module: 'risk', iface: 'ai' },
     { icon: <Activity size={14} />, label: '复盘', module: 'review', iface: 'workspace' },
     { icon: <TrendingUp size={14} />, label: '报表', module: 'reports', iface: 'workspace' },
   ], []);
