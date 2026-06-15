@@ -178,7 +178,7 @@ describe('AI Tools', () => {
       expect(mockCreateGoal).toHaveBeenCalledWith(expect.objectContaining({
         title: 'New Goal',
         progress: 0,
-        status: 'on_track',
+        status: 'in_progress',
         key_results: [],
         owner_id: null,
         leader_id: null,
@@ -206,7 +206,7 @@ describe('AI Tools', () => {
   describe('get_team_metrics handler', () => {
     it('computes metrics from fetched data', async () => {
       mockFetchGoals.mockResolvedValue([
-        { id: 'g1', title: 'Active', progress: 80, status: 'on_track', end_date: '2026-12-31', key_results: [] },
+        { id: 'g1', title: 'Active', progress: 80, status: 'in_progress', end_date: '2026-12-31', key_results: [] },
         { id: 'g2', title: 'Completed', progress: 100, status: 'completed', end_date: '2026-06-30', key_results: [] },
         { id: 'g3', title: 'Cancelled', progress: 0, status: 'cancelled', end_date: '2026-09-30', key_results: [] },
       ]);

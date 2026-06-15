@@ -35,7 +35,7 @@ vi.mock('@/lib/moduleContext', () => ({
 
 // Mock dataLayer CRUD
 vi.mock('@/lib/dataLayer', () => ({
-  createGoal: vi.fn().mockResolvedValue({ id: 'goal-1', title: 'Test Goal', progress: 0, status: 'active' }),
+  createGoal: vi.fn().mockResolvedValue({ id: 'goal-1', title: 'Test Goal', progress: 0, status: 'in_progress' }),
   createTask: vi.fn().mockResolvedValue({ id: 'task-1', title: 'Test Task', status: 'todo', priority: 'medium', done: false }),
   createActionItem: vi.fn().mockResolvedValue({ id: 'ai-1', title: 'Test Action Item', status: 'open' }),
   fetchGoals: vi.fn().mockResolvedValue([]),

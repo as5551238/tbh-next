@@ -21,7 +21,7 @@ import {
 describe('Core CRUD E2E — Goals', () => {
   it('create -> fetch -> update -> delete goal lifecycle', async () => {
     const created = await createGoal({
-      title: 'E2E Goal', progress: 0, status: 'active',
+      title: 'E2E Goal', progress: 0, status: 'in_progress',
       key_results: [], owner_id: 'tester',
       end_date: null, start_date: null, leader_id: null,
     });
@@ -70,7 +70,7 @@ describe('Core CRUD E2E — Projects', () => {
     const projects = await fetchProjects();
     expect(projects.length).toBeGreaterThan(0);
 
-    const updated = await updateProject(created.id, { progress: 40, status: 'active' });
+    const updated = await updateProject(created.id, { progress: 40, status: 'in_progress' });
     expect(updated.progress).toBe(40);
 
     await expect(deleteProject(created.id)).resolves.toBeUndefined();

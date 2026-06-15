@@ -214,9 +214,9 @@ describe('Data Layer (local fallback)', () => {
       const goal = await createGoal({
         title: 'Test Goal',
         progress: 0,
-        status: 'active',
-        key_results: [],
-        owner_id: 'Test',
+         status: 'in_progress',
+         key_results: [],
+         owner_id: 'Test',
         end_date: null,
         start_date: null,
         leader_id: null,
