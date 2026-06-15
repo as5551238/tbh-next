@@ -187,8 +187,21 @@ export default function SubscriptionView() {
                   <div className="text-lg font-extrabold text-text">${pPrice.monthly}</div>
                   <div className="text-[9px] text-text-3">/用户/月</div>
                   {isCurrent && (
-                    <div className="mt-2 flex flex-wrap items-center justify-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">
-                      <CheckCircle2 size={10} /> 当前方案
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+                      <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">
+                        <CheckCircle2 size={10} /> 当前方案
+                      </span>
+                      {sub.plan !== 'free' && (
+                        <button className="flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[8px] font-semibold text-text-3 hover:text-danger hover:bg-danger/10 transition-colors"
+                          onClick={async () => {
+                            if (!confirm('确定要降级为免费版？降级后将失去Pro/Enterprise功能。')) return;
+                            setCurrentPlan('free');
+                            setSub((prev) => ({ ...prev, plan: 'free' }));
+                            try { await cancelSubscription(); } catch { /* demo mode graceful fallback */ }
+                          }}>
+                          降级为免费版
+                        </button>
+                      )}
                     </div>
                   )}
                   {isUpgrade && !isRequested && (

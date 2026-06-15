@@ -212,6 +212,7 @@ export async function fetchProjects(): Promise<ProjectRow[]> {
     member_ids: Array.isArray(p.member_ids) ? p.member_ids.map(String) : [],
     task_count: Number(p.task_count ?? 0),
     end_date: p.end_date ? String(p.end_date) : null,
+    goal_id: p.goal_id ? String(p.goal_id) : null,
   }));
 }
 

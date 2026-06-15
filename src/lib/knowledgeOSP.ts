@@ -167,18 +167,39 @@ const KNOWLEDGE_PACKS: KnowledgePack[] = [
 
 // --- Fetch ---
 
-export async function fetchKnowledgePacks(industry?: string): Promise<KnowledgePack[]> {
+export async function fetchKnowledgePacks(industry?: string, search?: string): Promise<KnowledgePack[]> {
   if (!isSupabaseConfigured() || !supabase) {
-    return industry ? KNOWLEDGE_PACKS.filter((p) => p.industry === industry) : KNOWLEDGE_PACKS;
+    let result = industry ? KNOWLEDGE_PACKS.filter((p) => p.industry === industry) : KNOWLEDGE_PACKS;
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter((p) => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.tags.some((t) => t.toLowerCase().includes(q)));
+    }
+    return result;
   }
 
-  const { fetchKnowledgePacks: dlFetch } = await import('@/lib/dataLayer');
-  const rows = await dlFetch(industry);
-  if (!rows.length) return industry ? KNOWLEDGE_PACKS.filter((p) => p.industry === industry) : KNOWLEDGE_PACKS;
-  return rows.map((row: import('@/lib/dataLayer/types').KnowledgePackRow) => mapDbToPack(row));
+  const { fetchKnowledgePacks: dlFetch, fetchInstalledPacks } = await import('@/lib/dataLayer');
+  let query = supabase.from('knowledge_packs').select('*');
+  if (industry) query = query.eq('industry', industry);
+  if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+  query = query.order('downloads', { ascending: false });
+  const { data, error } = await query;
+  if (error || !data?.length) {
+    let fallback = industry ? KNOWLEDGE_PACKS.filter((p) => p.industry === industry) : KNOWLEDGE_PACKS;
+    if (search) {
+      const q = search.toLowerCase();
+      fallback = fallback.filter((p) => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.tags.some((t) => t.toLowerCase().includes(q)));
+    }
+    return fallback;
+  }
+
+  // Fetch installed pack IDs for current user
+  const installedPacks = await fetchInstalledPacks();
+  const installedSet = new Set(installedPacks.map((ip) => ip.pack_id));
+
+  return data.map((row: import('@/lib/dataLayer/types').KnowledgePackRow) => mapDbToPack(row, installedSet));
 }
 
-function mapDbToPack(row: import('@/lib/dataLayer/types').KnowledgePackRow): KnowledgePack {
+function mapDbToPack(row: import('@/lib/dataLayer/types').KnowledgePackRow, installedSet?: Set<string>): KnowledgePack {
   const cat = row.category as string ?? 'framework';
   const catObj = KNOWLEDGE_CATEGORIES.find((c) => c.id === cat);
   return {
@@ -195,7 +216,7 @@ function mapDbToPack(row: import('@/lib/dataLayer/types').KnowledgePackRow): Kno
     downloads: row.downloads as number ?? 0,
     rating: row.rating as number ?? 0,
     isOfficial: row.is_official ?? false,
-    isInstalled: false,
+    isInstalled: installedSet ? installedSet.has(row.id as string) : false,
     plan: row.plan as 'free' | 'pro' | 'enterprise' ?? 'free',
     updatedAt: row.updated_at as string ?? '',
   };

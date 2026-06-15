@@ -1,9 +1,9 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useGoals, useTasks } from '@/hooks/useMatrix';
+import { useGoals, useTasks, useProjects } from '@/hooks/useMatrix';
 import { cn, safeStr } from '@/lib/utils';
-import { Target, CheckCircle2, Zap, Plus } from 'lucide-react';
+import { Target, CheckCircle2, Zap, Plus, FolderOpen, X } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { CardSkeleton } from '@/components/Skeleton';
 import PageHeader from '@/components/PageHeader';
@@ -18,6 +18,7 @@ import { trackEvent } from '@/lib/behaviorTracker';
 
 export default function GoalsContent() {
   const { goals, loading, addGoal, editGoal, removeGoal } = useGoals();
+  const { projects, editProject } = useProjects();
   const { showPaywall, paywallReason, paywallFeature, closePaywall, requireLimit } = useGateCheck();
 
   // ── Monitor: render timing ─────────────────────────────────────────
@@ -39,6 +40,18 @@ export default function GoalsContent() {
     }
     return map;
   }, [goals, tasks]);
+
+  // Map: goal_id → project[] (for "关联项目")
+  const goalProjectMap = useMemo(() => {
+    const map: Record<string, typeof projects> = {};
+    for (const p of projects) {
+      if (p.goal_id) {
+        if (!map[p.goal_id]) map[p.goal_id] = [];
+        map[p.goal_id].push(p);
+      }
+    }
+    return map;
+  }, [projects]);
 
   const handleCardClick = useCallback((g: typeof goals[number]) => {
     const krTexts = g.key_results.map((kr) => typeof kr === 'string' ? kr : (kr as Record<string, unknown>).text || String(kr));
@@ -130,6 +143,9 @@ export default function GoalsContent() {
                 <input type="checkbox" checked={selectedGoalIds.has(g.id)} onChange={() => { setSelectedGoalIds((prev) => { const next = new Set(prev); if (next.has(g.id)) next.delete(g.id); else next.add(g.id); return next; }); }} className="h-3.5 w-3.5 accent-primary rounded" />
               </div>
               <span className="text-sm font-semibold text-text">{g.title}</span>
+              {goalProjectMap[g.id]?.length > 0 && (
+                <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-bold text-primary-2"><FolderOpen size={8} />{goalProjectMap[g.id].length}个项目</span>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {progMismatch && (
@@ -206,6 +222,29 @@ export default function GoalsContent() {
               </div>
             ))}
             <button className={btnSecondary} onClick={handleAddKr}>+ 添加{t('goals.keyResults')}</button>
+            {/* 关联项目 */}
+            {editGoalData.id && (
+              <div className="mt-3">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-1.5">关联项目</div>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(goalProjectMap[editGoalData.id] ?? []).map((p) => (
+                    <span key={p.id} className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary-2">
+                      <FolderOpen size={8} />{p.title}
+                      <button onClick={() => { editProject(p.id, { goal_id: null }); }}><X size={8} className="hover:text-danger" /></button>
+                    </span>
+                  ))}
+                  {(!goalProjectMap[editGoalData.id] || goalProjectMap[editGoalData.id].length === 0) && <span className="text-[10px] text-text-3">暂无关联项目</span>}
+                </div>
+                {projects.filter((p) => p.goal_id !== editGoalData.id).length > 0 && (
+                  <select className={inputCls} value="" onChange={(e) => { if (e.target.value) editProject(e.target.value, { goal_id: editGoalData.id! }); }}>
+                    <option value="">+ 关联项目...</option>
+                    {projects.filter((p) => p.goal_id !== editGoalData.id).map((p) => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
             {editGoalData.id && <CommentSection targetType="goal" targetId={editGoalData.id} />}
           </div>
         )}

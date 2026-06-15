@@ -502,6 +502,25 @@ CREATE TABLE IF NOT EXISTS knowledge_docs (
   team_id uuid
 );
 
+CREATE TABLE IF NOT EXISTS knowledge_packs (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  industry text NOT NULL DEFAULT 'IT业'::text,
+  title text NOT NULL,
+  description text DEFAULT ''::text,
+  category text DEFAULT 'framework'::text,
+  content text DEFAULT ''::text,
+  tags text[] DEFAULT '{}',
+  author text DEFAULT ''::text,
+  version text DEFAULT '1.0.0'::text,
+  downloads integer DEFAULT 0,
+  rating numeric(3,2) DEFAULT 0,
+  is_official boolean DEFAULT false,
+  plan text DEFAULT 'free'::text,
+  team_id text DEFAULT '__default__'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS kpis (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   industry text NOT NULL,
@@ -863,6 +882,12 @@ CREATE TABLE IF NOT EXISTS risks (
   detected_at timestamp with time zone DEFAULT now(),
   status text DEFAULT 'active'::text,
   affected_kpi text,
+  severity text DEFAULT 'medium'::text,
+  impact integer DEFAULT 2,
+  likelihood integer DEFAULT 2,
+  score integer DEFAULT 0,
+  owner_id text,
+  due_date date,
   team_id text DEFAULT '__default__'::text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()

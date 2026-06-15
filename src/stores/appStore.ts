@@ -207,8 +207,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
   teamId: '__default__',
 
-  viewMode: 'simple',
-  setViewMode: (mode) => set({ viewMode: mode }),
+  viewMode: (typeof localStorage !== 'undefined' && (localStorage.getItem('tbh-view-mode') as 'cockpit' | 'simple')) || 'simple' as 'cockpit' | 'simple',
+  setViewMode: (mode) => {
+    if (typeof localStorage !== 'undefined') localStorage.setItem('tbh-view-mode', mode);
+    set({ viewMode: mode });
+  },
 
   realtimeStatus: 'disconnected',
   setRealtimeStatus: (status) => set({ realtimeStatus: status }),

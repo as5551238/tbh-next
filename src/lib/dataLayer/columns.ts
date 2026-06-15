@@ -46,7 +46,8 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   ]),
   risks: new Set([
     'id', 'title', 'description', 'level', 'source', 'detected_at',
-    'status', 'affected_kpi', 'team_id', 'created_at', 'updated_at',
+    'status', 'affected_kpi', 'severity', 'impact', 'likelihood', 'score',
+    'owner_id', 'due_date', 'team_id', 'created_at', 'updated_at',
   ]),
   approvals: new Set([
     'id', 'title', 'type', 'status', 'applicant_id', 'approver_id',

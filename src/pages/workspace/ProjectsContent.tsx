@@ -2,10 +2,10 @@ import { CardSkeleton } from '@/components/Skeleton';
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { useState, useCallback } from 'react';
-import { useProjects } from '@/hooks/useMatrix';
+import { useProjects, useMembers } from '@/hooks/useMatrix';
 import type { ProjectRow } from '@/lib/dataLayer';
 import { cn } from '@/lib/utils';
-import { FolderKanban, Plus, Sparkles } from 'lucide-react';
+import { FolderKanban, Plus, Sparkles, X, UserPlus } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import ItemDetailModal, { type FieldDef } from '@/components/ItemDetailModal';
 import PageHeader from '@/components/PageHeader';
@@ -16,12 +16,17 @@ import { trackEvent } from '@/lib/behaviorTracker';
 
 export default function ProjectsContent() {
   const { projects, loading, addProject, editProject, removeProject } = useProjects();
+  const { members } = useMembers();
   const { showPaywall: ppShow, paywallReason: ppReason, paywallFeature: ppFeat, closePaywall: ppClose, requireLimit: ppLimit } = useGateCheck();
   const { can } = usePermission();
   const modal = useModal();
   const editModal = useModal();
-  const [form, setForm] = useState({ title: '', status: 'planned', end_date: '', members: 0 });
+  const memberModal = useModal();
+  const [form, setForm] = useState({ title: '', status: 'planned', end_date: '', member_ids: [] as string[] });
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
+  const [editMemberIds, setEditMemberIds] = useState<string[]>([]);
+  const [memberProjectId, setMemberProjectId] = useState<string | null>(null);
+  const [memberProjectTitle, setMemberProjectTitle] = useState('');
   const [projExportOpen, setProjExportOpen] = useState(false);
   const [aiHealthInsight, setAiHealthInsight] = useState<string | null>(null);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
@@ -35,7 +40,7 @@ export default function ProjectsContent() {
 
   const handleOpen = useCallback(() => {
     if (!ppLimit('maxProjects', projects.length, '免费版最多创建5个项目，升级Pro解锁更多')) return;
-    setForm({ title: '', status: 'planned', end_date: '', members: 0 });
+    setForm({ title: '', status: 'planned', end_date: '', member_ids: [] });
     modal.openModal();
   }, [modal.openModal]);
 
@@ -46,8 +51,9 @@ export default function ProjectsContent() {
       status: form.status,
       end_date: form.end_date || null,
       progress: 0,
-      member_ids: [],
+      member_ids: form.member_ids,
       task_count: 0,
+      goal_id: null,
     } as Omit<ProjectRow, 'id'>);
     trackEvent('project_create', { title: form.title, status: form.status });
     modal.closeModal();
@@ -55,6 +61,7 @@ export default function ProjectsContent() {
 
   const handleProjectClick = useCallback((p: typeof projects[number]) => {
     setEditData({ id: p.id, title: p.title, status: p.status, progress: p.progress, end_date: p.end_date ?? '' });
+    setEditMemberIds(p.member_ids ?? []);
     editModal.openModal();
   }, [editModal.openModal]);
 
@@ -64,9 +71,27 @@ export default function ProjectsContent() {
       status: String(updated.status),
       progress: Number(updated.progress),
       end_date: updated.end_date ? String(updated.end_date) : null,
+      member_ids: editMemberIds,
+      goal_id: null,
     });
     trackEvent('project_update', { id: updated.id, status: updated.status });
-  }, [editProject]);
+  }, [editProject, editMemberIds]);
+
+  const handleOpenMemberModal = useCallback((p: typeof projects[number], e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMemberProjectId(p.id);
+    setMemberProjectTitle(p.title);
+    setEditMemberIds(p.member_ids ?? []);
+    memberModal.openModal();
+  }, [memberModal.openModal]);
+
+  const handleRemoveMember = useCallback((mid: string) => {
+    setEditMemberIds((prev) => {
+      const newIds = prev.filter((id) => id !== mid);
+      if (memberProjectId) editProject(memberProjectId, { member_ids: newIds, goal_id: null });
+      return newIds;
+    });
+  }, [memberProjectId, editProject]);
 
   const projExportHeaders = ['名称', '描述', '状态', '进度', '负责人', '开始日期', '截止日期'];
   const handleExportProjectsCSV = useCallback(() => {
@@ -139,7 +164,7 @@ export default function ProjectsContent() {
             <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${p.progress}%` }} />
           </div>
           <div className="flex items-center justify-between text-[10px] text-text-3">
-             <span>{p.member_ids?.length ?? 0} 人</span>
+             <button className="flex items-center gap-0.5 hover:text-primary-2 transition-colors" onClick={(e) => handleOpenMemberModal(p, e)}><UserPlus size={10} />{p.member_ids?.length ?? 0} 人</button>
              <span>截止 {p.end_date}</span>
           </div>
         </div>
@@ -165,13 +190,53 @@ export default function ProjectsContent() {
         <ModalField label="截止日期">
           <input type="date" className={inputCls} value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
         </ModalField>
-        <ModalField label="成员人数">
-          <input type="number" className={inputCls} min="1" value={form.members || ''} placeholder="0" onChange={(e) => setForm((p) => ({ ...p, members: Number(e.target.value) || 0 }))} />
-        </ModalField>
+        <div className="mb-3">
+          <div className="text-[11px] font-medium text-text-3 mb-1">项目成员</div>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {form.member_ids.map((mid) => {
+              const m = members.find((x) => x.id === mid);
+              return (
+                <span key={mid} className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary-2">
+                  {m?.name ?? mid.slice(0, 8)}
+                  <button onClick={() => setForm((p) => ({ ...p, member_ids: p.member_ids.filter((id) => id !== mid) }))}><X size={9} className="hover:text-danger" /></button>
+                </span>
+              );
+            })}
+          </div>
+          <select className={inputCls} value="" onChange={(e) => { if (e.target.value && !form.member_ids.includes(e.target.value)) setForm((p) => ({ ...p, member_ids: [...p.member_ids, e.target.value] })); }}>
+            <option value="">+ 添加成员...</option>
+            {members.filter((m) => !form.member_ids.includes(m.id)).map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
       </Modal>
 
       <PaywallModal open={ppShow} onClose={ppClose} reason={ppReason} feature={ppFeat} />
       <ItemDetailModal open={editModal.open} onClose={editModal.closeModal} title="编辑项目" fields={projectFields} data={editData} onSave={handleProjectSave} onDelete={can('projects:delete') ? () => { if (editData?.id) { removeProject(String(editData.id)); trackEvent('project_delete', { id: editData.id }); editModal.closeModal(); } } : undefined} commentTarget={editData?.id ? { type: 'project', id: String(editData.id) } : null} />
+
+      {/* Member management modal */}
+      <Modal open={memberModal.open} onClose={memberModal.closeModal} title={`管理成员 - ${memberProjectTitle}`}
+        footer={<button className={btnPrimary} onClick={memberModal.closeModal}>完成</button>}>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {editMemberIds.map((mid) => {
+            const m = members.find((x) => x.id === mid);
+            return (
+              <span key={mid} className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary-2">
+                {m?.name ?? mid.slice(0, 8)}
+                <button onClick={() => handleRemoveMember(mid)}><X size={9} className="hover:text-danger" /></button>
+              </span>
+            );
+          })}
+          {editMemberIds.length === 0 && <span className="text-[10px] text-text-3">暂无成员，请从下方添加</span>}
+        </div>
+        <select className={inputCls} value="" onChange={(e) => { if (e.target.value && !editMemberIds.includes(e.target.value)) { const newIds = [...editMemberIds, e.target.value]; setEditMemberIds(newIds); if (memberProjectId) editProject(memberProjectId, { member_ids: newIds, goal_id: null }); } }}>
+          <option value="">+ 添加成员...</option>
+          {members.filter((m) => !editMemberIds.includes(m.id)).map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
+      </Modal>
       </div>
     </div>
   );

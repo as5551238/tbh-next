@@ -68,6 +68,7 @@ export interface ProjectRow {
   member_ids: string[];
   task_count: number;
   end_date: string | null;
+  goal_id: string | null;
 }
 
 export interface MemberRow {

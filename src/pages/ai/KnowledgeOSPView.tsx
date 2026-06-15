@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { fetchKnowledgePacks, KNOWLEDGE_CATEGORIES, type KnowledgePack } from '@/lib/knowledgeOSP';
-import { createKnowledgePack } from '@/lib/dataLayer';
+import { createKnowledgePack, insertInstalledPack, deleteInstalledPack } from '@/lib/dataLayer';
 import { cn } from '@/lib/utils';
 import { Search, Download, Star, X, Check, BookOpen, Tag, Loader2, Upload } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
@@ -30,16 +30,14 @@ export default function KnowledgeOSPView() {
   }
 
   useEffect(() => {
-    fetchKnowledgePacks(showAllIndustries ? undefined : industry).then((data) => {
-      // Apply persisted install state
-      setPacks(data.map((p) => ({ ...p, isInstalled: installedIds.has(p.id) })));
+    fetchKnowledgePacks(showAllIndustries ? undefined : industry, search || undefined).then((data) => {
+      setPacks(data);
       setLoading(false);
     }).catch((err) => { console.error("[knowledge]", err); error("知识包加载失败，请重试"); setLoading(false); });
-  }, [industry, showAllIndustries, installedIds.size]);
+  }, [industry, showAllIndustries, search]);
 
   const filtered = packs.filter((p) => {
     if (category !== 'all' && p.category !== category) return false;
-    if (search && !p.title.includes(search) && !p.description.includes(search) && !p.tags.some((t) => t.includes(search))) return false;
     return true;
   });
 
@@ -65,12 +63,14 @@ export default function KnowledgeOSPView() {
       const newIds = new Set(installedIds);
       newIds.add(pack.id);
       saveInstalledIds(newIds);
+      try { await insertInstalledPack(pack.id); } catch { /* already recorded locally */ }
       setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
       success(`知识包"${pack.title}"已导入`);
     } catch {
       const newIds = new Set(installedIds);
       newIds.add(pack.id);
       saveInstalledIds(newIds);
+      try { await insertInstalledPack(pack.id); } catch { /* local fallback */ }
       setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
       success(`知识包"${pack.title}"已标记导入`);
     } finally {
@@ -78,10 +78,22 @@ export default function KnowledgeOSPView() {
     }
   }
 
-  function toggleInstall() {
+  async function toggleInstall() {
     if (!selectedPack) return;
     const id = selectedPack.id;
     const nowInstalled = !selectedPack.isInstalled;
+    // Paywall check for pro/enterprise packs
+    if (nowInstalled && selectedPack.plan === 'pro' && !hasFeature('ai_knowledge_osp')) { setShowPaywall(true); return; }
+    if (nowInstalled && selectedPack.plan === 'enterprise' && !hasFeature('ai_knowledge_osp')) { setShowPaywall(true); return; }
+    try {
+      if (nowInstalled) {
+        await insertInstalledPack(id);
+      } else {
+        await deleteInstalledPack(id);
+      }
+    } catch (err) {
+      console.warn('[knowledge] Supabase install toggle failed, updating locally:', err);
+    }
     const newIds = new Set(installedIds);
     if (nowInstalled) newIds.add(id); else newIds.delete(id);
     saveInstalledIds(newIds);

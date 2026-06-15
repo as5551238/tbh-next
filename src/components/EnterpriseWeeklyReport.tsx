@@ -16,6 +16,7 @@ import {
   Clock,
   Users,
   Target,
+  Download,
 } from 'lucide-react';
 import type { EnterpriseReportData, PushChannelConfig } from '@/lib/pushChannels';
 import { loadPushConfig, savePushConfig, pushReportToAllChannels, formatWeeklyReportForWeCom } from '@/lib/pushChannels';
@@ -125,6 +126,29 @@ export default function EnterpriseWeeklyReport({ teamId = '__default__' }: Enter
           <button className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-[10px] text-text-3 hover:bg-surface-2" onClick={generateReport} disabled={loading}>
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />刷新
           </button>
+          {report && (
+            <button className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-[10px] text-text-3 hover:bg-surface-2" onClick={() => {
+              if (!report) return;
+              const md = `# 企业周报 - ${report.company.period}\n\n` +
+                `## 公司概览\n` +
+                `- 健康评分: ${report.company.healthScore}/100\n` +
+                `- 活跃项目: ${report.company.activeProjects}\n` +
+                `- 完成任务: ${report.company.completedTasks}\n` +
+                `- 逾期任务: ${report.company.overdueTasks}\n\n` +
+                `## 部门概览\n` +
+                `| 部门 | 健康评分 | 活跃项目 | 逾期任务 |\n|------|---------|---------|--------|\n` +
+                (report.departments ?? []).map((d: {name: string; healthScore: number; activeProjects: number; overdueTasks: number}) => `| ${d.name} | ${d.healthScore} | ${d.activeProjects} | ${d.overdueTasks} |`).join('\n') + '\n\n' +
+                `## 高优先级逾期任务\n` +
+                (report.highPriorityOverdue ?? []).map((t: {title: string; assignee: string; dueDate: string}) => `- ${t.title} (${t.assignee}, 截止${t.dueDate})`).join('\n');
+              const blob = new Blob([md], { type: 'text/markdown' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = `enterprise-report-${report.company.period}.md`;
+              a.click(); URL.revokeObjectURL(url);
+            }}>
+              <Download size={12} />导出
+            </button>
+          )}
         </div>
       </div>
 

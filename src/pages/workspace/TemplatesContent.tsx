@@ -4,7 +4,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
-import { FileCode2, Plus, Lock, Copy, Star } from 'lucide-react';
+import { FileCode2, Plus, Lock, Copy, Star, Pencil } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { trackEvent } from '@/lib/behaviorTracker';
 
@@ -22,10 +22,12 @@ export default function TemplatesContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
   const { templates, loading, addTemplate, editTemplate, removeTemplate } = useTemplates();
   const addModal = useModal();
+  const editTplModal = useModal();
   const { toasts, success } = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState('all');
   const [newItem, setNewItem] = useState({ name: '', category: 'PRD', content: '' });
+  const [editItem, setEditItem] = useState({ name: '', category: 'PRD', content: '' });
 
   const filtered = useMemo(() => {
     let list = templates;
@@ -50,6 +52,20 @@ export default function TemplatesContent() {
     await editTemplate(id, { usage_count: t.usage_count + 1 });
     trackEvent('template_use', { id, name: t.name });
     success(`已使用模板「${t.name}」`);
+  };
+
+  const handleEdit = () => {
+    if (!selected) return;
+    setEditItem({ name: selected.name, category: selected.category, content: selected.content });
+    editTplModal.openModal();
+  };
+
+  const handleEditSave = async () => {
+    if (!selected || !editItem.name.trim()) return;
+    await editTemplate(selected.id, { name: editItem.name, category: editItem.category, content: editItem.content });
+    trackEvent('template_edit', { id: selected.id, name: editItem.name });
+    success('模板已更新');
+    editTplModal.closeModal();
   };
 
   if (loading) {
@@ -120,7 +136,12 @@ export default function TemplatesContent() {
                   使用模板
                 </button>
                 {!selected.is_built_in && (
-                  <button onClick={() => { removeTemplate(selected.id); trackEvent('template_delete', { id: selected.id }); setSelectedId(null); }} className="rounded-lg px-3 py-1.5 text-[11px] text-text-3 hover:text-danger transition-colors">删除</button>
+                  <>
+                    <button onClick={handleEdit} className="flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1.5 text-[11px] font-semibold text-accent hover:bg-accent/20 transition-all">
+                      <Pencil size={12} />编辑
+                    </button>
+                    <button onClick={() => { removeTemplate(selected.id); trackEvent('template_delete', { id: selected.id }); setSelectedId(null); }} className="rounded-lg px-3 py-1.5 text-[11px] text-text-3 hover:text-danger transition-colors">删除</button>
+                  </>
                 )}
               </div>
             </div>
@@ -150,6 +171,26 @@ export default function TemplatesContent() {
         </ModalField>
         <ModalField label="模板内容">
           <textarea className={cn(inputCls, 'min-h-[120px]')} placeholder="模板内容..." value={newItem.content} onChange={(e) => setNewItem((p) => ({ ...p, content: e.target.value }))} />
+        </ModalField>
+      </Modal>
+
+      <Modal open={editTplModal.open} onClose={editTplModal.closeModal} title="编辑模板"
+        footer={
+          <div className="flex flex-wrap gap-2">
+            <button className={btnSecondary} onClick={editTplModal.closeModal}>取消</button>
+            <button className={btnPrimary} onClick={handleEditSave} disabled={!editItem.name.trim()}>保存</button>
+          </div>
+        }>
+        <ModalField label="模板名称">
+          <input className={inputCls} value={editItem.name} onChange={(e) => setEditItem((p) => ({ ...p, name: e.target.value }))} />
+        </ModalField>
+        <ModalField label="分类">
+          <select className={inputCls} value={editItem.category} onChange={(e) => setEditItem((p) => ({ ...p, category: e.target.value }))}>
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </ModalField>
+        <ModalField label="模板内容">
+          <textarea className={cn(inputCls, 'min-h-[120px]')} value={editItem.content} onChange={(e) => setEditItem((p) => ({ ...p, content: e.target.value }))} />
         </ModalField>
       </Modal>
     </div>

@@ -5,7 +5,7 @@ import { useMLOOFeedback } from '@/hooks/useMLOOFeedback';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
-import { AlertTriangle, Clock, TrendingDown, Shield, Plus, Trash2, Zap, Scan, RefreshCw, Settings, Activity } from 'lucide-react';
+import { AlertTriangle, Clock, TrendingDown, Shield, Plus, Trash2, Zap, Scan, RefreshCw, Settings, Activity, Download } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
@@ -13,6 +13,20 @@ import { scanRisks, alertToDeviationInput, type RiskAlert, type RiskScanResult, 
 import { recordRender } from '@/lib/monitoring';
 import { useGoals, useTasks } from '@/hooks/useMatrix';
 import { createDeviationAlert } from '@/lib/dataLayer/crud';
+import { exportToCSV, exportToJSON } from '@/lib/export';
+
+/** 4×4 likelihood×impact matrix → score 0-100 */
+function computeRiskScore(likelihood: number, impact: number): number {
+  const matrix = [
+    [5, 10, 20, 40],   // likelihood: 1 (rare)
+    [10, 20, 40, 60],   // likelihood: 2 (unlikely)
+    [20, 40, 60, 80],   // likelihood: 3 (possible)
+    [40, 60, 80, 100],  // likelihood: 4 (likely)
+  ];
+  const l = Math.max(1, Math.min(4, likelihood)) - 1;
+  const i = Math.max(1, Math.min(4, impact)) - 1;
+  return matrix[l][i];
+}
 
 const RiskEngineDashboard = lazy(() => import('@/components/RiskEngineDashboard'));
 
@@ -63,7 +77,7 @@ export default function RiskView() {
   const configModal = useModal();
   const { toasts, success, error: toastError } = useToast();
   const [selectedRisk, setSelectedRisk] = useState<typeof risks[number] | null>(null);
-  const [form, setForm] = useState({ title: '', level: 'medium' as 'critical' | 'high' | 'medium' | 'low', description: '', source: '', affected_kpi: '', status: 'active' as 'active' | 'watching' | 'resolved' });
+  const [form, setForm] = useState({ title: '', level: 'medium' as 'critical' | 'high' | 'medium' | 'low', description: '', source: '', affected_kpi: '', status: 'active' as 'active' | 'watching' | 'resolved', likelihood: 2, impact: 2 });
 
   // ── Proactive risk scanning state ──
   const [scanResult, setScanResult] = useState<RiskScanResult | null>(null);
@@ -80,6 +94,7 @@ export default function RiskView() {
     goalAtRiskProgress: 30,
     goalAtRiskDaysBeforeEnd: 7,
   });
+  const [riskExportOpen, setRiskExportOpen] = useState(false);
 
   // ── Auto-scan on mount (DR-51: toggle-gated) ──
   useEffect(() => {
@@ -168,9 +183,19 @@ export default function RiskView() {
           {autoScanEnabled ? '自动:开' : '自动:关'}
         </button>
 
-        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { setForm({ title: '', level: 'medium', description: '', source: '', affected_kpi: '', status: 'active' }); addModal.openModal(); }}>
+        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { setForm({ title: '', level: 'medium', description: '', source: '', affected_kpi: '', status: 'active', likelihood: 2, impact: 2 }); addModal.openModal(); }}>
           <Plus size={12} />上报风险
         </button>
+        <div className="relative">
+          <button className="flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setRiskExportOpen((v) => !v)}><Download size={10} />导出 ▾</button>
+          {riskExportOpen && (<>
+            <div className="fixed inset-0 z-40" onClick={() => setRiskExportOpen(false)} />
+            <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setRiskExportOpen(false); exportToCSV(['标题', '级别', '描述', '来源', '影响KPI', '状态', '检测日期'], risks.map((r) => ({ '标题': r.title, '级别': r.level, '描述': r.description, '来源': r.source, '影响KPI': r.affected_kpi ?? '', '状态': r.status, '检测日期': r.detected_at })), 'risks'); }}>导出 CSV</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setRiskExportOpen(false); exportToJSON(risks.map((r) => ({ title: r.title, level: r.level, description: r.description, source: r.source, status: r.status })), 'risks'); }}>导出 JSON</button>
+            </div>
+          </>)}
+        </div>
       </div>
 
       {/* ── Tab: 风险列表 / 引擎仪表盘 ── */}
@@ -330,6 +355,22 @@ export default function RiskView() {
         <ModalField label="影响KPI（可选）">
           <input className={inputCls} placeholder="如：交付及时率" value={form.affected_kpi} onChange={(e) => setForm((p) => ({ ...p, affected_kpi: e.target.value }))} />
         </ModalField>
+        <div className="mb-3">
+          <div className="text-[11px] font-medium text-text-3 mb-1">风险评估</div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="text-[10px] text-text-3">可能性 ({form.likelihood}/4)</label>
+              <input type="range" min="1" max="4" value={form.likelihood} className="w-full accent-primary" onChange={(e) => setForm((p) => ({ ...p, likelihood: Number(e.target.value) }))} />
+            </div>
+            <div className="flex-1">
+              <label className="text-[10px] text-text-3">影响度 ({form.impact}/4)</label>
+              <input type="range" min="1" max="4" value={form.impact} className="w-full accent-warn" onChange={(e) => setForm((p) => ({ ...p, impact: Number(e.target.value) }))} />
+            </div>
+          </div>
+          <div className={cn('mt-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-center', computeRiskScore(form.likelihood, form.impact) >= 60 ? 'bg-danger/10 text-danger' : computeRiskScore(form.likelihood, form.impact) >= 40 ? 'bg-warn/10 text-warn' : 'bg-success/10 text-success')}>
+            风险评分: {computeRiskScore(form.likelihood, form.impact)}/100
+          </div>
+        </div>
       </Modal>
 
       {/* ── Risk Detail / Edit / Delete Modal ── */}
