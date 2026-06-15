@@ -396,7 +396,18 @@ export async function fetchScheduleEvents(): Promise<ScheduleEventRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localScheduleEvents();
   const { data, error } = await supabase!.from('schedule_events').select('*').order('time');
   if (error || !data?.length) return localScheduleEvents();
-  return data as ScheduleEventRow[];
+  return (data as Record<string, unknown>[]).map((s) => ({
+    id: String(s.id ?? ''),
+    time: String(s.time ?? ''),
+    title: String(s.title ?? ''),
+    type: String(s.type ?? 'meeting'),
+    location: s.location ? String(s.location) : null,
+    date: s.date ? String(s.date) : undefined,
+    start_date: s.start_date ? String(s.start_date) : undefined,
+    end_date: s.end_date ? String(s.end_date) : undefined,
+    description: s.description ? String(s.description) : undefined,
+    created_at: s.created_at ? String(s.created_at) : undefined,
+  }));
 }
 
 export async function fetchOrgInfo(): Promise<OrgInfoRow> {
