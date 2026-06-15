@@ -22,7 +22,7 @@ export default function ProjectsContent() {
   const modal = useModal();
   const editModal = useModal();
   const memberModal = useModal();
-  const [form, setForm] = useState({ title: '', status: 'planned', end_date: '', member_ids: [] as string[] });
+  const [form, setForm] = useState({ title: '', status: 'todo', end_date: '', member_ids: [] as string[] });
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const [editMemberIds, setEditMemberIds] = useState<string[]>([]);
   const [memberProjectId, setMemberProjectId] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export default function ProjectsContent() {
 
   const handleOpen = useCallback(() => {
     if (!ppLimit('maxProjects', projects.length, '免费版最多创建5个项目，升级Pro解锁更多')) return;
-    setForm({ title: '', status: 'planned', end_date: '', member_ids: [] });
+    setForm({ title: '', status: 'todo', end_date: '', member_ids: [] });
     modal.openModal();
   }, [modal.openModal]);
 

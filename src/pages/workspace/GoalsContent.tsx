@@ -29,7 +29,7 @@ export default function GoalsContent() {
   const goalModal = useModal();
   const addGoalModal = useModal();
   const [editGoalData, setEditGoalData] = useState<{ id: string; title: string; status: string; progress: number; key_results: string[] } | null>(null);
-  const [newGoalForm, setNewGoalForm] = useState({ title: '', status: 'on_track', progress: 0, end_date: '', start_date: '' });
+  const [newGoalForm, setNewGoalForm] = useState({ title: '', status: 'in_progress', progress: 0, end_date: '', start_date: '' });
   const [selectedGoalIds, setSelectedGoalIds] = useState<Set<string>>(new Set());
   const [goalExportOpen, setGoalExportOpen] = useState(false);
 
@@ -58,7 +58,7 @@ export default function GoalsContent() {
     setEditGoalData({
       id: g.id,
       title: g.title,
-      status: g.status === 'active' || g.status === 'on_track' ? 'on_track' : 'at_risk',
+      status: g.status === 'active' || g.status === 'on_track' || g.status === 'in_progress' ? 'in_progress' : 'blocked',
       progress: g.progress,
       key_results: krTexts as string[],
     });
@@ -111,7 +111,7 @@ export default function GoalsContent() {
     <div className="flex flex-1 flex-col overflow-hidden">
       <PageHeader icon={<Target size={16} />} title={t('goals.title')} badge={t('goals.inProgress', { count: goals.length })}>
         {can('goals:write') && (
-        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, '免费版最多创建5个目标，升级Pro解锁更多')) return; setNewGoalForm({ title: '', status: 'on_track', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, '免费版最多创建5个目标，升级Pro解锁更多')) return; setNewGoalForm({ title: '', status: 'in_progress', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
           <Plus size={12} />{t('goals.newGoal')}
         </button>
         )}
@@ -153,13 +153,13 @@ export default function GoalsContent() {
                   <Zap size={9} />{t('goals.sync', { value: autoProg })}
                 </button>
               )}
-              <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', g.status === 'active' || g.status === 'on_track' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
-                {g.status === 'active' || g.status === 'on_track' ? t('goals.normal') : t('goals.risk')}
+              <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', g.status === 'in_progress' || g.status === 'active' || g.status === 'on_track' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
+                {g.status === 'in_progress' || g.status === 'active' || g.status === 'on_track' ? t('goals.normal') : t('goals.risk')}
               </span>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-surface-2 mb-1.5 overflow-hidden relative">
-            <div className={cn('h-full rounded-full transition-all', g.status === 'active' || g.status === 'on_track' ? 'bg-success' : 'bg-warn')} style={{ width: `${g.progress}%` }} />
+            <div className={cn('h-full rounded-full transition-all', g.status === 'in_progress' || g.status === 'active' || g.status === 'on_track' ? 'bg-success' : 'bg-warn')} style={{ width: `${g.progress}%` }} />
             {hasAuto && progMismatch && (
               <div className="absolute top-0 left-0 h-full rounded-full border border-accent/40 bg-accent/10 transition-all" style={{ width: `${autoProg}%` }} />
             )}
@@ -262,8 +262,8 @@ export default function GoalsContent() {
         </ModalField>
         <ModalField label={t('goals.status')}>
           <select className={inputCls} value={newGoalForm.status} onChange={(e) => setNewGoalForm((p) => ({ ...p, status: e.target.value }))}>
-            <option value="on_track">{t('goals.normal')}</option>
-            <option value="at_risk">{t('goals.risk')}</option>
+            <option value="in_progress">{t('goals.normal')}</option>
+            <option value="blocked">{t('goals.risk')}</option>
           </select>
         </ModalField>
         <ModalField label={t('goals.startDate')}>

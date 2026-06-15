@@ -33,7 +33,7 @@ export default function TemplateWizardView() {
         await addGoal({
           title: pg.title,
           progress: 0,
-          status: 'active',
+          status: 'in_progress',
           key_results: pg.keyResults,
           owner_id: null,
           leader_id: null,

@@ -67,7 +67,7 @@ export default function OnboardingFlow() {
       const goal: GoalRow = await createGoal({
         title: goalTitle.trim(),
         progress: 0,
-        status: 'on_track',
+        status: 'in_progress',
         key_results: [],
         owner_id: null,
         leader_id: null,
@@ -113,7 +113,7 @@ export default function OnboardingFlow() {
       const goal: GoalRow = await createGoal({
         title: SAMPLE_GOAL_TITLE,
         progress: 0,
-        status: 'on_track',
+        status: 'in_progress',
         key_results: [],
         owner_id: null,
         leader_id: null,

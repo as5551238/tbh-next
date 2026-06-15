@@ -342,7 +342,7 @@ const toolDefs: ToolDefinition[] = [
       return await createGoal({
         title: String(params.title),
         progress: 0,
-        status: 'on_track',
+        status: 'in_progress',
         key_results: [],
         owner_id: null,
         leader_id: null,

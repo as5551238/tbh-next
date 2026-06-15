@@ -5,7 +5,7 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
     'created_at', 'updated_at', 'leader_id', 'supporter_ids',
     'canvas_x', 'canvas_y', 'priority', 'tags', 'category',
     'repeat_cycle', 'discussion_thread_id', 'summary',
-    'tracking_records', 'attachments', 'selected_kr_ids', 'team_id', 'deleted_at',
+    'tracking_records', 'attachments', 'selected_kr_ids', 'team_id', 'deleted_at', 'app_type',
   ]),
   tasks: new Set([
     'id', 'title', 'description', 'project_id', 'goal_id', 'status', 'priority',
@@ -14,13 +14,14 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
     'leader_id', 'supporter_ids', 'canvas_x', 'canvas_y', 'parent_id',
     'category', 'repeat_cycle', 'discussion_thread_id', 'summary',
     'tracking_records', 'attachments', 'blocked_by', 'sprint_id', 'team_id', 'deleted_at',
+    'progress', 'milestone', 'dependency_ids', 'subtask_ids', 'estimated_hours', 'actual_hours', 'app_type',
   ]),
   projects: new Set([
     'id', 'title', 'description', 'goal_id', 'status', 'start_date', 'end_date',
     'owner_id', 'member_ids', 'task_count', 'progress', 'created_at', 'updated_at',
     'leader_id', 'supporter_ids', 'parent_id', 'canvas_x', 'canvas_y', 'priority',
     'tags', 'category', 'repeat_cycle', 'discussion_thread_id', 'summary',
-    'tracking_records', 'attachments', 'team_id', 'deleted_at',
+    'tracking_records', 'attachments', 'team_id', 'deleted_at', 'app_type',
   ]),
   members: new Set([
     'id', 'name', 'role', 'department', 'avatar', 'email', 'status',
@@ -109,7 +110,9 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
     'id', 'title', 'type', 'status', 'author', 'editors', 'team_id', 'created_at', 'updated_at',
   ]),
   schedule_events: new Set([
-    'id', 'title', 'time', 'type', 'location', 'team_id', 'created_at', 'updated_at',
+    'id', 'title', 'description', 'start_date', 'end_date', 'all_day', 'color',
+    'linked_item_id', 'linked_item_type', 'member_id', 'repeat_cycle', 'type',
+    'created_at', 'updated_at', 'team_id',
   ]),
   agents: new Set([
     'id', 'industry', 'dept', 'name', 'description', 'status', 'sort_order', 'created_at', 'updated_at',

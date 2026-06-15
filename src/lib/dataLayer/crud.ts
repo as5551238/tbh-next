@@ -36,7 +36,19 @@ import { filterColumns } from './columns';
 export async function createGoal(data: Omit<GoalRow, 'id'>): Promise<GoalRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `g_local_${Date.now()}`, ...data };
   return withAuthRetry(async () => {
-    const row = filterColumns('goals', { ...data, team_id: '__default__' } as Record<string, unknown>);
+    const now = new Date().toISOString().slice(0, 10);
+    const row = filterColumns('goals', {
+      ...data,
+      team_id: '__default__',
+      // Fill NOT NULL defaults if not provided by caller
+      start_date: data.start_date ?? now,
+      end_date: data.end_date ?? '2026-12-31',
+      priority: data.priority ?? 'medium',
+      category: data.category ?? '__none__',
+      repeat_cycle: data.repeat_cycle ?? 'none',
+      summary: data.summary ?? '',
+      app_type: (data as Record<string, unknown>).app_type ?? 'tbh',
+    } as Record<string, unknown>);
     const { data: result, error } = await supabase!.from('goals').insert(row).select().single();
     if (error) throw error;
     return { ...result, done: result.status === 'done' } as GoalRow;
@@ -63,7 +75,16 @@ export async function createTask(data: Omit<TaskRow, 'id'>): Promise<TaskRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `t_local_${Date.now()}`, ...data };
   return withAuthRetry(async () => {
     const row = filterColumns('tasks', (() => {
-      const r: Record<string, unknown> = { ...data, team_id: '__default__' };
+      const r: Record<string, unknown> = {
+        ...data,
+        team_id: '__default__',
+        // Fill NOT NULL defaults if not provided by caller
+        priority: data.priority ?? 'medium',
+        category: data.category ?? '__none__',
+        repeat_cycle: data.repeat_cycle ?? 'none',
+        summary: data.summary ?? '',
+        app_type: (data as Record<string, unknown>).app_type ?? 'tbh',
+      };
       if (data.done) r.status = 'done';
       delete r.done;
       return r;
@@ -107,7 +128,21 @@ export async function deleteTask(id: string): Promise<void> {
 export async function createProject(data: Omit<ProjectRow, 'id'>): Promise<ProjectRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `p_local_${Date.now()}`, ...data };
   return withAuthRetry(async () => {
-    const row = filterColumns('projects', { ...data, team_id: '__default__' } as Record<string, unknown>);
+    const now = new Date().toISOString().slice(0, 10);
+    const row = filterColumns('projects', {
+      ...data,
+      team_id: '__default__',
+      // Fill NOT NULL defaults if not provided by caller
+      start_date: data.start_date ?? now,
+      end_date: data.end_date ?? '2026-12-31',
+      task_count: data.task_count ?? 0,
+      progress: data.progress ?? 0,
+      priority: data.priority ?? 'medium',
+      category: data.category ?? '__none__',
+      repeat_cycle: data.repeat_cycle ?? 'none',
+      summary: data.summary ?? '',
+      app_type: (data as Record<string, unknown>).app_type ?? 'tbh',
+    } as Record<string, unknown>);
     const { data: result, error } = await supabase!.from('projects').insert(row).select().single();
     if (error) throw error;
     return result as ProjectRow;
@@ -206,7 +241,12 @@ export async function fetchActionItems(goalId?: string): Promise<ActionItemRow[]
 
 export async function createActionItem(data: ActionItemInput): Promise<ActionItemRow> {
   if (!isSupabaseConfigured() || !supabase) return { id: `ai_local_${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...data } as unknown as ActionItemRow;
-  const row = filterColumns('action_items', { ...data } as Record<string, unknown>);
+  const row = filterColumns('action_items', {
+    ...data,
+    // Fill defaults for Supabase NOT NULL / required fields
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  } as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('action_items').insert(row).select().single();
   if (error) throw error;
   return result as ActionItemRow;
@@ -361,13 +401,24 @@ export async function deleteContact(id: string): Promise<void> {
 export async function createScheduleEvent(data: ScheduleEventInput): Promise<ScheduleEventRow | null> {
   if (!isSupabaseConfigured() || !supabase) return null;
   const input = { ...(data as unknown as Record<string, unknown>) };
-  // Convert UI-friendly date+time → start_date for DB
+  // Convert UI-friendly date+time → start_date/end_date for DB
   const datePart = input.date as string | undefined;
   const timePart = input.time as string | undefined;
   if (datePart && !input.start_date) {
     input.start_date = timePart ? `${datePart}T${timePart}:00` : `${datePart}T00:00:00`;
   }
+  if (datePart && !input.end_date) {
+    input.end_date = timePart ? `${datePart}T${timePart}:59` : `${datePart}T23:59:59`;
+  }
   delete input.date; delete input.time; delete input.location; // DB doesn't have these
+  // Fill NOT NULL defaults
+  input.id = input.id ?? `evt_${Date.now()}`;
+  input.description = input.description ?? '';
+  input.all_day = input.all_day ?? false;
+  input.color = input.color ?? '#7b6cf0';
+  input.repeat_cycle = input.repeat_cycle ?? 'none';
+  input.created_at = input.created_at ?? new Date().toISOString();
+  input.updated_at = input.updated_at ?? new Date().toISOString();
   const filtered = filterColumns('schedule_events', input);
   const { data: row, error } = await supabase!.from('schedule_events').insert(filtered).select().single();
   if (error) { console.error('createScheduleEvent error:', error); return null; }

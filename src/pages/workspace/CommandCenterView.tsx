@@ -178,7 +178,7 @@ export default function CommandCenterView() {
         success('任务已创建');
         break;
       case 'goal':
-        await addGoal({ title: quickForm.title, status: 'active', progress: 0, start_date: new Date().toISOString().slice(0, 10), end_date: quickForm.due_date || null, description: quickForm.description, team_id: '__default__' } as any);
+        await addGoal({ title: quickForm.title, status: 'in_progress', progress: 0, start_date: new Date().toISOString().slice(0, 10), end_date: quickForm.due_date || null, description: quickForm.description, team_id: '__default__' } as any);
         success('目标已创建');
         break;
       case 'actionItem':
