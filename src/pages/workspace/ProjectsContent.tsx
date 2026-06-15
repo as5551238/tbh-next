@@ -22,7 +22,7 @@ export default function ProjectsContent() {
   const modal = useModal();
   const editModal = useModal();
   const memberModal = useModal();
-  const [form, setForm] = useState({ title: '', status: 'todo', end_date: '', member_ids: [] as string[] });
+  const [form, setForm] = useState({ title: '', status: 'planned', end_date: '', member_ids: [] as string[] });
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const [editMemberIds, setEditMemberIds] = useState<string[]>([]);
   const [memberProjectId, setMemberProjectId] = useState<string | null>(null);
@@ -33,14 +33,14 @@ export default function ProjectsContent() {
 
   const projectFields: FieldDef[] = [
     { key: 'title', label: '项目名称', type: 'text' },
-    { key: 'status', label: '状态', type: 'select', options: [{ value: 'todo', label: '待办' }, { value: 'in_progress', label: '进行中' }, { value: 'done', label: '已完成' }] },
+    { key: 'status', label: '状态', type: 'select', options: [{ value: 'planned', label: '计划中' }, { value: 'active', label: '进行中' }, { value: 'review', label: '评审中' }] },
     { key: 'progress', label: '进度', type: 'number' },
     { key: 'end_date', label: '截止日期', type: 'date' },
   ];
 
   const handleOpen = useCallback(() => {
     if (!ppLimit('maxProjects', projects.length, '免费版最多创建5个项目，升级Pro解锁更多')) return;
-    setForm({ title: '', status: 'todo', end_date: '', member_ids: [] });
+    setForm({ title: '', status: 'planned', end_date: '', member_ids: [] });
     modal.openModal();
   }, [modal.openModal]);
 

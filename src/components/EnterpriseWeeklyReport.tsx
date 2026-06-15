@@ -131,15 +131,15 @@ export default function EnterpriseWeeklyReport({ teamId = '__default__' }: Enter
               if (!report) return;
               const md = `# 企业周报 - ${report.company.period}\n\n` +
                 `## 公司概览\n` +
-                `- 健康评分: ${report.company.healthScore}/100\n` +
-                `- 活跃项目: ${report.company.activeProjects}\n` +
-                `- 完成任务: ${report.company.completedTasks}\n` +
-                `- 逾期任务: ${report.company.overdueTasks}\n\n` +
+                `- 目标完成率: ${report.company.goal_completion_rate}%\n` +
+                `- 总任务数: ${report.company.total_tasks}\n` +
+                `- 本周完成: ${report.company.completed_this_week}\n` +
+                `- 逾期任务: ${report.company.overdue_tasks}\n\n` +
                 `## 部门概览\n` +
-                `| 部门 | 健康评分 | 活跃项目 | 逾期任务 |\n|------|---------|---------|--------|\n` +
-                (report.departments ?? []).map((d: {name: string; healthScore: number; activeProjects: number; overdueTasks: number}) => `| ${d.name} | ${d.healthScore} | ${d.activeProjects} | ${d.overdueTasks} |`).join('\n') + '\n\n' +
+                `| 部门 | 人数 | 总任务 | 本周完成 | 逾期 |\n|------|------|--------|---------|------|\n` +
+                (report.departments ?? []).map((d: {department: string; member_count: number; total_tasks: number; completed_this_week: number; overdue: number}) => `| ${d.department} | ${d.member_count} | ${d.total_tasks} | ${d.completed_this_week} | ${d.overdue} |`).join('\n') + '\n\n' +
                 `## 高优先级逾期任务\n` +
-                (report.highPriorityOverdue ?? []).map((t: {title: string; assignee: string; dueDate: string}) => `- ${t.title} (${t.assignee}, 截止${t.dueDate})`).join('\n');
+                (report.company.high_priority_overdue ?? []).map((t: {title: string; priority: string; due_date: string}) => `- [${t.priority}] ${t.title} (截止${t.due_date})`).join('\n');
               const blob = new Blob([md], { type: 'text/markdown' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');

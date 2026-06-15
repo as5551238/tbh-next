@@ -25,15 +25,14 @@ export default function KnowledgeOSPView() {
   const [installedIds, setInstalledIds] = usePersistedState<Set<string>>('tbh-installed-packs', new Set<string>());
   const [importing, setImporting] = useState<string | null>(null);
 
-  function saveInstalledIds(ids: Set<string>) {
-    setInstalledIds(ids);
-  }
-
   useEffect(() => {
-    fetchKnowledgePacks(showAllIndustries ? undefined : industry, search || undefined).then((data) => {
-      setPacks(data);
-      setLoading(false);
-    }).catch((err) => { console.error("[knowledge]", err); error("知识包加载失败，请重试"); setLoading(false); });
+    const timer = setTimeout(() => {
+      fetchKnowledgePacks(showAllIndustries ? undefined : industry, search || undefined).then((data) => {
+        setPacks(data);
+        setLoading(false);
+      }).catch((err) => { console.error("[knowledge]", err); error("知识包加载失败，请重试"); setLoading(false); });
+    }, 300);
+    return () => clearTimeout(timer);
   }, [industry, showAllIndustries, search]);
 
   const filtered = packs.filter((p) => {
