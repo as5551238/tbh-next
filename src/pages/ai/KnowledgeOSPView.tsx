@@ -10,8 +10,6 @@ import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 import { usePersistedState } from '@/hooks/usePersistedState';
 
-const INSTALLED_PACKS_STORAGE = 'tbh-installed-packs';
-
 export default function KnowledgeOSPView() {
   const [showPaywall, setShowPaywall] = useState(false);
   const industry = useAppStore((s) => s.industry);
@@ -61,14 +59,14 @@ export default function KnowledgeOSPView() {
       });
       const newIds = new Set(installedIds);
       newIds.add(pack.id);
-      saveInstalledIds(newIds);
+      setInstalledIds(newIds);
       try { await insertInstalledPack(pack.id); } catch { /* already recorded locally */ }
       setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
       success(`知识包"${pack.title}"已导入`);
     } catch {
       const newIds = new Set(installedIds);
       newIds.add(pack.id);
-      saveInstalledIds(newIds);
+      setInstalledIds(newIds);
       try { await insertInstalledPack(pack.id); } catch { /* local fallback */ }
       setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
       success(`知识包"${pack.title}"已标记导入`);
@@ -95,7 +93,7 @@ export default function KnowledgeOSPView() {
     }
     const newIds = new Set(installedIds);
     if (nowInstalled) newIds.add(id); else newIds.delete(id);
-    saveInstalledIds(newIds);
+    setInstalledIds(newIds);
     setPacks((prev) => prev.map((p) => p.id === id ? { ...p, isInstalled: nowInstalled } : p));
     setSelectedPack((prev) => prev ? { ...prev, isInstalled: nowInstalled } : null);
     success(nowInstalled ? `知识包"${selectedPack.title}"已安装` : `知识包"${selectedPack.title}"已卸载`);

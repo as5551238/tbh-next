@@ -119,7 +119,7 @@ function localProjects(): ProjectRow[] {
   return [
     { id: 'p1', title: 'AI同事平台', status: 'in_progress', progress: 35, member_ids: ['m1', 'm2'], task_count: 12, end_date: '2026-12-31' },
     { id: 'p2', title: '数据看板重构', status: 'in_progress', progress: 60, member_ids: ['m2', 'm3'], task_count: 8, end_date: '2026-09-30' },
-    { id: 'p3', title: '移动端适配', status: 'todo', progress: 10, member_ids: ['m3'], task_count: 3, end_date: '2026-10-31' },
+    { id: 'p3', title: '移动端适配', status: 'planned', progress: 10, member_ids: ['m3'], task_count: 3, end_date: '2026-10-31' },
   ];
 }
 
