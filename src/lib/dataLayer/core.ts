@@ -394,20 +394,29 @@ export async function fetchWorkflows(): Promise<WorkflowRow[]> {
 
 export async function fetchScheduleEvents(): Promise<ScheduleEventRow[]> {
   if (!isSupabaseConfigured() || !supabase) return localScheduleEvents();
-  const { data, error } = await supabase!.from('schedule_events').select('*').order('time');
+  const { data, error } = await supabase!.from('schedule_events').select('*').order('start_date');
   if (error || !data?.length) return localScheduleEvents();
-  return (data as Record<string, unknown>[]).map((s) => ({
-    id: String(s.id ?? ''),
-    time: String(s.time ?? ''),
-    title: String(s.title ?? ''),
-    type: String(s.type ?? 'meeting'),
-    location: s.location ? String(s.location) : null,
-    date: s.date ? String(s.date) : undefined,
-    start_date: s.start_date ? String(s.start_date) : undefined,
-    end_date: s.end_date ? String(s.end_date) : undefined,
-    description: s.description ? String(s.description) : undefined,
-    created_at: s.created_at ? String(s.created_at) : undefined,
-  }));
+  return (data as Record<string, unknown>[]).map((s) => {
+    const startDate = s.start_date ? String(s.start_date) : undefined;
+    const endDate = s.end_date ? String(s.end_date) : undefined;
+    // Extract date (YYYY-MM-DD) and time (HH:mm) from start_date
+    const date = startDate ? startDate.slice(0, 10) : undefined;
+    const time = startDate && startDate.length > 10 ? startDate.slice(11, 16) : '';
+    return {
+      id: String(s.id ?? ''),
+      title: String(s.title ?? ''),
+      type: String(s.type ?? 'meeting'),
+      time,
+      location: null, // DB has no location column
+      date,
+      start_date: startDate,
+      end_date: endDate,
+      all_day: Boolean(s.all_day),
+      color: s.color ? String(s.color) : null,
+      description: s.description ? String(s.description) : null,
+      created_at: s.created_at ? String(s.created_at) : undefined,
+    };
+  });
 }
 
 export async function fetchOrgInfo(): Promise<OrgInfoRow> {

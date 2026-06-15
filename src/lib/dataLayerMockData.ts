@@ -72,10 +72,21 @@ export interface WorkflowRow {
   usage_count: number; is_built_in: boolean;
 }
 export interface ScheduleEventRow {
-  id: string; time: string; title: string; type: string;
-  location: string | null; date?: string;
-  start_date?: string; end_date?: string;
-  description?: string; created_at?: string;
+  id: string;
+  title: string;
+  type: string;
+  /** UI-friendly time extracted from start_date (HH:mm) or empty string for all-day */
+  time: string;
+  /** Location placeholder — not in DB schema, always null from Supabase */
+  location: string | null;
+  /** Date string (YYYY-MM-DD) extracted from start_date */
+  date?: string;
+  start_date?: string;
+  end_date?: string;
+  all_day?: boolean;
+  color?: string | null;
+  description?: string | null;
+  created_at?: string;
 }
 export interface OrgInfoRow {
   id: string; name: string; industry: string; size: string;

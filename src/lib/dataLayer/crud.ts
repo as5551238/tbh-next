@@ -360,7 +360,15 @@ export async function deleteContact(id: string): Promise<void> {
 
 export async function createScheduleEvent(data: ScheduleEventInput): Promise<ScheduleEventRow | null> {
   if (!isSupabaseConfigured() || !supabase) return null;
-  const filtered = filterColumns('schedule_events', data as unknown as Record<string, unknown>);
+  const input = { ...(data as unknown as Record<string, unknown>) };
+  // Convert UI-friendly date+time → start_date for DB
+  const datePart = input.date as string | undefined;
+  const timePart = input.time as string | undefined;
+  if (datePart && !input.start_date) {
+    input.start_date = timePart ? `${datePart}T${timePart}:00` : `${datePart}T00:00:00`;
+  }
+  delete input.date; delete input.time; delete input.location; // DB doesn't have these
+  const filtered = filterColumns('schedule_events', input);
   const { data: row, error } = await supabase!.from('schedule_events').insert(filtered).select().single();
   if (error) { console.error('createScheduleEvent error:', error); return null; }
   return row as ScheduleEventRow;
@@ -368,7 +376,15 @@ export async function createScheduleEvent(data: ScheduleEventInput): Promise<Sch
 
 export async function updateScheduleEvent(id: string, data: ScheduleEventUpdate): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) return;
-  const { error } = await supabase!.from('schedule_events').update(data).eq('id', id);
+  const input = { ...(data as unknown as Record<string, unknown>) };
+  // Convert UI-friendly date+time → start_date for DB
+  const datePart = input.date as string | undefined;
+  const timePart = input.time as string | undefined;
+  if (datePart && !input.start_date) {
+    input.start_date = timePart ? `${datePart}T${timePart}:00` : `${datePart}T00:00:00`;
+  }
+  delete input.date; delete input.time; delete input.location;
+  const { error } = await supabase!.from('schedule_events').update(input).eq('id', id);
   if (error) throw new Error(`updateScheduleEvent: ${error.message}`);
 }
 
