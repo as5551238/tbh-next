@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, saveSupabaseConfig } from '@/lib/supabase';
 
 export default function SupabaseSetupPage() {
   const navigate = useNavigate();
@@ -26,11 +26,9 @@ export default function SupabaseSetupPage() {
   }
 
   function handleSave() {
-    // For now, we store in sessionStorage so the app can pick it up
-    // In production, this would go through proper init flow
-    sessionStorage.setItem('tbh-next-supabase-url', url.trim());
-    sessionStorage.setItem('tbh-next-supabase-anon-key', anonKey.trim());
-    navigate(navigateTo('workspace', 'overview'));
+    saveSupabaseConfig(url.trim(), anonKey.trim());
+    // Reload to reinitialize supabase client with new credentials
+    window.location.href = '/';
   }
 
   return (
