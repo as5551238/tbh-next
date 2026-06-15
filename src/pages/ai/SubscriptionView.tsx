@@ -197,6 +197,18 @@ export default function SubscriptionView() {
                             if (!confirm('确定要降级为免费版？降级后将失去Pro/Enterprise功能。')) return;
                             setCurrentPlan('free');
                             setSub((prev) => ({ ...prev, plan: 'free' }));
+                            // Update usage limits to free tier
+                            const freeLimits = PLAN_LIMITS.free;
+                            setUsage((prev) => prev ? {
+                              ...prev,
+                              aiQueriesLimit: freeLimits.aiQueriesPerDay,
+                              agentsLimit: freeLimits.maxAgents,
+                              teamMembersLimit: freeLimits.maxTeamMembers,
+                              projectsLimit: freeLimits.maxProjects,
+                              docsLimit: freeLimits.maxDocs,
+                              goalsLimit: freeLimits.maxGoals >= 0 ? freeLimits.maxGoals : prev.goals,
+                              tasksLimit: freeLimits.maxTasks >= 0 ? freeLimits.maxTasks : prev.tasks,
+                            } : null);
                             try { await cancelSubscription(); } catch { /* demo mode graceful fallback */ }
                           }}>
                           降级为免费版

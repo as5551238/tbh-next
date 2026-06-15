@@ -64,12 +64,8 @@ export default function KnowledgeOSPView() {
       setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
       success(`知识包"${pack.title}"已导入`);
     } catch {
-      const newIds = new Set(installedIds);
-      newIds.add(pack.id);
-      setInstalledIds(newIds);
-      try { await insertInstalledPack(pack.id); } catch { /* local fallback */ }
-      setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
-      success(`知识包"${pack.title}"已标记导入`);
+      // Import actually failed — do NOT mark as installed
+      error(`知识包"${pack.title}"导入失败，请重试`);
     } finally {
       setImporting(null);
     }
@@ -84,6 +80,22 @@ export default function KnowledgeOSPView() {
     if (nowInstalled && selectedPack.plan === 'enterprise' && !hasFeature('ai_knowledge_osp')) { setShowPaywall(true); return; }
     try {
       if (nowInstalled) {
+        // Create the pack in DB first (same as handleImport), then record installation
+        await createKnowledgePack({
+          industry: selectedPack.industry,
+          title: selectedPack.title,
+          description: selectedPack.description,
+          category: selectedPack.category,
+          content: selectedPack.content,
+          tags: selectedPack.tags,
+          author: selectedPack.author,
+          version: selectedPack.version,
+          downloads: selectedPack.downloads,
+          rating: selectedPack.rating,
+          is_official: selectedPack.isOfficial,
+          plan: selectedPack.plan,
+          updated_at: selectedPack.updatedAt,
+        });
         await insertInstalledPack(id);
       } else {
         await deleteInstalledPack(id);

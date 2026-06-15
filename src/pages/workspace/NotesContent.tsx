@@ -32,7 +32,7 @@ export default function NotesContent() {
 
   const handleAdd = async () => {
     if (!newItem.title.trim()) return;
-    await addNote({ title: newItem.title, content: newItem.content, tags: newItem.tags.split(',').map((t) => t.trim()).filter(Boolean), color: newItem.color, pinned: newItem.pinned, member_id: null, team_id: '' });
+    await addNote({ title: newItem.title, content: newItem.content, tags: newItem.tags.split(',').map((t) => t.trim()).filter(Boolean), color: newItem.color, pinned: newItem.pinned, member_id: null, team_id: '__default__' });
     success('笔记已创建');
     setNewItem({ title: '', content: '', tags: '', color: NOTE_COLORS[0], pinned: false });
     addModal.closeModal();

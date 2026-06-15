@@ -118,7 +118,7 @@ export default function TasksContent() {
   }, []);
 
   const bulkStatus = useCallback((status: string) => {
-    selectedIds.forEach((id) => editTask(id, { status }));
+    selectedIds.forEach((id) => editTask(id, { status, done: status === 'done' }));
     setSelectedIds(new Set());
   }, [selectedIds, editTask]);
 

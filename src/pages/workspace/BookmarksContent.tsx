@@ -33,7 +33,7 @@ export default function BookmarksContent() {
 
   const handleAdd = async () => {
     if (!newItem.title.trim()) return;
-    await addBookmark({ title: newItem.title, url: newItem.url, target_type: newItem.target_type, target_id: '', category: newItem.category, member_id: null, team_id: '' });
+    await addBookmark({ title: newItem.title, url: newItem.url, target_type: newItem.target_type, target_id: '', category: newItem.category, member_id: null, team_id: '__default__' });
     success('书签已添加');
     setNewItem({ title: '', url: '', target_type: 'other', category: '' });
     addModal.closeModal();

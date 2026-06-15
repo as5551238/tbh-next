@@ -55,7 +55,7 @@ export default function ActivitiesContent() {
 
   const handleAdd = async () => {
     if (!newItem.title.trim()) return;
-    await addActivity({ title: newItem.title, description: newItem.description, type: newItem.type, actor: newItem.actor || '系统', target_type: null, target_id: null, team_id: '' });
+    await addActivity({ title: newItem.title, description: newItem.description, type: newItem.type, actor: newItem.actor || '系统', target_type: null, target_id: null, team_id: '__default__' });
     success('活动已添加');
     setNewItem({ title: '', description: '', type: 'created', actor: '' });
     addModal.closeModal();

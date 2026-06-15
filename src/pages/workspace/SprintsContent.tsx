@@ -30,7 +30,7 @@ export default function SprintsContent() {
 
   const handleAdd = async () => {
     if (!newItem.name.trim()) return;
-    await addSprint({ name: newItem.name, goal_id: newItem.goal_id || null, status: newItem.status, start_date: newItem.start_date, end_date: newItem.end_date, total_tasks: 0, completed_tasks: 0, team_id: '' });
+    await addSprint({ name: newItem.name, goal_id: newItem.goal_id || null, status: newItem.status, start_date: newItem.start_date, end_date: newItem.end_date, total_tasks: 0, completed_tasks: 0, team_id: '__default__' });
     success('冲刺已创建');
     setNewItem({ name: '', goal_id: '', status: 'planning', start_date: '', end_date: '' });
     addModal.closeModal();

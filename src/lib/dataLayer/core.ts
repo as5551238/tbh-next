@@ -117,9 +117,9 @@ function localTasks(): TaskRow[] {
 
 function localProjects(): ProjectRow[] {
   return [
-    { id: 'p1', title: 'AI同事平台', status: 'in_progress', progress: 35, member_ids: ['m1', 'm2'], task_count: 12, end_date: '2026-12-31' },
-    { id: 'p2', title: '数据看板重构', status: 'in_progress', progress: 60, member_ids: ['m2', 'm3'], task_count: 8, end_date: '2026-09-30' },
-    { id: 'p3', title: '移动端适配', status: 'planned', progress: 10, member_ids: ['m3'], task_count: 3, end_date: '2026-10-31' },
+    { id: 'p1', title: 'AI同事平台', status: 'in_progress', progress: 35, member_ids: ['m1', 'm2'], task_count: 12, start_date: null, end_date: '2026-12-31', goal_id: 'g1' },
+    { id: 'p2', title: '数据看板重构', status: 'in_progress', progress: 60, member_ids: ['m2', 'm3'], task_count: 8, start_date: null, end_date: '2026-09-30', goal_id: 'g1' },
+    { id: 'p3', title: '移动端适配', status: 'planned', progress: 10, member_ids: ['m3'], task_count: 3, start_date: null, end_date: '2026-10-31', goal_id: 'g2' },
   ];
 }
 
@@ -214,8 +214,13 @@ export async function fetchProjects(): Promise<ProjectRow[]> {
     progress: Number(p.progress ?? 0),
     member_ids: Array.isArray(p.member_ids) ? p.member_ids.map(String) : [],
     task_count: Number(p.task_count ?? 0),
+    start_date: p.start_date ? String(p.start_date) : null,
     end_date: p.end_date ? String(p.end_date) : null,
     goal_id: p.goal_id ? String(p.goal_id) : null,
+    owner_id: p.owner_id ? String(p.owner_id) : null,
+    leader_id: p.leader_id ? String(p.leader_id) : null,
+    description: p.description ? String(p.description) : null,
+    priority: p.priority ? String(p.priority) : undefined,
   }));
 }
 

@@ -2,6 +2,7 @@ import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useGoals, useTasks, useProjects } from '@/hooks/useMatrix';
+import type { KeyResultValue } from '@/lib/dataLayer';
 import { cn, safeStr } from '@/lib/utils';
 import { Target, CheckCircle2, Zap, Plus, FolderOpen, X } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
@@ -28,7 +29,7 @@ export default function GoalsContent() {
   const { tasks } = useTasks();
   const goalModal = useModal();
   const addGoalModal = useModal();
-  const [editGoalData, setEditGoalData] = useState<{ id: string; title: string; status: string; progress: number; key_results: string[] } | null>(null);
+  const [editGoalData, setEditGoalData] = useState<{ id: string; title: string; status: string; progress: number; key_results: KeyResultValue[] } | null>(null);
   const [newGoalForm, setNewGoalForm] = useState({ title: '', status: 'in_progress', progress: 0, end_date: '', start_date: '' });
   const [selectedGoalIds, setSelectedGoalIds] = useState<Set<string>>(new Set());
   const [goalExportOpen, setGoalExportOpen] = useState(false);
@@ -54,13 +55,16 @@ export default function GoalsContent() {
   }, [projects]);
 
   const handleCardClick = useCallback((g: typeof goals[number]) => {
-    const krTexts = g.key_results.map((kr) => typeof kr === 'string' ? kr : (kr as Record<string, unknown>).text || String(kr));
+    // Normalize status: map 'active'→'on_track', 'in_progress'→'on_track' for the dropdown
+    let normalizedStatus = g.status;
+    if (normalizedStatus === 'active' || normalizedStatus === 'in_progress') normalizedStatus = 'on_track';
+    if (normalizedStatus !== 'on_track' && normalizedStatus !== 'at_risk') normalizedStatus = 'on_track';
     setEditGoalData({
       id: g.id,
       title: g.title,
-      status: g.status === 'active' || g.status === 'on_track' || g.status === 'in_progress' ? 'in_progress' : 'blocked',
+      status: normalizedStatus,
       progress: g.progress,
-      key_results: krTexts as string[],
+      key_results: g.key_results,
     });
     goalModal.openModal();
   }, [goalModal.openModal]);
@@ -74,23 +78,35 @@ export default function GoalsContent() {
 
   const handleEditGoalSave = useCallback(() => {
     if (!editGoalData) return;
+    // Merge edited text back into KR objects, preserving metadata (targetValue, currentValue, id, track)
+    const mergedKeyResults: KeyResultValue[] = editGoalData.key_results.map((kr, i) => {
+      if (typeof kr === 'string') return { text: kr, selected: false } as KeyResultValue;
+      // kr is a KeyResultItem — update text but keep all other fields
+      return { ...kr, text: (kr as Record<string, unknown>).text ?? kr.title ?? String(kr) } as KeyResultValue;
+    });
+    // Map dropdown status back to DB-accepted values
+    const dbStatus = editGoalData.status === 'at_risk' ? 'at_risk' : 'on_track';
     editGoal(editGoalData.id, {
       title: editGoalData.title,
-      status: editGoalData.status,
+      status: dbStatus,
       progress: editGoalData.progress,
-      key_results: editGoalData.key_results.map((text) => ({ text, selected: false })) as typeof goals[number]['key_results'],
+      key_results: mergedKeyResults,
     });
-    trackEvent('goal_update', { id: editGoalData.id, title: editGoalData.title, status: editGoalData.status, progress: editGoalData.progress });
+    trackEvent('goal_update', { id: editGoalData.id, title: editGoalData.title, status: dbStatus, progress: editGoalData.progress });
     goalModal.closeModal();
     setEditGoalData(null);
-  }, [editGoalData, editGoal, goalModal.closeModal, goals]);
+  }, [editGoalData, editGoal, goalModal.closeModal]);
 
   const handleKrTextChange = useCallback((idx: number, value: string) => {
-    setEditGoalData((prev) => prev ? { ...prev, key_results: prev.key_results.map((t, i) => i === idx ? value : t) } : null);
+    setEditGoalData((prev) => prev ? { ...prev, key_results: prev.key_results.map((kr, i) => {
+      if (i !== idx) return kr;
+      if (typeof kr === 'string') return value as KeyResultValue;
+      return { ...kr, text: value, title: value } as KeyResultValue;
+    }) } : null);
   }, []);
 
   const handleAddKr = useCallback(() => {
-    setEditGoalData((prev) => prev ? { ...prev, key_results: [...prev.key_results, ''] } : null);
+    setEditGoalData((prev) => prev ? { ...prev, key_results: [...prev.key_results, '' as KeyResultValue] } : null);
   }, []);
 
   const handleRemoveKr = useCallback((idx: number) => {
@@ -217,7 +233,7 @@ export default function GoalsContent() {
             <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-text-3">{t('goals.keyResults')}</div>
             {editGoalData.key_results.map((kr, i) => (
               <div key={i} className="flex items-center gap-2 mb-2 flex-wrap">
-                <input className={inputCls} aria-label={`关键结果 ${i + 1}`} value={kr} placeholder={`KR ${i + 1}`} onChange={(e) => handleKrTextChange(i, e.target.value)} />
+                <input className={inputCls} aria-label={`关键结果 ${i + 1}`} value={typeof kr === 'string' ? kr : String((kr as Record<string, unknown>).text ?? (kr as Record<string, unknown>).title ?? '')} placeholder={`KR ${i + 1}`} onChange={(e) => handleKrTextChange(i, e.target.value)} />
                 <button className="shrink-0 text-[10px] text-danger hover:text-danger/80" onClick={() => handleRemoveKr(i)}>{t('goals.delete')}</button>
               </div>
             ))}

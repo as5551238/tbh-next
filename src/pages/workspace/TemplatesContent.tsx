@@ -39,7 +39,7 @@ export default function TemplatesContent() {
 
   const handleAdd = async () => {
     if (!newItem.name.trim()) return;
-    await addTemplate({ name: newItem.name, category: newItem.category, content: newItem.content, usage_count: 0, is_built_in: false, team_id: '' });
+    await addTemplate({ name: newItem.name, category: newItem.category, content: newItem.content, usage_count: 0, is_built_in: false, team_id: '__default__' });
     trackEvent('template_create', { name: newItem.name, category: newItem.category });
     success('模板已创建');
     setNewItem({ name: '', category: 'PRD', content: '' });
@@ -82,7 +82,7 @@ export default function TemplatesContent() {
         <span className="text-sm font-bold">模板库</span>
         <span className="text-[10px] text-text-3">{templates.length} 个模板</span>
         <div className="flex-1" />
-        <button onClick={() => { if (!isPro) return; addModal.openModal(); }} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
+        <button onClick={() => { if (!isPro) { alert('创建模板需要专业版，请升级解锁'); return; } addModal.openModal(); }} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
           <Plus size={12} />
           新建模板
         </button>

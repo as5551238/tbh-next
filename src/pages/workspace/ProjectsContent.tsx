@@ -66,16 +66,18 @@ export default function ProjectsContent() {
   }, [editModal.openModal]);
 
   const handleProjectSave = useCallback((updated: Record<string, unknown>) => {
-    editProject(String(updated.id), {
+    const projectId = String(updated.id);
+    const currentProject = projects.find((p) => p.id === projectId);
+    editProject(projectId, {
       title: String(updated.title),
       status: String(updated.status),
       progress: Number(updated.progress),
       end_date: updated.end_date ? String(updated.end_date) : null,
       member_ids: editMemberIds,
-      goal_id: null,
+      goal_id: currentProject?.goal_id ?? null,
     });
     trackEvent('project_update', { id: updated.id, status: updated.status });
-  }, [editProject, editMemberIds]);
+  }, [editProject, editMemberIds, projects]);
 
   const handleOpenMemberModal = useCallback((p: typeof projects[number], e: React.MouseEvent) => {
     e.stopPropagation();
@@ -88,18 +90,18 @@ export default function ProjectsContent() {
   const handleRemoveMember = useCallback((mid: string) => {
     setEditMemberIds((prev) => {
       const newIds = prev.filter((id) => id !== mid);
-      if (memberProjectId) editProject(memberProjectId, { member_ids: newIds, goal_id: null });
+      if (memberProjectId) editProject(memberProjectId, { member_ids: newIds });
       return newIds;
     });
   }, [memberProjectId, editProject]);
 
   const projExportHeaders = ['名称', '描述', '状态', '进度', '负责人', '开始日期', '截止日期'];
   const handleExportProjectsCSV = useCallback(() => {
-    const rows = projects.map((p) => ({ '名称': String(p.title ?? ''), '描述': '', '状态': String(p.status ?? ''), '进度': String(p.progress ?? ''), '负责人': '', '开始日期': '', '截止日期': String(p.end_date ?? '') }));
+    const rows = projects.map((p) => ({ '名称': String(p.title ?? ''), '描述': '', '状态': String(p.status ?? ''), '进度': String(p.progress ?? ''), '负责人': '', '开始日期': String(p.start_date ?? ''), '截止日期': String(p.end_date ?? '') }));
     exportToCSV(projExportHeaders, rows, 'projects');
   }, [projects]);
   const handleExportProjectsJSON = useCallback(() => {
-    const rows = projects.map((p) => ({ '名称': String(p.title ?? ''), '描述': '', '状态': String(p.status ?? ''), '进度': String(p.progress ?? ''), '负责人': '', '开始日期': '', '截止日期': String(p.end_date ?? '') }));
+    const rows = projects.map((p) => ({ '名称': String(p.title ?? ''), '描述': '', '状态': String(p.status ?? ''), '进度': String(p.progress ?? ''), '负责人': '', '开始日期': String(p.start_date ?? ''), '截止日期': String(p.end_date ?? '') }));
     exportToJSON(rows, 'projects');
   }, [projects]);
 
@@ -230,7 +232,7 @@ export default function ProjectsContent() {
           })}
           {editMemberIds.length === 0 && <span className="text-[10px] text-text-3">暂无成员，请从下方添加</span>}
         </div>
-        <select className={inputCls} value="" onChange={(e) => { if (e.target.value && !editMemberIds.includes(e.target.value)) { const newIds = [...editMemberIds, e.target.value]; setEditMemberIds(newIds); if (memberProjectId) editProject(memberProjectId, { member_ids: newIds, goal_id: null }); } }}>
+        <select className={inputCls} value="" onChange={(e) => { if (e.target.value && !editMemberIds.includes(e.target.value)) { const newIds = [...editMemberIds, e.target.value]; setEditMemberIds(newIds); if (memberProjectId) editProject(memberProjectId, { member_ids: newIds }); } }}>
           <option value="">+ 添加成员...</option>
           {members.filter((m) => !editMemberIds.includes(m.id)).map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
