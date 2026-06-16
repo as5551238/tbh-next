@@ -48,6 +48,8 @@ export function useAgentLoop(
 ) {
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
+  const industryRaw = useAppStore((s) => s.industryRaw);
+  const deptRaw = useAppStore((s) => s.deptRaw);
   const activeModule = useAppStore((s) => s.activeModule);
   const { user } = useAuth();
   const { goals } = useGoals();
@@ -295,7 +297,7 @@ export function useAgentLoop(
             .map(t => ({ title: t.title, status: t.status, priority: t.priority, due_date: t.due_date ?? undefined })),
           overdueTasks: overdueTasks.map(t => ({ title: t.title, due_date: t.due_date!, priority: t.priority })),
           actionItemList: openActionItems.slice(0, 8).map(a => ({ title: a.title, priority: a.priority, status: a.status })),
-        }));
+        }), industryRaw, deptRaw);
 
     const aiMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },

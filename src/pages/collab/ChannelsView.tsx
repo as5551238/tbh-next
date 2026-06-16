@@ -9,7 +9,9 @@ import PaywallModal from '@/components/PaywallModal';
 import { Send, Bot, User, Hash, Users, ChevronDown, Circle, Plus, X } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
 import { createMessage, fetchChannels, createChannel, type ChannelRow } from '@/lib/dataLayer';
+import { addChannelMember, removeChannelMember, fetchChannelMembers, type ChannelMemberRow } from '@/lib/dataLayer/extended-insights';
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
+import { useLocale } from '@/lib/i18n';
 
 interface ChatMsg {
   id: number;
@@ -26,8 +28,11 @@ interface OnlineUser {
 }
 
 export default function ChannelsView() {
+  const { t } = useLocale();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
+  const industryRaw = useAppStore((s) => s.industryRaw);
+  const deptRaw = useAppStore((s) => s.deptRaw);
   const indColor = useIndustryColor();
   const { cell, loading } = useMatrixCell();
   const defaultChannels = cell.channels;
@@ -41,6 +46,10 @@ export default function ChannelsView() {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [channelMembers, setChannelMembers] = useState<ChannelMemberRow[]>([]);
+  const [inviteMemberId, setInviteMemberId] = useState('');
+  const [inviteError, setInviteError] = useState('');
+  const inviteModal = useModal();
   const scrollRef = useRef<HTMLDivElement>(null);
   const createChModal = useModal();
   const [newChName, setNewChName] = useState('');
@@ -71,6 +80,14 @@ export default function ChannelsView() {
       ]);
     }
   }, [channelsLoaded, channels, activeCh, industry, dept]);
+
+  // Load channel members when active channel changes
+  useEffect(() => {
+    if (!activeCh || !channelRows.length) return;
+    const currentRow = channelRows.find((r) => r.name === activeCh);
+    if (!currentRow) return;
+    fetchChannelMembers(currentRow.id).then(setChannelMembers).catch(() => setChannelMembers([]));
+  }, [activeCh, channelRows]);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -132,7 +149,7 @@ export default function ChannelsView() {
     setIsTyping(true);
     scrollToBottom();
 
-    const systemPrompt = buildSystemPrompt(cell, industry, dept);
+    const systemPrompt = buildSystemPrompt(cell, industry, dept, undefined, industryRaw, deptRaw);
     const aiMessages: ChatMessage[] = [
       { role: 'system', content: `${systemPrompt}\n\n你正在「#${activeCh}」频道中作为AI同事与团队成员对话。语气像一位资深同事，简洁专业。` },
       ...messages
@@ -174,6 +191,23 @@ export default function ChannelsView() {
     }
   }
 
+  async function handleInviteMember() {
+    if (!inviteMemberId.trim()) return;
+    setInviteError('');
+    const currentRow = channelRows.find((r) => r.name === activeCh);
+    if (!currentRow) { setInviteError('频道信息未找到'); return; }
+    try {
+      const newMember = await addChannelMember(currentRow.id, inviteMemberId.trim());
+      if (newMember) {
+        setChannelMembers((prev) => [...prev, newMember]);
+      }
+      setInviteMemberId('');
+      inviteModal.closeModal();
+    } catch (err: unknown) {
+      setInviteError(err instanceof Error ? err.message : '邀请失败');
+    }
+  }
+
   async function handleCreateChannel() {
     if (!newChName.trim()) return;
     const plan = getCurrentPlan();
@@ -187,6 +221,8 @@ export default function ChannelsView() {
     if (row) {
       setChannelRows((prev) => [...prev, row]);
       setChannels((prev) => [...prev, name]);
+      // Auto-add creator as channel member
+      try { await addChannelMember(row.id, user?.id ?? 'admin_001', 'creator'); } catch { /* ignore */ }
     } else {
       setChannels((prev) => [...prev, name]);
     }
@@ -205,7 +241,7 @@ export default function ChannelsView() {
           <ChevronDown size={14} className="text-text-3" />
         </div>
         <div className="flex-1 overflow-y-auto py-1">
-          <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-text-3">频道</div>
+          <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-text-3">{t('channels.channels')}</div>
           {channels.map((ch) => (
             <button
               key={ch}
@@ -215,16 +251,16 @@ export default function ChannelsView() {
               <Hash size={13} className="shrink-0 text-text-3" />
               <span className="truncate">{ch}</span>
               {activeCh === ch && onlineUsers.length > 0 && (
-                <span className="ml-auto text-[8px] text-success font-bold">{onlineUsers.length} 在线</span>
+                <span className="ml-auto text-[8px] text-success font-bold">{t('channels.onlineCount', { count: onlineUsers.length })}</span>
               )}
             </button>
           ))}
           <button onClick={createChModal.openModal} className="flex flex-wrap w-full items-center gap-2 px-3 py-1.5 text-xs text-text-3 hover:text-primary-2 transition-colors">
             <Plus size={13} className="shrink-0" />
-            <span>新建频道</span>
+            <span>{t('channels.newChannel')}</span>
           </button>
           <div className="px-3 py-1.5 mt-2 text-[9px] font-bold uppercase tracking-wider text-text-3">
-            AI 同事 ({cell.agents.length})
+            {t('channels.aiColleagues')} ({cell.agents.length})
           </div>
           {cell.agents.map((agent) => (
             <div key={agent.name} className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs text-text-2">
@@ -253,9 +289,12 @@ export default function ChannelsView() {
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
           <Hash size={15} className="text-text-3" />
           <span className="text-sm font-bold">{activeCh}</span>
-          <span className="text-[10px] text-text-3 ml-2"><Users size={11} className="inline mr-1" />{1 + onlineUsers.length} 人 · {cell.agents.length} AI</span>
+          <span className="text-[10px] text-text-3 ml-2"><Users size={11} className="inline mr-1" />{t('channels.memberCount', { count: 1 + onlineUsers.length + channelMembers.length, aiCount: cell.agents.length })}</span>
+          <button onClick={inviteModal.openModal} className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] text-primary-2 hover:bg-primary/20">
+            <Plus size={10} />{t('channels.inviteMember')}
+          </button>
           {onlineUsers.length > 0 && (
-            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">成员在线</span>
+            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">{t('channels.membersOnline')}</span>
           )}
         </div>
 
@@ -296,12 +335,12 @@ export default function ChannelsView() {
               value={msgInput}
               onChange={(e) => setMsgInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-              placeholder={`在 #${activeCh} 中发言...`}
-              aria-label="频道消息输入"
+              placeholder={t('channels.msgPlaceholder', { channel: activeCh })}
+              aria-label={t('channels.msgInputAria')}
               className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3"
               disabled={isTyping}
             />
-            <button onClick={handleSend} aria-label="发送消息" className="rounded-lg bg-primary p-1.5 text-white transition-opacity hover:opacity-80 disabled:opacity-50" disabled={isTyping || !msgInput.trim()}>
+            <button onClick={handleSend} aria-label={t('channels.sendAria')} className="rounded-lg bg-primary p-1.5 text-white transition-opacity hover:opacity-80 disabled:opacity-50" disabled={isTyping || !msgInput.trim()}>
               <Send size={14} />
             </button>
           </div>
@@ -313,21 +352,54 @@ export default function ChannelsView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={createChModal.closeModal}>
           <div className="w-80 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold">新建频道</span>
-              <button onClick={createChModal.closeModal} aria-label="关闭" className="text-text-3 hover:text-text"><X size={16} /></button>
+              <span className="text-sm font-bold">{t('channels.createChannelTitle')}</span>
+              <button onClick={createChModal.closeModal} aria-label={t('channels.closeAria')} className="text-text-3 hover:text-text"><X size={16} /></button>
             </div>
             <div>
-              <label className="text-[10px] text-text-3 mb-1 block">频道名称 *</label>
-              <input value={newChName} onChange={(e) => setNewChName(e.target.value)} placeholder="输入频道名称" className={inputCls + ' w-full'} onKeyDown={(e) => e.key === 'Enter' && handleCreateChannel()} />
+              <label className="text-[10px] text-text-3 mb-1 block">{t('channels.channelName')}</label>
+              <input value={newChName} onChange={(e) => setNewChName(e.target.value)} placeholder={t('channels.channelNamePlaceholder')} className={inputCls + ' w-full'} onKeyDown={(e) => e.key === 'Enter' && handleCreateChannel()} />
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-4">
-              <button onClick={handleCreateChannel} disabled={!newChName.trim()} className={`${btnPrimary} disabled:opacity-40`}>创建</button>
-              <button onClick={createChModal.closeModal} className={btnSecondary}>取消</button>
+              <button onClick={handleCreateChannel} disabled={!newChName.trim()} className={`${btnPrimary} disabled:opacity-40`}>{t('common.create')}</button>
+              <button onClick={createChModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
             </div>
           </div>
         </div>
       )}
-      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="团队人数已达上限，升级可扩展团队" feature="maxTeamMembers" />
+      {/* Invite Member Modal */}
+      {inviteModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={inviteModal.closeModal}>
+          <div className="w-80 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold">{t('channels.inviteTitle', { channel: activeCh })}</span>
+              <button onClick={inviteModal.closeModal} aria-label={t('channels.closeAria')} className="text-text-3 hover:text-text"><X size={16} /></button>
+            </div>
+            <div>
+              <label className="text-[10px] text-text-3 mb-1 block">{t('channels.memberId')}</label>
+              <input value={inviteMemberId} onChange={(e) => { setInviteMemberId(e.target.value); setInviteError(''); }} placeholder={t('channels.memberIdPlaceholder')} className={inputCls + ' w-full'} onKeyDown={(e) => e.key === 'Enter' && handleInviteMember()} />
+            </div>
+            {inviteError && <div className="mt-2 text-[10px] text-danger">{inviteError}</div>}
+            {channelMembers.length > 0 && (
+              <div className="mt-3 space-y-1">
+                <div className="text-[9px] text-text-3 font-bold">{t('channels.currentMembers')}</div>
+                {channelMembers.map((cm) => (
+                  <div key={cm.id} className="flex items-center justify-between text-[10px] text-text-2">
+                    <span>{cm.member_id} <span className="text-text-3">({cm.role})</span></span>
+                    {cm.role !== 'creator' && (
+                      <button onClick={async () => { await removeChannelMember(cm.channel_id, cm.member_id); setChannelMembers((prev) => prev.filter((m) => m.id !== cm.id)); }} className="text-danger hover:underline">{t('channels.remove')}</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <button onClick={handleInviteMember} disabled={!inviteMemberId.trim()} className={`${btnPrimary} disabled:opacity-40`}>{t('channels.invite')}</button>
+              <button onClick={inviteModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason={t('channels.paywallReason')} feature="maxTeamMembers" />
     </div>
   );
 }

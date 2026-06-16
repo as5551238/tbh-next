@@ -189,13 +189,16 @@ export async function supabaseSignup(email: string, password: string, name: stri
 export async function supabaseResetPassword(email: string): Promise<void> {
   try {
     if (!supabase) throw new Error('Supabase not configured');
+    // Environment-aware redirect URL: dev uses BrowserRouter, prod uses HashRouter
+    const baseUrl = import.meta.env.DEV
+      ? `${window.location.origin}/login`
+      : `${window.location.origin}${import.meta.env.BASE_URL}#/login`;
     const { error } = await supabase!.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: baseUrl,
     });
     if (error) throw error;
   } catch (err) {
     console.error('[supabaseResetPassword]', err);
-    clearAuth();
     throw err;
   }
 }
@@ -231,7 +234,20 @@ export function useAuth() {
           const demoUser = getDemoUser();
           if (demoUser) syncUser(demoUser);
         }
-        const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase!.auth.onAuthStateChange((event, session) => {
+          // Handle password recovery: redirect to login with recovery indicator
+          if (event === 'PASSWORD_RECOVERY') {
+            const meta = session?.user?.user_metadata ?? {};
+            syncUser(session?.user ? {
+              id: session.user.id,
+              email: session.user.email ?? '',
+              role: meta.role ?? 'member',
+              name: meta.name ?? session.user.email?.split('@')[0] ?? 'User',
+            } : null);
+            // Store recovery flag so LoginPage can show "set new password" form
+            localStorage.setItem('tbh-next-pw-recovery', '1');
+            return;
+          }
           if (session?.user) {
             const meta = session.user.user_metadata ?? {};
             syncUser({

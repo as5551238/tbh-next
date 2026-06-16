@@ -194,7 +194,7 @@ export async function createKnowledgeDoc(data: Omit<KnowledgeDocRow, 'id' | 'cre
   const row = filterColumns('knowledge', { ...data, team_id: '__default__' } as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('knowledge').insert(row).select().single();
   if (error) throw error;
-  return row as unknown as KnowledgeDocRow;
+  return result as KnowledgeDocRow;
 }
 
 export async function updateKnowledgeDoc(id: string, data: Partial<Omit<KnowledgeDocRow, 'id' | 'created_at' | 'updated_at'>>): Promise<KnowledgeDocRow> {
@@ -202,7 +202,7 @@ export async function updateKnowledgeDoc(id: string, data: Partial<Omit<Knowledg
   const row = filterColumns('knowledge', data as unknown as Record<string, unknown>);
   const { data: result, error } = await supabase!.from('knowledge').update(row).eq('id', id).select().single();
   if (error) throw error;
-  return row as unknown as KnowledgeDocRow;
+  return result as KnowledgeDocRow;
 }
 
 export async function deleteKnowledgeDoc(id: string): Promise<void> {

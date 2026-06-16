@@ -18,7 +18,7 @@ export interface ReviewStep {
 }
 
 export interface ReviewModel {
-  id: 'grai' | 'pdca' | '5whys';
+  id: string;
   name: string;
   nameEn: string;
   description: string;
@@ -30,7 +30,7 @@ export interface ReviewModel {
 
 export interface ReviewSession {
   id: string;
-  modelId: ReviewModel['id'];
+  modelId: string;
   targetType: 'goal' | 'project' | 'task' | 'sprint';
   targetId: string;
   targetTitle: string;
@@ -149,6 +149,146 @@ export const REVIEW_MODELS: ReviewModel[] = [
 ## 行动项
 {{actionItems}}`,
   },
+  {
+    id: 'fmea',
+    name: 'FMEA 失效模式分析',
+    nameEn: 'Failure Mode and Effects Analysis',
+    description: '系统性识别潜在失效模式并评估风险，适合制造业/质量管理场景',
+    icon: '⚠️',
+    scenarioTags: ['质量风险', '失效分析', '预防措施', '制造业', '产品缺陷', '过程改进'],
+    steps: [
+      { id: 'process', title: '过程/功能描述', prompt: '分析的对象是什么？其功能和预期输出是什么？', placeholder: '例如：注塑成型工序，预期产出合格率≥99.5%', required: true },
+      { id: 'failure', title: '失效模式识别', prompt: '可能出现的失效模式有哪些？（每个模式单独列出）', placeholder: '例如：1.尺寸超差 2.表面缩痕 3.材料脆化', required: true },
+      { id: 'effect', title: '失效影响与严重度(S)', prompt: '每种失效的影响是什么？严重度评分(1-10)？', placeholder: '例如：尺寸超差→装配失败，S=8；表面缩痕→外观不良，S=5', required: true },
+      { id: 'cause', title: '失效原因与频度(O)', prompt: '导致失效的原因是什么？发生频度评分(1-10)？', placeholder: '例如：模温波动→O=6；原料含水→O=4', required: true },
+      { id: 'control', title: '现有控制与探测度(D)', prompt: '现有控制措施有哪些？探测度评分(1-10)？', placeholder: '例如：首件检验→D=3；SPC监控→D=2', required: true },
+      { id: 'rpn', title: 'RPN评估与优先级', prompt: '计算RPN(S×O×D)，确定优先改进项', placeholder: '例如：尺寸超差 RPN=8×6×3=144（高优先）', required: true },
+      { id: 'action', title: '改进措施', prompt: '针对高RPN项的改进措施是什么？', placeholder: '例如：增加模温自动补偿系统，预计O降至2→新RPN=8×2×3=48', required: true },
+    ],
+    outputTemplate: `# ⚠️ FMEA 失效模式分析：{{targetTitle}}
+
+## 过程/功能
+{{process}}
+
+## 失效模式
+{{failure}}
+
+## 失效影响与严重度
+{{effect}}
+
+## 失效原因与频度
+{{cause}}
+
+## 现有控制与探测度
+{{control}}
+
+## RPN评估
+{{rpn}}
+
+## 改进措施
+{{action}}
+
+## 行动项
+{{actionItems}}`,
+  },
+  {
+    id: '8d',
+    name: '8D 问题解决',
+    nameEn: 'Eight Disciplines Problem Solving',
+    description: '结构化问题解决方法，适合质量事故、客户投诉等需要根因分析和永久纠正的场景',
+    icon: '🔧',
+    scenarioTags: ['质量事故', '客户投诉', '生产异常', '8D报告', '纠正预防', '不合格品'],
+    steps: [
+      { id: 'd1', title: 'D1 组建团队', prompt: '谁参与解决这个问题？各自的角色和专长是什么？', placeholder: '例如：质量工程师(组长)+工艺工程师+操作员+供应商质量', required: true },
+      { id: 'd2', title: 'D2 问题描述', prompt: '5W2H描述：什么问题？何时何地发生？影响了多少？', placeholder: '例如：3月20日客户投诉XX批次产品功能失效，影响2000件', required: true },
+      { id: 'd3', title: 'D3 临时遏制', prompt: '如何立即隔离问题，防止影响扩大？', placeholder: '例如：隔离该批次全部库存+通知客户暂停使用+在制品100%全检', required: true },
+      { id: 'd4', title: 'D4 根本原因', prompt: '根本原因是什么？（至少问5个为什么）', placeholder: '例如：5Why分析→焊接温度超差→温控器失效→供应商变更未通知', required: true },
+      { id: 'd5', title: 'D5 永久纠正措施', prompt: '针对根因的永久纠正措施是什么？', placeholder: '例如：更换高精度温控器+增加温度实时监控+供应商变更审批流程', required: true },
+      { id: 'd6', title: 'D6 实施验证', prompt: '如何验证纠正措施有效？验证结果如何？', placeholder: '例如：连续5批次产品焊接强度测试全部达标，Cpk从0.8提升至1.5', required: true },
+      { id: 'd7', title: 'D7 预防再发', prompt: '如何防止同类问题在其他产品/产线上发生？', placeholder: '例如：更新温控器验收标准+所有焊接工艺增加温度监控+供应商变更管理流程系统化', required: true },
+      { id: 'd8', title: 'D8 团队肯定', prompt: '总结经验教训，肯定团队贡献', placeholder: '例如：本次8D从投诉到验证关闭共7天，团队协作高效；关键教训是供应商变更必须提前通知并验证', required: true },
+    ],
+    outputTemplate: `# 🔧 8D 问题解决报告：{{targetTitle}}
+
+## D1 组建团队
+{{d1}}
+
+## D2 问题描述
+{{d2}}
+
+## D3 临时遏制
+{{d3}}
+
+## D4 根本原因
+{{d4}}
+
+## D5 永久纠正措施
+{{d5}}
+
+## D6 实施验证
+{{d6}}
+
+## D7 预防再发
+{{d7}}
+
+## D8 团队肯定
+{{d8}}
+
+## 行动项
+{{actionItems}}`,
+  },
+  {
+    id: 'kpt',
+    name: 'KPT 复盘',
+    nameEn: 'Keep-Problem-Try',
+    description: '最轻量的复盘框架，适合周/日维度的快速回顾，从保持、问题、尝试三个维度反思',
+    icon: '💡',
+    scenarioTags: ['周回顾', '日复盘', '快速回顾', '团队例会', '持续改进', '轻量复盘'],
+    steps: [
+      { id: 'keep', title: 'Keep — 保持什么', prompt: '哪些做法效果好，应该继续保持？', placeholder: '例如：每日站会制度有效减少了阻塞；代码评审制度提升了质量', required: true },
+      { id: 'problem', title: 'Problem — 什么问题', prompt: '遇到了什么问题和困难？', placeholder: '例如：跨部门沟通响应慢；需求变更导致返工；测试环境不稳定', required: true },
+      { id: 'try', title: 'Try — 尝试什么', prompt: '下一步想尝试什么新做法来解决上述问题？', placeholder: '例如：尝试异步沟通工具替代部分会议；需求冻结期制度', required: true },
+    ],
+    outputTemplate: `# 💡 KPT 复盘：{{targetTitle}}
+
+## Keep — 保持
+{{keep}}
+
+## Problem — 问题
+{{problem}}
+
+## Try — 尝试
+{{try}}
+
+## 行动项
+{{actionItems}}`,
+  },
+  {
+    id: 'ssc',
+    name: 'Start-Stop-Continue',
+    nameEn: 'Start-Stop-Continue',
+    description: '行为导向的复盘框架，从"开始做/停止做/继续做"三个角度明确行动方向',
+    icon: '🚦',
+    scenarioTags: ['团队行为改进', '习惯养成', '流程优化', '团队反思', '领导力发展'],
+    steps: [
+      { id: 'start', title: 'Start — 应该开始做什么', prompt: '有哪些新的做法、习惯或流程应该开始引入？', placeholder: '例如：开始做代码覆盖率报告；开始每周技术分享', required: true },
+      { id: 'stop', title: 'Stop — 应该停止做什么', prompt: '有哪些无效的做法、坏习惯或浪费时间的流程应该停止？', placeholder: '例如：停止无议程的会议；停止跳过单元测试直接提交', required: true },
+      { id: 'continue', title: 'Continue — 应该继续做什么', prompt: '哪些做法已经证明有效，应该继续坚持和加强？', placeholder: '例如：继续CI/CD自动化部署；继续双周迭代节奏', required: true },
+    ],
+    outputTemplate: `# 🚦 Start-Stop-Continue 复盘：{{targetTitle}}
+
+## Start — 开始做
+{{start}}
+
+## Stop — 停止做
+{{stop}}
+
+## Continue — 继续做
+{{continue}}
+
+## 行动项
+{{actionItems}}`,
+  },
 ];
 
 // --- Rule-based Recommendation Engine (zero token cost) ---
@@ -194,6 +334,22 @@ export function recommendModels(ctx: ReviewContext): { model: ReviewModel; score
     if (model.id === '5whys' && ctx.isOverdue && ctx.deviationPercent < -20) {
       score += 30;
       reason = '严重偏差适合5Whys根因分析';
+    }
+    if (model.id === '8d' && ctx.isOverdue) {
+      score += 25;
+      reason = '逾期项目适合8D结构化解决';
+    }
+    if (model.id === 'fmea' && ctx.tags.some(t => /质量|缺陷|不合格|失效|风险/.test(t))) {
+      score += 35;
+      reason = '质量风险适合FMEA失效模式分析';
+    }
+    if (model.id === 'kpt' && ctx.deviationPercent >= -10 && ctx.deviationPercent <= 10) {
+      score += 25;
+      reason = '小幅偏差适合KPT轻量复盘';
+    }
+    if (model.id === 'ssc' && ctx.tags.some(t => /行为|习惯|流程优化|团队/.test(t))) {
+      score += 25;
+      reason = '行为改进适合Start-Stop-Continue框架';
     }
 
     // 规则3：偏差程度
@@ -251,7 +407,7 @@ export interface DeviationAlert {
   deviationPercent: number;
   isOverdue: boolean;
   severity: 'info' | 'warn' | 'danger';
-  recommendedModel: ReviewModel['id'];
+  recommendedModel: string;
   message: string;
 }
 

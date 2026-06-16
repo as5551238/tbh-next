@@ -12,8 +12,17 @@ const AgentConfigView = lazy(retryLazy(() => import('@/pages/ai/AgentConfigView'
 const IndustryView = lazy(retryLazy(() => import('@/pages/ai/IndustryView')));
 const SubscriptionView = lazy(retryLazy(() => import('@/pages/ai/SubscriptionView')));
 const DSTEView = lazy(retryLazy(() => import('@/pages/ai/DSTEView')));
-// C-grade AI modules FROZEN (W14): MorningView, AgentListView, WorkflowsView, KpiDashView,
-// KnowledgeOSPView, MCPA2AView, TemplateWizardView, BehaviorTrackerView, UsageAlertsView, SystemMonitorView
+// C-grade AI modules FROZEN (W14) — registered for sidebar "开发中" visibility
+const MorningView = lazy(retryLazy(() => import('@/pages/ai/MorningView')));
+const AgentListView = lazy(retryLazy(() => import('@/pages/ai/AgentListView')));
+const WorkflowsView = lazy(retryLazy(() => import('@/pages/ai/WorkflowsView')));
+const KpiDashView = lazy(retryLazy(() => import('@/pages/ai/KpiDashView')));
+const KnowledgeOSPView = lazy(retryLazy(() => import('@/pages/ai/KnowledgeOSPView')));
+const MCPA2AView = lazy(retryLazy(() => import('@/pages/ai/MCPA2AView')));
+const TemplateWizardView = lazy(retryLazy(() => import('@/pages/ai/TemplateWizardView')));
+const BehaviorTrackerView = lazy(retryLazy(() => import('@/pages/ai/BehaviorTrackerView')));
+const UsageAlertsView = lazy(retryLazy(() => import('@/pages/ai/UsageAlertsView')));
+const SystemMonitorView = lazy(retryLazy(() => import('@/pages/ai/SystemMonitorView')));
 // DEPRECATED modules removed from routes (W9):
 // AgentMarketView — needs ecosystem, no value for single-user; see .temp/w8-stub-disposition.md
 // CrossDeptAutomationView — duplicates AutomationContent; see .temp/w8-stub-disposition.md
@@ -29,8 +38,17 @@ const LAZY_MODULES: Record<string, React.LazyExoticComponent<React.FC>> = {
   industryView: IndustryView,
   subscription: SubscriptionView,
   dste: DSTEView,
-  // C-grade FROZEN (W14): morning, agentList, workflows, kpiDash, knowledgeOSP,
-  //   mcpA2a, behaviorTracker, templateWizard, usageAlerts, systemMonitor
+  // C-grade FROZEN (W14) — sidebar visible, content loads existing stub
+  morning: MorningView,
+  agentList: AgentListView,
+  workflows: WorkflowsView,
+  kpiDash: KpiDashView,
+  knowledgeOSP: KnowledgeOSPView,
+  mcpA2a: MCPA2AView,
+  templateWizard: TemplateWizardView,
+  behaviorTracker: BehaviorTrackerView,
+  usageAlerts: UsageAlertsView,
+  systemMonitor: SystemMonitorView,
 };
 
 export default function PersonalAI() {

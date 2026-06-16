@@ -33,8 +33,11 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
   actionItems: 'workspace', tags: 'workspace',
   mywork: 'workspace',
   commandCenter: 'workspace',
-  // C-grade FROZEN (W14): prediction, docs, experience, roles, alignment,
-  //   activities, notes, sprints, templates, bookmarks, categories, statusFlow
+  // C-grade FROZEN (W14) — registered for sidebar "开发中" visibility
+  prediction: 'workspace', docs: 'workspace', experience: 'workspace',
+  roles: 'workspace', alignment: 'workspace', activities: 'workspace',
+  notes: 'workspace', sprints: 'workspace', templates: 'workspace',
+  bookmarks: 'workspace', categories: 'workspace', statusFlow: 'workspace',
   // collab modules
   channels: 'collab', teamCal: 'collab', approvals: 'collab',
   announcements: 'collab', collabDocs: 'collab', meetings: 'collab',
@@ -43,8 +46,10 @@ export const MODULE_TO_INTERFACE: Record<string, string> = {
   main: 'ai', risk: 'ai',
   agentConfig: 'ai', industryView: 'ai',
   subscription: 'ai', dste: 'ai',
-  // C-grade AI FROZEN (W14): morning, agentList, workflows, kpiDash, knowledgeOSP,
-  //   mcpA2a, behaviorTracker, templateWizard, usageAlerts, systemMonitor
+  // C-grade AI FROZEN (W14) — registered for sidebar "开发中" visibility
+  morning: 'ai', agentList: 'ai', workflows: 'ai', kpiDash: 'ai',
+  knowledgeOSP: 'ai', mcpA2a: 'ai', behaviorTracker: 'ai',
+  templateWizard: 'ai', usageAlerts: 'ai', systemMonitor: 'ai',
 };
 
 /** 根据 module 名推断其所属 interface */
@@ -95,7 +100,9 @@ interface AppState {
   // Matrix
   industry: string;
   dept: string;
-  setContext: (industry: string, dept: string) => void;
+  industryRaw: string;
+  deptRaw: string;
+  setContext: (industry: string, dept: string, industryRaw?: string, deptRaw?: string) => void;
 
   // Context panel
   ctxPanelOpen: boolean;
@@ -176,7 +183,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   industry: 'IT业',
   dept: '产品部',
-  setContext: (industry, dept) => set({ industry, dept }),
+  industryRaw: 'IT业',
+  deptRaw: '产品部',
+  setContext: (industry, dept, industryRaw, deptRaw) => set({
+    industry,
+    dept,
+    industryRaw: industryRaw ?? industry,
+    deptRaw: deptRaw ?? dept,
+  }),
 
   ctxPanelOpen: false,
   toggleCtxPanel: () => set((s) => ({ ctxPanelOpen: !s.ctxPanelOpen })),

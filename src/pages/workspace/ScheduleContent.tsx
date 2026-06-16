@@ -7,14 +7,16 @@ import { Calendar, Clock, MapPin, Plus, Lock, ChevronLeft, ChevronRight, LayoutG
 import { createScheduleEvent } from '@/lib/dataLayer';
 import { hasFeature } from '@/lib/subscription';
 import { CardSkeleton } from '@/components/Skeleton';
+import { useLocale } from '@/lib/i18n';
 
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
-const WEEKDAYS_FULL = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const WEEKDAYS_KEYS = ['weekdaySun', 'weekdayMon', 'weekdayTue', 'weekdayWed', 'weekdayThu', 'weekdayFri', 'weekdaySat'];
+const WEEKDAYS_FULL_KEYS = ['weekdayFullSun', 'weekdayFullMon', 'weekdayFullTue', 'weekdayFullWed', 'weekdayFullThu', 'weekdayFullFri', 'weekdayFullSat'];
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 7); // 07:00 - 19:00
 
 type ViewMode = 'month' | 'week' | 'day';
 
 export default function ScheduleContent() {
+  const { t } = useLocale();
   const isPro = hasFeature('advancedAnalytics' as never);
   const industry = useAppStore((s) => s.industry);
   const { events, setEvents, addEvent, editEvent, removeEvent, loading } = useScheduleEvents();
@@ -114,26 +116,29 @@ export default function ScheduleContent() {
     createModal.openModal();
   }
 
+  const WEEKDAYS = WEEKDAYS_KEYS.map((k) => t(`schedule.${k}`));
+  const WEEKDAYS_FULL = WEEKDAYS_FULL_KEYS.map((k) => t(`schedule.${k}`));
+
   const modalForm = (
     <>
-      <ModalField label="日程标题">
-        <input className={inputCls} value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="输入日程标题" />
+      <ModalField label={t('schedule.eventTitle')}>
+        <input className={inputCls} value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder={t('schedule.eventTitlePlaceholder')} />
       </ModalField>
-      <ModalField label="时间">
+      <ModalField label={t('schedule.time')}>
         <input className={inputCls} type="time" value={formTime} onChange={(e) => setFormTime(e.target.value)} />
       </ModalField>
-      <ModalField label="地点">
-        <input className={inputCls} value={formLocation} onChange={(e) => setFormLocation(e.target.value)} placeholder="可选" />
+      <ModalField label={t('schedule.location')}>
+        <input className={inputCls} value={formLocation} onChange={(e) => setFormLocation(e.target.value)} placeholder={t('schedule.locationOptional')} />
       </ModalField>
-      <ModalField label="类型">
+      <ModalField label={t('schedule.type')}>
         <select className={inputCls} value={formType} onChange={(e) => setFormType(e.target.value)}>
-          <option value="meeting">会议</option>
-          <option value="deadline">截止</option>
-          <option value="task">任务</option>
-          <option value="reminder">提醒</option>
+          <option value="meeting">{t('schedule.typeMeeting')}</option>
+          <option value="deadline">{t('schedule.typeDeadline')}</option>
+          <option value="task">{t('schedule.typeTask')}</option>
+          <option value="reminder">{t('schedule.typeReminder')}</option>
         </select>
       </ModalField>
-      <ModalField label="日期">
+      <ModalField label={t('schedule.dateLabel')}>
         <input className={inputCls} type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} />
       </ModalField>
     </>
@@ -141,7 +146,7 @@ export default function ScheduleContent() {
 
   // Navigation label based on view
   const navLabel = viewMode === 'month'
-    ? `${currentYear}年${currentMonth + 1}月`
+    ? t('schedule.navMonthLabel', { year: currentYear, month: currentMonth + 1 })
     : viewMode === 'week'
       ? `${dateStr(weekStart)} ~ ${dateStr(new Date(weekStart.getTime() + 6 * 86400000))}`
       : dateStr(dayDate);
@@ -214,16 +219,16 @@ export default function ScheduleContent() {
           </div>
         );
       })}
-      <button className="mt-2 w-full rounded-lg bg-primary/5 py-1 text-[10px] text-primary-2 hover:bg-primary/10" onClick={() => openCreateForDate(dayDate)}>+ 在此日添加日程</button>
+      <button className="mt-2 w-full rounded-lg bg-primary/5 py-1 text-[10px] text-primary-2 hover:bg-primary/10" onClick={() => openCreateForDate(dayDate)}>{t('schedule.addScheduleHere')}</button>
     </div>
   );
 
   // Right panel events for month view
   const panelTitle = viewMode === 'month'
-    ? (monthOffset === 0 ? '今日安排' : `${currentMonth + 1}月日程`)
+    ? (monthOffset === 0 ? t('schedule.todaySchedule') : t('schedule.monthSchedule', { month: currentMonth + 1 }))
     : viewMode === 'week'
-      ? '本周日程'
-      : `${dateStr(dayDate)} 日程`;
+      ? t('schedule.weekSchedule')
+      : t('schedule.dayScheduleLabel', { date: dateStr(dayDate) });
 
   const panelEvents = viewMode === 'month'
     ? todayEvents
@@ -240,14 +245,14 @@ export default function ScheduleContent() {
       <div className="flex flex-1 flex-col min-w-0 overflow-y-auto p-3 md:p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <Calendar size={18} className="text-primary-2" />
-          <span className="text-sm font-bold">日程</span>
+          <span className="text-sm font-bold">{t('schedule.title')}</span>
           {/* View mode switcher */}
           <div className="flex rounded-lg bg-surface-2 overflow-hidden">
-            {([['month', '月'], ['week', '周'], ['day', '日']] as [ViewMode, string][]).map(([mode, label]) => (
+            {([['month', t('schedule.viewMonth')], ['week', t('schedule.viewWeek')], ['day', t('schedule.viewDay')]] as [ViewMode, string][]).map(([mode, label]) => (
               <button key={mode} className={cn('px-2.5 py-1 text-[10px] font-semibold transition-colors', viewMode === mode ? 'bg-primary/15 text-primary-2' : 'text-text-3 hover:text-text')} onClick={() => { setViewMode(mode); setMonthOffset(0); }}>{label}</button>
             ))}
           </div>
-          <button onClick={() => { if (!isPro) return; resetForm(); createModal.openModal(); }} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">{isPro ? "+ 新建日程" : <><Lock size={10} className="inline mr-1" />Pro</>}</button>
+          <button onClick={() => { if (!isPro) return; resetForm(); createModal.openModal(); }} className="ml-auto rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20">{isPro ? t('schedule.newSchedule') : <><Lock size={10} className="inline mr-1" />Pro</>}</button>
         </div>
 
         <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
@@ -255,7 +260,7 @@ export default function ScheduleContent() {
             <ChevronLeft size={14} className="text-text-3 cursor-pointer hover:text-text" onClick={() => setMonthOffset((o) => o - 1)} />
             <span className="text-xs font-bold">{navLabel}</span>
             <ChevronRight size={14} className="text-text-3 cursor-pointer hover:text-text" onClick={() => setMonthOffset((o) => o + 1)} />
-            {monthOffset !== 0 && <button className="text-[9px] text-primary-2 hover:underline ml-1" onClick={() => setMonthOffset(0)}>回到今天</button>}
+            {monthOffset !== 0 && <button className="text-[9px] text-primary-2 hover:underline ml-1" onClick={() => setMonthOffset(0)}>{t('schedule.backToToday')}</button>}
           </div>
           {viewMode === 'month' && monthView}
           {viewMode === 'week' && weekView}
@@ -279,7 +284,7 @@ export default function ScheduleContent() {
                 <span className={cn('ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-bold',
                   evt.type === 'meeting' ? 'bg-primary/10 text-primary-2' : evt.type === 'deadline' ? 'bg-danger/10 text-danger' : 'bg-warn/10 text-warn'
                 )}>
-                  {evt.type === 'meeting' ? '会议' : evt.type === 'deadline' ? '截止' : evt.type === 'task' ? '任务' : '提醒'}
+                  {evt.type === 'meeting' ? t('schedule.typeMeeting') : evt.type === 'deadline' ? t('schedule.typeDeadline') : evt.type === 'task' ? t('schedule.typeTask') : t('schedule.typeReminder')}
                 </span>
               </div>
               <div className="text-xs font-semibold text-text">{evt.title}</div>
@@ -289,22 +294,22 @@ export default function ScheduleContent() {
         </div>
       </div>
 
-      <Modal open={createModal.open} onClose={createModal.closeModal} title="新建日程"
+      <Modal open={createModal.open} onClose={createModal.closeModal} title={t('schedule.newScheduleTitle')}
         footer={
           <>
-            <button onClick={createModal.closeModal} className={btnSecondary}>取消</button>
-            <button onClick={handleCreate} className={btnPrimary} disabled={!formTitle.trim() || !formTime.trim()}>创建</button>
+            <button onClick={createModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
+            <button onClick={handleCreate} className={btnPrimary} disabled={!formTitle.trim() || !formTime.trim()}>{t('common.create')}</button>
           </>
         }>
         {modalForm}
       </Modal>
 
-      <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑日程"
+      <Modal open={editModal.open} onClose={editModal.closeModal} title={t('schedule.editScheduleTitle')}
         footer={
           <>
-            <button onClick={() => { if (editingId) { removeEvent(editingId); resetForm(); editModal.closeModal(); } }} className="text-[11px] text-danger hover:underline mr-auto">删除</button>
-            <button onClick={editModal.closeModal} className={btnSecondary}>取消</button>
-            <button onClick={handleEdit} className={btnPrimary} disabled={!formTitle.trim() || !formTime.trim()}>保存</button>
+            <button onClick={() => { if (editingId) { removeEvent(editingId); resetForm(); editModal.closeModal(); } }} className="text-[11px] text-danger hover:underline mr-auto">{t('common.delete')}</button>
+            <button onClick={editModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
+            <button onClick={handleEdit} className={btnPrimary} disabled={!formTitle.trim() || !formTime.trim()}>{t('common.save')}</button>
           </>
         }>
         {modalForm}

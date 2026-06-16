@@ -31,6 +31,7 @@ export default function ContextPanel() {
   const [cocreateMode, setCocreateMode] = useState(false);
   const [cocreateIndustry, setCocreateIndustry] = useState('');
   const [cocreateDept, setCocreateDept] = useState('');
+  const [lastUserInput, setLastUserInput] = useState('');
 
   const indColor = useIndustryColor();
   const { cell, loading } = useMatrixCell();
@@ -38,6 +39,7 @@ export default function ContextPanel() {
   const handleAiUnderstand = useCallback(async (userText: string) => {
     setIsThinking(true);
     setChips([]);
+    setLastUserInput(userText);
 
     const systemPrompt = [
       '你是一个"AI工作理解"助手，根据用户描述的工作内容，推断其所属行业和部门。',
@@ -118,7 +120,7 @@ export default function ContextPanel() {
       handleCocreate(chip.industry, chip.dept);
       return;
     }
-    setContext(chip.industry, chip.dept);
+    setContext(chip.industry, chip.dept, lastUserInput, lastUserInput);
     setAiMessages((prev) => [
       ...prev,
       { role: 'ai', text: `已切换到「${chip.industry} · ${chip.dept}」，界面、KPI、工作流和Agent已为你定制。` },
@@ -176,7 +178,7 @@ export default function ContextPanel() {
       const color = getColorForIndustry(industry, IND_COLORS);
       saveCustomCell({ industry, dept, cell, color, createdAt: new Date().toISOString() });
 
-      setContext(industry, dept);
+      setContext(industry, dept, `${industry}${dept}`, `${industry}${dept}`);
       setAiMessages((prev) => [
         ...prev,
         { role: 'ai', text: `✅ 「${industry} · ${dept}」专属视图已生成！\n\n已为你定制：\n- ${cell.kpis.length}个行业KPI\n- ${cell.workflow.length}步业务流程\n- ${cell.agents.length}个专属AI Agent\n- ${cell.top3.length}条预警项\n\n界面已切换，你可以开始使用了。` },

@@ -27,9 +27,18 @@ const MyWorkView = lazy(retryLazy(() => import('@/pages/MyWorkView')));
 const CommandCenterView = lazy(retryLazy(() => import('@/pages/workspace/CommandCenterView')));
 // B-grade modules (kept for M2 close-out)
 const InsightContent = lazy(retryLazy(() => import('@/pages/workspace/InsightContent')));
-// C-grade modules FROZEN (W14): PredictionContent, DocsContent, ExperienceContent, RolesContent,
-// ActivitiesContent, NotesContent, SprintsContent, TemplatesContent, BookmarksContent,
-// CategoriesContent, StatusFlowContent, PenetrationView
+// C-grade modules FROZEN (W14) — registered for sidebar "开发中" visibility
+const PredictionContent = lazy(retryLazy(() => import('@/pages/workspace/PredictionContent')));
+const DocsContent = lazy(retryLazy(() => import('@/pages/workspace/DocsContent')));
+const ExperienceContent = lazy(retryLazy(() => import('@/pages/workspace/ExperienceContent')));
+const RolesContent = lazy(retryLazy(() => import('@/pages/workspace/RolesContent')));
+const ActivitiesContent = lazy(retryLazy(() => import('@/pages/workspace/ActivitiesContent')));
+const NotesContent = lazy(retryLazy(() => import('@/pages/workspace/NotesContent')));
+const SprintsContent = lazy(retryLazy(() => import('@/pages/workspace/SprintsContent')));
+const TemplatesContent = lazy(retryLazy(() => import('@/pages/workspace/TemplatesContent')));
+const BookmarksContent = lazy(retryLazy(() => import('@/pages/workspace/BookmarksContent')));
+const CategoriesContent = lazy(retryLazy(() => import('@/pages/workspace/CategoriesContent')));
+const StatusFlowContent = lazy(retryLazy(() => import('@/pages/workspace/StatusFlowContent')));
 // DEPRECATED modules removed from routes (W9):
 // FeatureFlagsContent, SavedViewsContent, AutomationContent — see .temp/w8-stub-disposition.md
 
@@ -62,8 +71,18 @@ const WORKSPACE_MODULES: Record<string, LazyExoticComponent<FC>> = {
   tags: TagsContent,
   mywork: MyWorkView as LazyExoticComponent<FC>,
   commandCenter: CommandCenterView,
-  // C-grade FROZEN (W14): prediction, docs, experience, roles, alignment,
-  //   activities, notes, sprints, templates, bookmarks, categories, statusFlow
+  // C-grade FROZEN (W14) — sidebar visible, content loads existing stub
+  prediction: PredictionContent,
+  docs: DocsContent,
+  experience: ExperienceContent,
+  roles: RolesContent,
+  activities: ActivitiesContent,
+  notes: NotesContent,
+  sprints: SprintsContent,
+  templates: TemplatesContent,
+  bookmarks: BookmarksContent,
+  categories: CategoriesContent,
+  statusFlow: StatusFlowContent,
 };
 
 export default function Workspace() {

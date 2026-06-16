@@ -180,3 +180,55 @@ export async function deleteNote(id: string): Promise<void> {
   const { error } = await supabase.from('notes').delete().eq('id', id);
   if (error) throw new Error(`deleteNote: ${error.message}`);
 }
+
+// ======== Channel Members ========
+
+export interface ChannelMemberRow {
+  id: string;
+  channel_id: string;
+  member_id: string;
+  role: 'creator' | 'admin' | 'member';
+  joined_at: string;
+}
+
+export async function fetchChannelMembers(channelId: string): Promise<ChannelMemberRow[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  const { data, error } = await supabase
+    .from('channel_members')
+    .select('*')
+    .eq('channel_id', channelId)
+    .order('joined_at', { ascending: true });
+  if (error || !data) return [];
+  return data as ChannelMemberRow[];
+}
+
+export async function addChannelMember(channelId: string, memberId: string, role: 'admin' | 'member' = 'member'): Promise<ChannelMemberRow | null> {
+  if (!isSupabaseConfigured() || !supabase) return null;
+  // Check for duplicate
+  const { data: existing } = await supabase
+    .from('channel_members')
+    .select('id')
+    .eq('channel_id', channelId)
+    .eq('member_id', memberId)
+    .maybeSingle();
+  if (existing) {
+    throw new Error('该成员已在频道中');
+  }
+  const { data: result, error } = await supabase
+    .from('channel_members')
+    .insert({ channel_id: channelId, member_id: memberId, role })
+    .select()
+    .single();
+  if (error) throw new Error(`addChannelMember: ${error.message}`);
+  return result as ChannelMemberRow;
+}
+
+export async function removeChannelMember(channelId: string, memberId: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+  const { error } = await supabase
+    .from('channel_members')
+    .delete()
+    .eq('channel_id', channelId)
+    .eq('member_id', memberId);
+  if (error) throw new Error(`removeChannelMember: ${error.message}`);
+}

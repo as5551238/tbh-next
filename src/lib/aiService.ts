@@ -344,21 +344,31 @@ export async function chatCompletion(
 
 // --- Utility: build system prompt from cell context ---
 
-export function buildSystemPrompt(cell: MatrixCell, industry: string, dept: string, moduleContext?: string): string {
+export function buildSystemPrompt(cell: MatrixCell, industry: string, dept: string, moduleContext?: string, industryRaw?: string, deptRaw?: string): string {
   const moduleSection = moduleContext
     ? ['', '## 当前页面上下文', moduleContext, '']
+    : [];
+
+  // If raw user description differs from normalized, include both
+  const rawContext = (industryRaw && industryRaw !== industry) || (deptRaw && deptRaw !== dept)
+    ? ['', '## 用户原始描述（重要：优先参考此描述理解用户真实场景）',
+       `- 用户原始行业描述：${industryRaw ?? industry}`,
+       `- 用户原始部门描述：${deptRaw ?? dept}`,
+       '- 上面"当前上下文"中的行业/部门是系统归一化后的值，可能丢失了用户的细分领域信息，请综合两者给出最精准的回答',
+       '']
     : [];
 
   return [
     `你是「团队业务中台」的AI工作助手，服务于「${industry} · ${dept}」部门。`,
     '',
     '## 当前上下文',
-    `- 行业：${industry}`,
-    `- 部门：${dept}`,
+    '- 行业：' + industry,
+    '- 部门：' + dept,
     `- 晨间播报：${cell.morning}`,
     `- 业务概览：${cell.ribbon}`,
     `- 下一步建议：${cell.nextStep}`,
     ...moduleSection,
+    ...rawContext,
     '## KPI 数据',
     ...cell.kpis.map((k) => `- ${k.name}: ${k.value}（目标 ${k.target}，状态 ${k.status === 'good' ? '达标' : k.status === 'warn' ? '告警' : '危险'}，趋势 ${k.trend === 'up' ? '上升' : k.trend === 'down' ? '下降' : '持平'}）`),
     '',

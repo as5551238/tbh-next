@@ -90,7 +90,7 @@ export function ReviewAlertsPhase({
         ) : (
           <div className="space-y-2">
             {alerts.map((a) => (
-              <div key={a.id} onClick={() => { if (!requireFeature('customWorkflows', '深度复盘模式需要专业版或企业版')) return; onStartReview(a); }}
+              <div key={a.id} onClick={() => onStartReview(a)}
                  className={`rounded-xl border p-3 cursor-pointer transition-all hover:shadow-lg ${sevCls[a.severity]}`}>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <AlertTriangle size={13} className={sevIcon[a.severity]} />
@@ -125,7 +125,7 @@ export function ReviewAlertsPhase({
         </div>
         <div className="flex flex-wrap gap-2">
           {REVIEW_MODELS.map((m) => (
-            <button key={m.id} onClick={() => { if (!requireFeature('customWorkflows', '深度复盘模式需要专业版或企业版')) return; onManualStart(m.id); }}
+            <button key={m.id} onClick={() => onManualStart(m.id)}
               className="rounded-lg border border-border bg-surface px-3 py-2 text-left transition-all hover:border-primary/50 hover:shadow-md">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-base">{m.icon}</span>

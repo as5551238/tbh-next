@@ -1,0 +1,53 @@
+/**
+ * True Run Rate (TRR) Configuration
+ * 
+ * TRR = passed_journeys / total_journeys
+ * Target: >= 80%
+ * TRR < 40% → trigger 8D
+ * TRR 40-60% → freeze new features (DR-90)
+ * 
+ * This file is consumed by the evolution heartbeat and CI pipeline.
+ */
+{
+  "version": 1,
+  "total_journeys": 5,
+  "journeys": [
+    {
+      "id": "J1-task-crud",
+      "name": "Task CRUD closed loop",
+      "test_file": "e2e/trr-journeys.spec.ts",
+      "test_name": "Journey-1: Task CRUD"
+    },
+    {
+      "id": "J2-ai-context",
+      "name": "AI understands industry context",
+      "test_file": "e2e/trr-journeys.spec.ts",
+      "test_name": "Journey-2: AI context"
+    },
+    {
+      "id": "J3-i18n-switch",
+      "name": "Language switch zh→en→zh",
+      "test_file": "e2e/trr-journeys.spec.ts",
+      "test_name": "Journey-3: Language switch"
+    },
+    {
+      "id": "J4-knowledge-crud",
+      "name": "Knowledge doc CRUD",
+      "test_file": "e2e/trr-journeys.spec.ts",
+      "test_name": "Journey-4: Knowledge doc"
+    },
+    {
+      "id": "J5-password-reset",
+      "name": "Password reset flow",
+      "test_file": "e2e/trr-journeys.spec.ts",
+      "test_name": "Journey-5: Password reset"
+    }
+  ],
+  "thresholds": {
+    "target_trr": 0.8,
+    "warning_trr": 0.6,
+    "critical_trr": 0.4
+  },
+  "last_run": null,
+  "last_trr": null
+}
