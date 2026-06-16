@@ -74,10 +74,11 @@ export default function ScheduleContent() {
     const dateStr2 = formDate || dateStr(today);
     addEvent({
       title: formTitle.trim(),
-      start_date: dateStr2,
+      date: dateStr2,
+      time: formTime,
       description: formLocation.trim() || '',
       type: formType,
-    });
+    } as unknown as Parameters<typeof addEvent>[0]);
     resetForm();
     createModal.closeModal();
   }

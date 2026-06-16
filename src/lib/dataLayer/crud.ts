@@ -416,6 +416,7 @@ export async function createScheduleEvent(data: ScheduleEventInput): Promise<Sch
   input.description = input.description ?? '';
   input.all_day = input.all_day ?? false;
   input.color = input.color ?? '#7b6cf0';
+  input.member_id = input.member_id ?? 'admin_001';
   input.repeat_cycle = input.repeat_cycle ?? 'none';
   input.created_at = input.created_at ?? new Date().toISOString();
   input.updated_at = input.updated_at ?? new Date().toISOString();

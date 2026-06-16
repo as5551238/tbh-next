@@ -22,7 +22,7 @@ export default function ProjectsContent() {
   const modal = useModal();
   const editModal = useModal();
   const memberModal = useModal();
-  const [form, setForm] = useState({ title: '', status: 'planned', end_date: '', member_ids: [] as string[] });
+  const [form, setForm] = useState({ title: '', status: 'todo', end_date: '', member_ids: [] as string[] });
   const [editData, setEditData] = useState<Record<string, unknown> | null>(null);
   const [editMemberIds, setEditMemberIds] = useState<string[]>([]);
   const [memberProjectId, setMemberProjectId] = useState<string | null>(null);
@@ -33,14 +33,14 @@ export default function ProjectsContent() {
 
   const projectFields: FieldDef[] = [
     { key: 'title', label: '项目名称', type: 'text' },
-    { key: 'status', label: '状态', type: 'select', options: [{ value: 'planned', label: '计划中' }, { value: 'active', label: '进行中' }, { value: 'review', label: '评审中' }] },
+    { key: 'status', label: '状态', type: 'select', options: [{ value: 'todo', label: '计划中' }, { value: 'in_progress', label: '进行中' }, { value: 'done', label: '已完成' }, { value: 'blocked', label: '阻塞' }, { value: 'cancelled', label: '已取消' }] },
     { key: 'progress', label: '进度', type: 'number' },
     { key: 'end_date', label: '截止日期', type: 'date' },
   ];
 
   const handleOpen = useCallback(() => {
     if (!ppLimit('maxProjects', projects.length, '免费版最多创建5个项目，升级Pro解锁更多')) return;
-    setForm({ title: '', status: 'planned', end_date: '', member_ids: [] });
+    setForm({ title: '', status: 'todo', end_date: '', member_ids: [] });
     modal.openModal();
   }, [modal.openModal]);
 
@@ -158,8 +158,8 @@ export default function ProjectsContent() {
         <div key={p.id} className="rounded-xl border border-border bg-surface p-3 md:p-4 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer" onClick={() => handleProjectClick(p)}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-text">{p.title}</span>
-            <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', p.status === 'active' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn')}>
-              {p.status === 'active' ? '进行中' : p.status === 'planned' ? '计划中' : '评审中'}
+            <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', p.status === 'in_progress' ? 'bg-success/10 text-success' : p.status === 'done' ? 'bg-primary/10 text-primary' : p.status === 'blocked' ? 'bg-danger/10 text-danger' : p.status === 'cancelled' ? 'bg-text-3/10 text-text-3' : 'bg-warn/10 text-warn')}>
+              {p.status === 'in_progress' ? '进行中' : p.status === 'done' ? '已完成' : p.status === 'blocked' ? '阻塞' : p.status === 'cancelled' ? '已取消' : '计划中'}
             </span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-2 mb-2 overflow-hidden">
@@ -184,9 +184,11 @@ export default function ProjectsContent() {
         </ModalField>
         <ModalField label="状态">
           <select className={inputCls} value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
-            <option value="planned">计划中</option>
-            <option value="active">进行中</option>
-            <option value="review">评审中</option>
+            <option value="todo">计划中</option>
+            <option value="in_progress">进行中</option>
+            <option value="done">已完成</option>
+            <option value="blocked">阻塞</option>
+            <option value="cancelled">已取消</option>
           </select>
         </ModalField>
         <ModalField label="截止日期">

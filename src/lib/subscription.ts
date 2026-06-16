@@ -246,7 +246,11 @@ function setCachedVerifiedPlan(plan: string): void {
 export function getCurrentPlan(): string {
   const verified = getCachedVerifiedPlan();
   if (verified) return verified;
-  return localStorage.getItem(SUB_PLAN_KEY) || 'free';
+  const stored = localStorage.getItem(SUB_PLAN_KEY);
+  if (stored) return stored;
+  // Self-hosted with Supabase configured → enterprise (no artificial limits)
+  if (isSupabaseConfigured()) return 'enterprise';
+  return 'free';
 }
 
 export function setCurrentPlan(plan: string): void {
@@ -261,11 +265,13 @@ export async function refreshPlanFromServer(userId: string): Promise<string> {
   }
   try {
     const info = await fetchSubscription(userId);
-    if (info.plan) {
+    // Only trust server plan if it's an explicit subscription (not the 'no data' fallback)
+    if (info.plan && info.plan !== 'free') {
       setCachedVerifiedPlan(info.plan);
       localStorage.setItem(SUB_PLAN_KEY, info.plan);
       return info.plan;
     }
+    // No explicit subscription found — keep current plan (which defaults to enterprise for self-hosted)
   } catch {}
   return getCurrentPlan();
 }
