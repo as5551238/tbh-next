@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { StickyNote, Plus, Lock, Search, Pin } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
+import { t } from '@/lib/i18nCore';
 
 const NOTE_COLORS = ['#7b6cf0', '#00d4aa', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899'];
 
@@ -33,7 +34,7 @@ export default function NotesContent() {
   const handleAdd = async () => {
     if (!newItem.title.trim()) return;
     await addNote({ title: newItem.title, content: newItem.content, tags: newItem.tags.split(',').map((t) => t.trim()).filter(Boolean), color: newItem.color, pinned: newItem.pinned, member_id: null, team_id: '__default__' });
-    success('笔记已创建');
+    success(t('notes.noteCreated'));
     setNewItem({ title: '', content: '', tags: '', color: NOTE_COLORS[0], pinned: false });
     addModal.closeModal();
   };
@@ -41,7 +42,7 @@ export default function NotesContent() {
   const handleEdit = async () => {
     if (!selectedNote) return;
     await editNote(selectedNote.id, selectedNote as Partial<typeof selectedNote>);
-    success('笔记已更新');
+    success(t('notes.noteUpdated'));
     editModal.closeModal();
   };
 
@@ -59,7 +60,7 @@ export default function NotesContent() {
           {note.pinned && <Pin size={10} className="text-accent shrink-0" />}
           <span className="text-xs font-semibold text-text truncate">{note.title}</span>
         </div>
-        <div className="text-[10px] text-text-3 mt-1 line-clamp-2">{note.content || '无内容'}</div>
+        <div className="text-[10px] text-text-3 mt-1 line-clamp-2">{note.content || t('notes.noContent')}</div>
         <div className="flex items-center gap-1 mt-1.5 flex-wrap">
           {(note.tags || []).map((tag) => (
             <span key={tag} className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[9px] text-text-3">{tag}</span>
@@ -78,18 +79,18 @@ export default function NotesContent() {
       <ToastOverlay toasts={toasts} />
       <div className="flex flex-wrap items-center gap-2">
         <StickyNote size={18} className="text-primary-2" />
-        <span className="text-sm font-bold">笔记</span>
-        <span className="text-[10px] text-text-3">{notes.length} 条</span>
+        <span className="text-sm font-bold">{t('notes.title')}</span>
+        <span className="text-[10px] text-text-3">{t('notes.noteCount', { count: notes.length })}</span>
         <div className="flex-1" />
         <button onClick={() => { if (!isPro) return; addModal.openModal(); }} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
           <Plus size={12} />
-          新建笔记
+          {t('notes.newNote')}
         </button>
       </div>
 
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3" />
-        <input className={cn(inputCls, 'pl-9')} aria-label="搜索笔记" placeholder="搜索标题/内容/标签..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className={cn(inputCls, 'pl-9')} aria-label={t('notes.searchAria')} placeholder={t('notes.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {pinned.length > 0 && (

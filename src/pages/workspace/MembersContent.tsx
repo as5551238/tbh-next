@@ -8,6 +8,7 @@ import { hasFeature } from '@/lib/subscription';
 import { Users, Plus, Lock, Search, MoreHorizontal, Mail, Phone, Trash2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { exportToCSV, exportToJSON } from '@/lib/export';
+import { t } from '@/lib/i18nCore';
 
 export default function MembersContent() {
   const isPro = hasFeature('advancedAnalytics' as never);
@@ -22,10 +23,10 @@ export default function MembersContent() {
   const [memberExportOpen, setMemberExportOpen] = useState(false);
 
   const roleMap: Record<string, { label: string; cls: string }> = {
-    admin: { label: '管理员', cls: 'bg-danger/10 text-danger' },
-    manager: { label: '经理', cls: 'bg-warn/10 text-warn' },
-    member: { label: '成员', cls: 'bg-primary/10 text-primary-2' },
-    agent: { label: 'AI同事', cls: 'bg-accent/10 text-accent' },
+    admin: { label: t('members.roleAdmin'), cls: 'bg-danger/10 text-danger' },
+    manager: { label: t('members.roleManager'), cls: 'bg-warn/10 text-warn' },
+    member: { label: t('members.roleMember'), cls: 'bg-primary/10 text-primary-2' },
+    agent: { label: t('members.roleAi'), cls: 'bg-accent/10 text-accent' },
   };
 
   const filteredMembers = searchTerm
@@ -54,13 +55,13 @@ export default function MembersContent() {
 
   const selectCls = inputCls.replace('text-text', 'text-text bg-surface-2');
 
-  const memberExportHeaders = ['姓名', '邮箱', '角色', '部门', '状态'];
+  const memberExportHeaders = [t('members.exportName'), t('members.exportEmail'), t('members.exportRole'), t('members.exportDept'), t('members.exportStatus')];
   function handleExportMembersCSV() {
-    const rows = members.map((m) => ({ '姓名': String(m.name ?? ''), '邮箱': String(m.email ?? ''), '角色': String(m.role ?? ''), '部门': String(m.department ?? ''), '状态': String(m.status ?? '') }));
+    const rows = members.map((m) => ({ [t('members.exportName')]: String(m.name ?? ''), [t('members.exportEmail')]: String(m.email ?? ''), [t('members.exportRole')]: String(m.role ?? ''), [t('members.exportDept')]: String(m.department ?? ''), [t('members.exportStatus')]: String(m.status ?? '') }));
     exportToCSV(memberExportHeaders, rows, 'members');
   }
   function handleExportMembersJSON() {
-    const rows = members.map((m) => ({ '姓名': String(m.name ?? ''), '邮箱': String(m.email ?? ''), '角色': String(m.role ?? ''), '部门': String(m.department ?? ''), '状态': String(m.status ?? '') }));
+    const rows = members.map((m) => ({ [t('members.exportName')]: String(m.name ?? ''), [t('members.exportEmail')]: String(m.email ?? ''), [t('members.exportRole')]: String(m.role ?? ''), [t('members.exportDept')]: String(m.department ?? ''), [t('members.exportStatus')]: String(m.status ?? '') }));
     exportToJSON(rows, 'members');
   }
 
@@ -68,19 +69,19 @@ export default function MembersContent() {
     <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Users size={18} className="text-primary-2" />
-        <span className="text-sm font-bold">成员管理</span>
-        <span className="ml-auto text-[10px] text-text-3">{members.length} 人</span>
+        <span className="text-sm font-bold">{t('members.title')}</span>
+        <span className="ml-auto text-[10px] text-text-3">{t('members.memberCount', { count: members.length })}</span>
         <button onClick={() => { if (!isPro) return; inviteModal.openModal(); }} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary px-3 py-1 text-[11px] font-semibold text-white hover:bg-primary-2">
           <Plus size={12} />
-          邀请成员
+          {t('members.inviteMember')}
         </button>
         <div className="relative">
-          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setMemberExportOpen((v) => !v)}>导出 ▾</button>
+          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setMemberExportOpen((v) => !v)}>{t('members.exportBtn')}</button>
           {memberExportOpen && (<>
             <div className="fixed inset-0 z-40" onClick={() => setMemberExportOpen(false)} />
             <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-border bg-surface py-1 shadow-lg">
-              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setMemberExportOpen(false); handleExportMembersCSV(); }}>导出 CSV</button>
-              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setMemberExportOpen(false); handleExportMembersJSON(); }}>导出 JSON</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setMemberExportOpen(false); handleExportMembersCSV(); }}>{t('members.exportCSV')}</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setMemberExportOpen(false); handleExportMembersJSON(); }}>{t('members.exportJSON')}</button>
             </div>
           </>)}
         </div>
@@ -92,7 +93,7 @@ export default function MembersContent() {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="搜索成员..."
+          placeholder={t('members.searchPlaceholder')}
           className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3"
         />
       </div>
@@ -118,9 +119,9 @@ export default function MembersContent() {
                   <div className="text-[10px] text-text-3">{m.department} · {m.email}</div>
                 </div>
                 <div className="hidden group-hover:flex flex-wrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                   <button onClick={() => m.email && (window.location.href = 'mailto:' + m.email)} aria-label="发送邮件" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><Mail size={13} /></button>
-                   <button onClick={() => m.phone && (window.location.href = 'tel:' + m.phone)} aria-label="拨打电话" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><Phone size={13} /></button>
-                   <button onClick={() => { navigator.clipboard.writeText(m.email); }} title="复制邮箱" aria-label="复制邮箱" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><MoreHorizontal size={13} /></button>
+                   <button onClick={() => m.email && (window.location.href = 'mailto:' + m.email)} aria-label={t('members.sendEmail')} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><Mail size={13} /></button>
+                   <button onClick={() => m.phone && (window.location.href = 'tel:' + m.phone)} aria-label={t('members.callPhone')} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><Phone size={13} /></button>
+                   <button onClick={() => { navigator.clipboard.writeText(m.email); }} title={t('members.copyEmail')} aria-label={t('members.copyEmail')} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2 hover:text-text"><MoreHorizontal size={13} /></button>
                 </div>
               </div>
             );
@@ -129,55 +130,55 @@ export default function MembersContent() {
       )}
 
       {/* Invite Modal */}
-      <Modal open={inviteModal.open} onClose={inviteModal.closeModal} title="邀请成员"
-        footer={<><button onClick={inviteModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleInvite} className={btnPrimary}>发送邀请</button></>}>
-        <ModalField label="姓名">
-          <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="输入姓名" className={inputCls} />
+      <Modal open={inviteModal.open} onClose={inviteModal.closeModal} title={t('members.inviteTitle')}
+        footer={<><button onClick={inviteModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button><button onClick={handleInvite} className={btnPrimary}>{t('members.sendInvite')}</button></>}>
+        <ModalField label={t('members.nameLabel')}>
+          <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('members.namePlaceholder')} className={inputCls} />
         </ModalField>
-        <ModalField label="邮箱">
-          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="输入邮箱" className={inputCls} />
+        <ModalField label={t('members.emailLabel')}>
+          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t('members.emailPlaceholder')} className={inputCls} />
         </ModalField>
-        <ModalField label="电话">
-          <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="输入电话号码" className={inputCls} />
+        <ModalField label={t('members.phoneLabel')}>
+          <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={t('members.phonePlaceholder')} className={inputCls} />
         </ModalField>
-        <ModalField label="部门">
+        <ModalField label={t('members.deptLabel')}>
           <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value === '__EMPTY__' ? '' : e.target.value })} className={selectCls}>
-            <option value="__EMPTY__">选择部门</option>
+            <option value="__EMPTY__">{t('members.deptPlaceholder')}</option>
             {deptOptions.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </ModalField>
-        <ModalField label="角色">
+        <ModalField label={t('members.roleLabel')}>
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={selectCls}>
-            <option value="member">成员</option>
-            <option value="manager">经理</option>
-            <option value="admin">管理员</option>
+            <option value="member">{t('members.roleMember')}</option>
+            <option value="manager">{t('members.roleManager')}</option>
+            <option value="admin">{t('members.roleAdmin')}</option>
           </select>
         </ModalField>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑成员"
-        footer={<><button onClick={() => { if (editingMember) { removeMember(editingMember.id); editModal.closeModal(); } }} className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10">删除</button><button onClick={editModal.closeModal} className={btnSecondary}>取消</button><button onClick={handleEdit} className={btnPrimary}>保存</button></>}>
-        <ModalField label="姓名">
+      <Modal open={editModal.open} onClose={editModal.closeModal} title={t('members.editTitle')}
+        footer={<><button onClick={() => { if (editingMember) { removeMember(editingMember.id); editModal.closeModal(); } }} className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10">{t('common.delete')}</button><button onClick={editModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button><button onClick={handleEdit} className={btnPrimary}>{t('common.save')}</button></>}>
+        <ModalField label={t('members.nameLabel')}>
           <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
         </ModalField>
-        <ModalField label="邮箱">
+        <ModalField label={t('members.emailLabel')}>
           <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
         </ModalField>
-        <ModalField label="电话">
+        <ModalField label={t('members.phoneLabel')}>
           <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
         </ModalField>
-        <ModalField label="部门">
+        <ModalField label={t('members.deptLabel')}>
           <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value === '__EMPTY__' ? '' : e.target.value })} className={selectCls}>
-            <option value="__EMPTY__">选择部门</option>
+            <option value="__EMPTY__">{t('members.deptPlaceholder')}</option>
             {deptOptions.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </ModalField>
-        <ModalField label="角色">
+        <ModalField label={t('members.roleLabel')}>
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={selectCls}>
-            <option value="member">成员</option>
-            <option value="manager">经理</option>
-            <option value="admin">管理员</option>
+            <option value="member">{t('members.roleMember')}</option>
+            <option value="manager">{t('members.roleManager')}</option>
+            <option value="admin">{t('members.roleAdmin')}</option>
           </select>
         </ModalField>
       </Modal>
