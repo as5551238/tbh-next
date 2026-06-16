@@ -70,6 +70,24 @@ async function checkFile(filePath) {
       });
     }
   }
+
+  // Rule 3: FREE_FEATURES items should not be gated by hasFeature()
+  // DR-94 defines FREE_FEATURES Set — these features must never be paywall-gated
+  const freeFeatures = ['basicCrud', 'tags', 'review', 'knowledgeBase', 'channelMembers', 'passwordReset', 'i18n', 'basicReports'];
+  const hasFeatureCallRegex = /hasFeature\s*\(\s*['"](\w+)['"]/g;
+  while ((match = hasFeatureCallRegex.exec(content)) !== null) {
+    const featureName = match[1];
+    if (freeFeatures.includes(featureName)) {
+      const line = content.substring(0, match.index).split('\n').length;
+      findings.push({
+        severity: 'error',
+        file: relPath,
+        line,
+        message: `hasFeature('${featureName}') gates a FREE_FEATURE — per DR-94, '${featureName}' must never be paywall-gated. Remove the gate or use a Pro-only feature name.`,
+        rule: 'DR-94',
+      });
+    }
+  }
 }
 
 async function main() {
