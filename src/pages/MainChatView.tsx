@@ -20,7 +20,7 @@ function getAiRouteLabel(): { label: string; color: string } {
 }
 
 function MainChatView() {
-  const { showPaywall: mcShow, paywallReason: mcReason, paywallFeature: mcFeat, closePaywall: mcClose, requireFeature: mcRequire } = useGateCheck();
+  const { showPaywall: mcShow, paywallReason: mcReason, paywallFeature: mcFeat, closePaywall: mcClose } = useGateCheck();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const indColor = useIndustryColor();

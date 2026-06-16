@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { CardSkeleton } from '@/components/Skeleton';
 import { useGateCheck } from '@/hooks/useGateCheck';
@@ -14,7 +13,7 @@ import { ReviewDraftPhase } from './review/ReviewDraftPhase';
 import { ReviewDonePhase } from './review/ReviewDonePhase';
 
 export default function ReviewContent() {
-  const { showPaywall: rvShow, paywallReason: rvReason, paywallFeature: rvFeat, closePaywall: rvClose, requireFeature: rvRequire } = useGateCheck();
+  const { showPaywall: rvShow, paywallReason: rvReason, paywallFeature: rvFeat, closePaywall: rvClose } = useGateCheck();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
   const { goals, loading: goalsLoading } = useGoals();

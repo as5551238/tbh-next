@@ -1,6 +1,5 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
-import { hasFeature } from '@/lib/subscription';
 import { useState, useCallback, useEffect } from 'react';
 import { usePredictions, useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useToast, ToastOverlay } from '@/hooks/useToast';

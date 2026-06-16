@@ -6,7 +6,6 @@ import { useNotifications } from '@/hooks/useMatrix';
 import { setStoredModelId, AI_MODEL_PRESETS } from '@/lib/aiService';
 import { Settings, Bot, Save, RotateCcw, Check } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
-import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';

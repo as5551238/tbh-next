@@ -4,7 +4,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/lib/auth';
 import { useRealtime, usePresence } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
-import { hasFeature, getCurrentPlan, PLAN_LIMITS } from '@/lib/subscription';
+import { getCurrentPlan, PLAN_LIMITS } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 import { Send, Bot, User, Hash, Users, ChevronDown, Circle, Plus, X } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';

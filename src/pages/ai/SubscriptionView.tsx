@@ -8,7 +8,7 @@ import { upsertSubscription } from '@/lib/dataLayer';
 import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Lock, CheckCircle2, CreditCard } from 'lucide-react';
 import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs, useGoals, useTasks } from '@/hooks/useMatrix';
 import { CardSkeleton } from '@/components/Skeleton';
-import PaywallModal from '@/components/PaywallModal';
+
 
 function CheckoutPlanCard({ plan, isCurrent, onCheckout }: { plan: typeof CHECKOUT_PLANS[number]; isCurrent: boolean; onCheckout: () => Promise<void> }) {
   const [processing, setProcessing] = useState(false);

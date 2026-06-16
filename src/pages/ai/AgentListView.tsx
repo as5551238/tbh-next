@@ -5,7 +5,6 @@ import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Plus, Check, Edit3 }
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { CardSkeleton } from '@/components/Skeleton';
 import PageHeader from '@/components/PageHeader';
-import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 
 const STATUS_DOT: Record<string, string> = { running: 'bg-success', idle: 'bg-warn', error: 'bg-danger' };

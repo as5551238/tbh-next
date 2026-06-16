@@ -7,7 +7,6 @@ import { a2aSend, a2aGetMessages, a2aPipeline } from '@/lib/mcpA2a';
 import { MORNING_AGENT, PROGRESS_AGENT, RISK_AGENT } from '@/lib/agents';
 import { cn } from '@/lib/utils';
 import { Plug, Radio, Play, ArrowRight, Loader2, Zap, RefreshCw, Unplug, Wifi } from 'lucide-react';
-import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 
 const ALL_AGENTS_DEF = [MORNING_AGENT, PROGRESS_AGENT, RISK_AGENT];

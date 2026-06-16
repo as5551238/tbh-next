@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { AlertTriangle, Clock, TrendingDown, Shield, Plus, Trash2, Zap, Scan, RefreshCw, Settings, Activity, Download } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
-import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 import { scanRisks, alertToDeviationInput, type RiskAlert, type RiskScanResult, type RiskEngineConfig } from '@/lib/riskEngine';
 import { recordRender } from '@/lib/monitoring';

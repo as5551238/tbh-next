@@ -1,6 +1,5 @@
 import { useGateCheck } from '@/hooks/useGateCheck';
 import PaywallModal from '@/components/PaywallModal';
-import { hasFeature } from '@/lib/subscription';
 import { useState, useCallback, useEffect } from 'react';
 import { useReports, useGoals, useTasks, useRisks, useActionItems, useDeviationAlerts } from '@/hooks/useMatrix';
 import { useAuth } from '@/lib/auth';
