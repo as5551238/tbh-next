@@ -14,21 +14,8 @@ const IFACE_LABELS: Record<string, string> = {
   ai: '个人AI台',
 };
 
-const MODULE_LABELS: Record<string, string> = {
-  overview: '工作台首页', schedule: '日程', notifications: '通知',
-  goals: '目标 OKR', projects: '项目管理', tasks: '任务中心',
-  insight: '数据洞察', reports: '报表中心', prediction: '预测引擎',
-  knowledge: '知识库', docs: '文档协作', experience: '经验库',
-  members: '成员管理', roles: '角色权限', org: '组织设置', admin: '系统配置',
-  channels: '频道列表', teamCal: '团队日历', approvals: '审批中心',
-  announcements: '公告板', collabDocs: '协作文档', meetings: '会议',
-  files: '文件共享', directory: '通讯录', aiAgents: 'AI同事',
-  main: '工作助手', morning: '晨间聚焦', risk: '风险预警',
-  agentList: 'Agent列表', agentConfig: 'Agent配置',
-  industryView: '行业视图', workflows: '工作流模板', kpiDash: 'KPI仪表盘',
-  tags: '标签管理', categories: '分类管理', featureFlags: '功能开关',
-  savedViews: '保存视图', automation: '自动化规则', statusFlow: '状态流转',
-};
+import { MODULE_LABELS } from '@/lib/moduleContext';
+
 
 export default function TopBar() {
   const iface = useAppStore((s) => s.interface);

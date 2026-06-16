@@ -394,8 +394,8 @@ describe('detectDeviations', () => {
 });
 
 describe('REVIEW_MODELS', () => {
-  it('has exactly 3 review models', () => {
-    expect(REVIEW_MODELS).toHaveLength(3);
+  it('has exactly 7 review models (GRAI/PDCA/5Whys/FMEA/8D/KPT/SSC)', () => {
+    expect(REVIEW_MODELS).toHaveLength(7);
   });
 
   it('each model has required fields', () => {

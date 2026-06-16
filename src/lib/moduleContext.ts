@@ -55,6 +55,16 @@ const MODULE_LABELS: Record<string, string> = {
   sharedFiles: '共享文件',
   contacts: '通讯录',
   meetings: '会议',
+  announcements: '公告板',
+  approvals: '审批中心',
+  teamCal: '团队日历',
+  behaviorTracker: '行为追踪',
+  systemMonitor: '系统监控',
+  dste: 'DSTE闭环',
+  commandCenter: '指挥中心',
+  usageAlerts: '用量预警',
+  aiAgents: 'AI同事',
+  templateWizard: '模板向导',
 };
 
 /**
