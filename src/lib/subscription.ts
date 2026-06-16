@@ -278,6 +278,9 @@ export async function refreshPlanFromServer(userId: string): Promise<string> {
 
 /** Quick feature gate check (synchronous). Returns true if the current plan allows the feature AND it is not disabled by admin flag override. */
 export function hasFeature(feature: keyof PlanLimits): boolean {
+  // L0: FREE_FEATURES — DR-94: basic CRUD is never gated
+  if (FREE_FEATURES.has(feature)) return true;
+
   // L1: Admin flag override — if explicitly disabled, block regardless of plan
   if (feature in _flagOverrides && _flagOverrides[feature] === false) return false;
 
@@ -334,3 +337,19 @@ export const FLAG_KEY_TO_FEATURE: Record<string, keyof PlanLimits> = {
   custom_reports: 'customReports',
   api_access: 'apiAccess',
 };
+
+/**
+ * DR-94: Features that are ALWAYS free — basic CRUD operations must never be gated.
+ * If hasFeature() is called with one of these keys, it returns true unconditionally.
+ * Violation: gating a FREE_FEATURE behind a paywall is a CI error (ci-quality-gate.mjs).
+ */
+export const FREE_FEATURES: ReadonlySet<string> = new Set([
+  'basicCrud',         // create/read/update/delete on core entities
+  'tags',              // tag management
+  'review',            // basic review sessions (all 7 models)
+  'knowledgeBase',     // knowledge doc CRUD
+  'channelMembers',    // channel member invite/view
+  'passwordReset',     // account recovery
+  'i18n',              // language switching
+  'basicReports',      // standard reports & dashboards
+]);

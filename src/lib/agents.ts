@@ -20,7 +20,7 @@ export interface AgentDef {
   name: string;
   icon: string;
   description: string;
-  systemPrompt: (cell: MatrixCell, industry: string, dept: string) => string;
+  systemPrompt: (cell: MatrixCell, industry: string, dept: string, moduleContext?: string, industryRaw?: string, deptRaw?: string) => string;
   capabilities: string[];
   route: RegExp;
   color: string; // accent color for UI
@@ -42,8 +42,8 @@ export const MORNING_AGENT: AgentDef = {
     '关键指标变化提醒',
   ],
   route: /晨报|早报|晨间|今日聚焦|morning|今天重点|今日待办/i,
-  systemPrompt: (cell, industry, dept) => [
-    buildSystemPrompt(cell, industry, dept),
+  systemPrompt: (cell, industry, dept, _moduleCtx, industryRaw, deptRaw) => [
+    buildSystemPrompt(cell, industry, dept, undefined, industryRaw, deptRaw),
     '',
     '## 你是「晨报助手」',
     '你专注于为用户生成每日晨间播报。基于最新的KPI、风险和工作流数据，给出简洁有力的晨间摘要。',
@@ -71,8 +71,8 @@ export const PROGRESS_AGENT: AgentDef = {
     '效率瓶颈定位',
   ],
   route: /KPI|指标|进度|绩效|目标|达成率|里程碑|完成率/i,
-  systemPrompt: (cell, industry, dept) => [
-    buildSystemPrompt(cell, industry, dept),
+  systemPrompt: (cell, industry, dept, _moduleCtx, industryRaw, deptRaw) => [
+    buildSystemPrompt(cell, industry, dept, undefined, industryRaw, deptRaw),
     '',
     '## 你是「进度追踪」助手',
     '你专注于数据驱动的进度分析。基于KPI和目标数据，给出精准的达标率分析和趋势预测。',
@@ -101,8 +101,8 @@ export const RISK_AGENT: AgentDef = {
     '历史风险模式分析',
   ],
   route: /风险|预警|告警|隐患|问题|异常|堵塞|延迟|超时/i,
-  systemPrompt: (cell, industry, dept) => [
-    buildSystemPrompt(cell, industry, dept),
+  systemPrompt: (cell, industry, dept, _moduleCtx, industryRaw, deptRaw) => [
+    buildSystemPrompt(cell, industry, dept, undefined, industryRaw, deptRaw),
     '',
     '## 你是「风险监控」助手',
     '你专注于风险识别、评估和应对。基于当前风险数据和业务指标，给出有针对性的风险分析和应对建议。',

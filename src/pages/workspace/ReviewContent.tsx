@@ -62,8 +62,6 @@ export default function ReviewContent() {
             pickModel(model);
           }}
           onResumeSession={resumeSession}
-          requireFeature={rvRequire}
-          paywallSlot={paywallSlot}
         />
       );
     case 'pick':
@@ -85,7 +83,7 @@ export default function ReviewContent() {
           onNextStep={nextStep}
           onPrevStep={prevStep}
           onGenerateDraft={generateDraft}
-          onSkipToDraft={() => { if (!rvRequire('customWorkflows', 'AI复盘生成需要专业版或企业版')) return; generateDraft(); }}
+          onSkipToDraft={() => generateDraft()}
           onBack={() => resetReview()}
           paywallSlot={paywallSlot}
         />

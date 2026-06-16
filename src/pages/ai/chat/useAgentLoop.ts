@@ -284,7 +284,7 @@ export function useAgentLoop(
     setIsTyping(true);
 
     const systemPrompt = matchedAgent
-      ? matchedAgent.systemPrompt(cell, industry, dept)
+      ? matchedAgent.systemPrompt(cell, industry, dept, undefined, industryRaw, deptRaw)
       : buildSystemPrompt(cell, industry, dept, buildModuleContext(activeModule, {
           tasksTotal: tasks.length,
           tasksOverdue: tasks.filter(t => t.status !== 'done' && new Date(t.due_date ?? '') < new Date()).length,

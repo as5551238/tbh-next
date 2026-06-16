@@ -22,8 +22,6 @@ interface AlertPhaseProps {
   onMarkRead: (alert: DeviationAlert) => void;
   onManualStart: (modelId: string) => void;
   onResumeSession: (session: ReviewSessionRow) => void;
-  requireFeature: (feature: string, reason: string) => boolean;
-  paywallSlot: React.ReactNode;
 }
 
 const statusLabel: Record<string, string> = {
@@ -34,7 +32,7 @@ const statusLabel: Record<string, string> = {
 
 export function ReviewAlertsPhase({
   alerts, persistedAlerts, autoProgressMap, goals, recentSessions,
-  onStartTimeReview, onComputeAlerts, onMarkRead, onManualStart, onResumeSession, requireFeature, paywallSlot,
+  onStartTimeReview, onComputeAlerts, onMarkRead, onManualStart, onResumeSession,
 }: AlertPhaseProps) {
   return (
     <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
@@ -160,7 +158,6 @@ export function ReviewAlertsPhase({
         </div>
       )}
 
-      {paywallSlot}
     </div>
   );
 }

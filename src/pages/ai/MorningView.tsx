@@ -15,6 +15,8 @@ export default function MorningView() {
   const indColor = useIndustryColor();
   const industry = useAppStore((s) => s.industry);
   const dept = useAppStore((s) => s.dept);
+  const industryRaw = useAppStore((s) => s.industryRaw);
+  const deptRaw = useAppStore((s) => s.deptRaw);
 
   const [briefing, setBriefing] = useState<string>('');
   const [briefingLoading, setBriefingLoading] = useState(false);
@@ -55,7 +57,7 @@ export default function MorningView() {
     setBriefingLoading(true);
     setBriefing('');
 
-    const systemPrompt = MORNING_AGENT.systemPrompt(cell, industry, dept);
+    const systemPrompt = MORNING_AGENT.systemPrompt(cell, industry, dept, undefined, industryRaw, deptRaw);
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: '请生成今日晨间播报，包含：1)核心状态概括 2)今日重点(3-5项) 3)告警指标行动建议' },
