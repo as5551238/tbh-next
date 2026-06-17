@@ -4,6 +4,7 @@ import { Database, Bell, Shield, Palette, Globe, Plug, Save, Plus, Trash2, Cpu }
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { checkSupabaseHealth, fetchApiKeys, createApiKey, deleteApiKey } from '@/lib/dataLayer';
 import { maskKey, encodeKey, decodeKey, migrateLocalStorageKeys, type ApiKeyEntry, type ConfigItem } from './helpers';
+import { t } from '@/lib/i18nCore';
 
 export default function GeneralTab() {
   const emailModal = useModal();
@@ -35,49 +36,62 @@ export default function GeneralTab() {
   const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'error'>('checking');
   const checkDbHealth = useCallback(() => {
     setDbStatus('checking');
-    checkSupabaseHealth().then((s) => setDbStatus(s)).catch((err) => { console.error('[admin]', err); toast('管理操作失败，请重试', 'error'); setDbStatus('error'); });
+    checkSupabaseHealth().then((s) => setDbStatus(s)).catch((err) => { console.error('[admin]', err); toast(t('admin.genAdminOpFailed'), 'error'); setDbStatus('error'); });
   }, []);
   useEffect(() => { checkDbHealth(); }, [checkDbHealth]);
 
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyValue, setNewKeyValue] = useState('');
 
+  const lbDbConn = t('admin.genDbConn');
+  const lbApiKeyMgmt = t('admin.genApiKeyMgmt');
+  const lbDomainDeploy = t('admin.genDomainDeploy');
+  const lbNotifChannel = t('admin.genNotifChannel');
+  const lbAlertRule = t('admin.genAlertRule');
+  const lbEmailPush = t('admin.genEmailPush');
+  const lbDeepSeekAI = t('admin.genDeepSeekAI');
+  const lbLoginMethod = t('admin.genLoginMethod');
+  const lbSessionTimeout = t('admin.genSessionTimeout');
+  const lbDataBackup = t('admin.genDataBackup');
+  const lbTheme = t('admin.genTheme');
+  const lbBrandColor = t('admin.genBrandColor');
+
   const sections: { title: string; items: ConfigItem[] }[] = [
     {
-      title: '系统',
+      title: t('admin.genSecSystem'),
       items: [
-        { icon: <Database size={15} />, label: '数据库连接', value: 'Supabase · ' + (dbStatus === 'ok' ? '已连接' : dbStatus === 'error' ? '连接失败' : '检测中…'), status: dbStatus === 'ok' ? 'ok' : dbStatus === 'error' ? 'error' : 'warn' },
-        { icon: <Plug size={15} />, label: 'API密钥管理', value: `${apiKeys.length}个已配置`, status: 'ok' },
-        { icon: <Globe size={15} />, label: '域名与部署', value: 'GitHub Pages', status: 'ok' },
+        { icon: <Database size={15} />, label: lbDbConn, value: 'Supabase · ' + (dbStatus === 'ok' ? t('admin.genConnected') : dbStatus === 'error' ? t('admin.genConnFailed') : t('admin.genChecking')), status: dbStatus === 'ok' ? 'ok' : dbStatus === 'error' ? 'error' : 'warn' },
+        { icon: <Plug size={15} />, label: lbApiKeyMgmt, value: t('admin.genApiKeysCount', { count: apiKeys.length }), status: 'ok' },
+        { icon: <Globe size={15} />, label: lbDomainDeploy, value: 'GitHub Pages', status: 'ok' },
       ],
     },
     {
-      title: '通知',
+      title: t('admin.genSecNotif'),
       items: [
-        { icon: <Bell size={15} />, label: '通知渠道', value: '企微 + 浏览器推送', status: 'ok' },
-        { icon: <Bell size={15} />, label: '告警规则', value: '5条规则', status: 'ok' },
-        { icon: <Bell size={15} />, label: '邮件推送', value: resendKey ? 'Resend API · 已配置' : 'Resend API · 未配置', status: resendKey ? 'ok' : 'warn' },
+        { icon: <Bell size={15} />, label: lbNotifChannel, value: t('admin.genNotifChannelValue'), status: 'ok' },
+        { icon: <Bell size={15} />, label: lbAlertRule, value: t('admin.genAlertRuleValue'), status: 'ok' },
+        { icon: <Bell size={15} />, label: lbEmailPush, value: t('admin.genEmailPushValue', { configured: resendKey }), status: resendKey ? 'ok' : 'warn' },
       ],
     },
     {
-      title: 'AI服务',
+      title: t('admin.genSecAI'),
       items: [
-        { icon: <Cpu size={15} />, label: 'DeepSeek AI', value: deepseekKey ? 'API Key · 已配置' : 'API Key · 未配置', status: deepseekKey ? 'ok' : 'warn' },
+        { icon: <Cpu size={15} />, label: lbDeepSeekAI, value: t('admin.genAiKeyValue', { configured: deepseekKey }), status: deepseekKey ? 'ok' : 'warn' },
       ],
     },
     {
-      title: '安全',
+      title: t('admin.genSecSecurity'),
       items: [
-        { icon: <Shield size={15} />, label: '登录方式', value: '密码 + Supabase Auth', status: 'ok' },
-        { icon: <Shield size={15} />, label: '会话超时', value: '24小时', status: 'ok' },
-        { icon: <Shield size={15} />, label: '数据备份', value: '自动 · 每日', status: 'ok' },
+        { icon: <Shield size={15} />, label: lbLoginMethod, value: t('admin.genLoginMethodValue'), status: 'ok' },
+        { icon: <Shield size={15} />, label: lbSessionTimeout, value: t('admin.genSessionTimeoutValue'), status: 'ok' },
+        { icon: <Shield size={15} />, label: lbDataBackup, value: t('admin.genDataBackupValue'), status: 'ok' },
       ],
     },
     {
-      title: '外观',
+      title: t('admin.genSecAppearance'),
       items: [
-        { icon: <Palette size={15} />, label: '主题', value: '深色科技风', status: 'ok' },
-        { icon: <Palette size={15} />, label: '品牌色', value: 'var(--brand-accent)', status: 'ok' },
+        { icon: <Palette size={15} />, label: lbTheme, value: t('admin.genThemeValue'), status: 'ok' },
+        { icon: <Palette size={15} />, label: lbBrandColor, value: 'var(--brand-accent)', status: 'ok' },
       ],
     },
   ];
@@ -95,20 +109,20 @@ export default function GeneralTab() {
   }
 
   function onItemClick(item: ConfigItem) {
-    if (item.label === '邮件推送') return emailModal.openModal();
-    if (item.label === 'API密钥管理') return apiModal.openModal();
-    if (item.label === 'DeepSeek AI') return aiModal.openModal();
+    if (item.label === lbEmailPush) return emailModal.openModal();
+    if (item.label === lbApiKeyMgmt) return apiModal.openModal();
+    if (item.label === lbDeepSeekAI) return aiModal.openModal();
 
     const fieldMap: Record<string, { label: string; value: string }[]> = {
-      '数据库连接': [{ label: '连接类型', value: 'Supabase' }, { label: '项目 URL', value: import.meta.env.VITE_SUPABASE_URL || '(环境变量)' }, { label: '状态', value: dbStatus === 'ok' ? '已连接' : dbStatus === 'error' ? '连接失败' : '检测中…' }],
-      '域名与部署': [{ label: '部署平台', value: 'GitHub Pages' }, { label: '域名', value: 'as5551238.github.io/team-business-hub' }, { label: 'CI', value: 'GitHub Actions' }],
-      '通知渠道': [{ label: '企业微信', value: '已启用' }, { label: '浏览器推送', value: '已启用' }, { label: '邮件', value: resendKey ? '已启用' : '未启用' }],
-      '告警规则': [{ label: '规则数量', value: '5' }, { label: '最近触发', value: '无' }, { label: '通知方式', value: '企微 + 浏览器' }],
-      '登录方式': [{ label: '密码登录', value: '已启用' }, { label: 'Supabase Auth', value: '已启用' }, { label: 'SSO', value: '未启用' }],
-      '会话超时': [{ label: '超时时间', value: '24小时' }, { label: '刷新策略', value: '自动续期' }],
-      '数据备份': [{ label: '备份频率', value: '每日' }, { label: '保留天数', value: '30天' }, { label: '最近备份', value: '今日 03:00' }],
-      '主题': [{ label: '当前主题', value: '深色科技风' }, { label: '模式', value: 'Dark' }],
-      '品牌色': [{ label: '主色', value: '--brand-accent' }, { label: '辅色', value: '--brand-accent-hover' }],
+      [lbDbConn]: [{ label: t('admin.genConnType'), value: 'Supabase' }, { label: t('admin.genProjectUrl'), value: import.meta.env.VITE_SUPABASE_URL || t('admin.genEnvVar') }, { label: t('admin.genStatusLabel'), value: dbStatus === 'ok' ? t('admin.genConnected') : dbStatus === 'error' ? t('admin.genConnFailed') : t('admin.genChecking') }],
+      [lbDomainDeploy]: [{ label: t('admin.genDeployPlatform'), value: 'GitHub Pages' }, { label: t('admin.genDomain'), value: 'as5551238.github.io/team-business-hub' }, { label: 'CI', value: 'GitHub Actions' }],
+      [lbNotifChannel]: [{ label: t('admin.genWeCom'), value: t('admin.enabled') }, { label: t('admin.genBrowserPush'), value: t('admin.enabled') }, { label: t('admin.genEmail'), value: resendKey ? t('admin.enabled') : t('admin.disabled') }],
+      [lbAlertRule]: [{ label: t('admin.genRuleCount'), value: '5' }, { label: t('admin.genLastTrigger'), value: t('admin.genNone') }, { label: t('admin.genNotifMethod'), value: t('admin.genWecomPlusBrowser') }],
+      [lbLoginMethod]: [{ label: t('admin.genPwdLogin'), value: t('admin.enabled') }, { label: 'Supabase Auth', value: t('admin.enabled') }, { label: 'SSO', value: t('admin.disabled') }],
+      [lbSessionTimeout]: [{ label: t('admin.genTimeoutDuration'), value: t('admin.gen24Hours') }, { label: t('admin.genRefreshPolicy'), value: t('admin.genAutoRenew') }],
+      [lbDataBackup]: [{ label: t('admin.genBackupFreq'), value: t('admin.genDaily') }, { label: t('admin.genRetentionDays'), value: t('admin.gen30Days') }, { label: t('admin.genLastBackup'), value: t('admin.genLastBackupValue') }],
+      [lbTheme]: [{ label: t('admin.genCurrentTheme'), value: t('admin.genDarkSciFi') }, { label: t('admin.genMode'), value: 'Dark' }],
+      [lbBrandColor]: [{ label: t('admin.genPrimaryColor'), value: '--brand-accent' }, { label: t('admin.genSecondaryColor'), value: '--brand-accent-hover' }],
     };
 
     const fields = fieldMap[item.label];
@@ -148,7 +162,7 @@ export default function GeneralTab() {
       localStorage.setItem('tbh_deepseek_api_key', deepseekKey);
     } catch { /* ignore */ }
     aiModal.closeModal();
-    toast('DeepSeek API Key 已保存', 'success');
+    toast(t('admin.genDeepSeekSaved'), 'success');
   }
 
   return (
@@ -156,15 +170,15 @@ export default function GeneralTab() {
       {/* System Health */}
       <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-bold text-text-3 uppercase tracking-wider">系统健康</span>
-          <span className="text-[10px] text-success font-semibold">正常运行</span>
+          <span className="text-xs font-bold text-text-3 uppercase tracking-wider">{t('admin.genSystemHealth')}</span>
+          <span className="text-[10px] text-success font-semibold">{t('admin.genRunningNormal')}</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: '数据库', status: dbStatus === 'checking' ? 'warn' : dbStatus },
+            { label: t('admin.genDb'), status: dbStatus === 'checking' ? 'warn' : dbStatus },
             { label: 'API', status: 'ok' as string },
-            { label: '部署', status: 'ok' as string },
-            { label: '邮件', status: resendKey ? 'ok' : 'warn' },
+            { label: t('admin.genDeploy'), status: 'ok' as string },
+            { label: t('admin.genEmailLabel'), status: resendKey ? 'ok' : 'warn' },
             { label: 'AI', status: deepseekKey ? 'ok' : 'warn' },
           ].map((h) => (
             <div key={h.label} className="text-center">
@@ -202,48 +216,48 @@ export default function GeneralTab() {
       </div>
 
       {/* 邮件推送配置 Modal */}
-      <Modal open={emailModal.open} onClose={emailModal.closeModal} title="邮件推送配置"
+      <Modal open={emailModal.open} onClose={emailModal.closeModal} title={t('admin.genEmailPushConfig')}
         footer={
           <>
-            <button onClick={emailModal.closeModal} className={btnSecondary}>取消</button>
+            <button onClick={emailModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
             <button onClick={saveEmailConfig} className={`${btnPrimary} flex items-center gap-1.5`}>
-              <Save size={12} /> 保存
+              <Save size={12} /> {t('common.save')}
             </button>
           </>
         }>
         <ModalField label="Resend API Key">
           <input type="password" className={inputCls} placeholder="re_xxxxxxxxxxxx" value={resendKey} onChange={(e) => setResendKey(e.target.value)} />
         </ModalField>
-        <ModalField label="发件人邮箱">
+        <ModalField label={t('admin.genSenderEmail')}>
           <input type="email" className={inputCls} placeholder="noreply@yourdomain.com" value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
         </ModalField>
-        <ModalField label="SMTP 服务器（可选）">
+        <ModalField label={t('admin.genSmtpOptional')}>
           <input className={inputCls} placeholder="smtp.resend.com:465" value={smtpServer} onChange={(e) => setSmtpServer(e.target.value)} />
         </ModalField>
-        <p className="text-[10px] text-text-3 mt-2">配置后将通过 Resend API 发送告警与通知邮件。API Key 将存储于环境变量中。</p>
+        <p className="text-[10px] text-text-3 mt-2">{t('admin.genEmailConfigDesc')}</p>
       </Modal>
 
       {/* DeepSeek AI 配置 Modal */}
-      <Modal open={aiModal.open} onClose={aiModal.closeModal} title="DeepSeek AI 配置"
+      <Modal open={aiModal.open} onClose={aiModal.closeModal} title={t('admin.genDeepSeekConfig')}
         footer={
           <>
-            <button onClick={aiModal.closeModal} className={btnSecondary}>取消</button>
+            <button onClick={aiModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
             <button onClick={saveAiConfig} className={`${btnPrimary} flex items-center gap-1.5`}>
-              <Save size={12} /> 保存
+              <Save size={12} /> {t('common.save')}
             </button>
           </>
         }>
         <ModalField label="DeepSeek API Key">
           <input type="password" className={inputCls} placeholder="sk-xxxxxxxxxxxxxxxx" value={deepseekKey} onChange={(e) => setDeepseekKey(e.target.value)} />
         </ModalField>
-        <p className="text-[10px] text-text-3 mt-2">配置后 AI 助手将直连 DeepSeek API，无需服务端代理。Key 仅存储于浏览器本地，不会上传至服务器。</p>
+        <p className="text-[10px] text-text-3 mt-2">{t('admin.genAiConfigDesc')}</p>
       </Modal>
 
       {/* API密钥管理 Modal */}
-      <Modal open={apiModal.open} onClose={apiModal.closeModal} title="API 密钥管理" width="max-w-lg"
+      <Modal open={apiModal.open} onClose={apiModal.closeModal} title={t('admin.genApiKeyMgmtTitle')} width="max-w-lg"
         footer={
           <>
-            <button onClick={apiModal.closeModal} className={btnSecondary}>关闭</button>
+            <button onClick={apiModal.closeModal} className={btnSecondary}>{t('common.close')}</button>
           </>
         }>
         <div className="space-y-2 mb-4">
@@ -251,21 +265,21 @@ export default function GeneralTab() {
             <div key={k.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2">
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium text-text truncate">{k.name}</div>
-                <div className="text-[10px] text-text-3">{maskKey(k.key)} · 创建于 {k.created}</div>
+                <div className="text-[10px] text-text-3">{maskKey(k.key)} · {t('admin.genCreatedAt', { date: k.created })}</div>
               </div>
-              <button onClick={() => removeApiKey(k.id)} aria-label="删除密钥" className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-md text-text-3 hover:bg-danger/10 hover:text-danger transition-colors">
+              <button onClick={() => removeApiKey(k.id)} aria-label={t('admin.genDeleteKey')} className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-md text-text-3 hover:bg-danger/10 hover:text-danger transition-colors">
                 <Trash2 size={13} />
               </button>
             </div>
           ))}
         </div>
         <div className="border-t border-border pt-3">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">新增密钥</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">{t('admin.genAddKey')}</div>
           <div className="flex flex-wrap gap-2">
-            <input className={`${inputCls} flex-1`} aria-label="密钥名称" placeholder="名称" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} />
-            <input type="password" className={`${inputCls} flex-1`} aria-label="密钥值" placeholder="密钥值" value={newKeyValue} onChange={(e) => setNewKeyValue(e.target.value)} />
+            <input className={`${inputCls} flex-1`} aria-label={t('admin.genKeyName')} placeholder={t('admin.genKeyNamePlaceholder')} value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} />
+            <input type="password" className={`${inputCls} flex-1`} aria-label={t('admin.genKeyValue')} placeholder={t('admin.genKeyValuePlaceholder')} value={newKeyValue} onChange={(e) => setNewKeyValue(e.target.value)} />
             <button onClick={addApiKey} className={`${btnPrimary} flex items-center gap-1 whitespace-nowrap`}>
-              <Plus size={12} /> 添加
+              <Plus size={12} /> {t('common.add')}
             </button>
           </div>
         </div>
@@ -275,14 +289,14 @@ export default function GeneralTab() {
       <Modal open={genericModal.open} onClose={genericModal.closeModal} title={genericTitle}
         footer={
           <>
-            <button onClick={genericModal.closeModal} className={btnSecondary}>关闭</button>
+            <button onClick={genericModal.closeModal} className={btnSecondary}>{t('common.close')}</button>
             <button onClick={() => {
               try {
                 localStorage.setItem(`tbh-config-${genericTitle}`, JSON.stringify(genericField));
               } catch { /* quota */ }
               genericModal.closeModal();
             }} className={`${btnPrimary} flex items-center gap-1.5`}>
-              <Save size={12} /> 保存
+              <Save size={12} /> {t('common.save')}
             </button>
           </>
         }>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { t } from '@/lib/i18nCore';
 
 export default function NotificationTab() {
   const [notifPrefs, setNotifPrefs] = useState<{ email: boolean; push: boolean; im: boolean; digest: 'none' | 'daily' | 'weekly' }>(() => {
@@ -9,9 +10,9 @@ export default function NotificationTab() {
   return (
     <div className="space-y-3">
       {([
-        { key: 'email' as const, label: '邮件通知', desc: '重要事件通过邮件推送' },
-        { key: 'push' as const, label: '浏览器推送', desc: '浏览器桌面通知' },
-        { key: 'im' as const, label: '企微/Slack', desc: '即时通讯渠道推送' },
+        { key: 'email' as const, label: t('admin.notifEmail'), desc: t('admin.notifEmailDesc') },
+        { key: 'push' as const, label: t('admin.notifPush'), desc: t('admin.notifPushDesc') },
+        { key: 'im' as const, label: t('admin.notifIM'), desc: t('admin.notifIMDesc') },
       ]).map((item) => (
         <div key={item.key} className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
           <div>
@@ -25,13 +26,13 @@ export default function NotificationTab() {
       ))}
       <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
         <div>
-          <div className="text-xs font-medium text-text">摘要频率</div>
-          <div className="text-[10px] text-text-3">定期推送工作摘要</div>
+          <div className="text-xs font-medium text-text">{t('admin.digestFreq')}</div>
+          <div className="text-[10px] text-text-3">{t('admin.digestFreqDesc')}</div>
         </div>
         <select value={notifPrefs.digest} onChange={(e) => setNotifPrefs((p) => ({ ...p, digest: e.target.value as 'none' | 'daily' | 'weekly' }))} className="h-7 rounded-md border border-border bg-bg px-2 text-xs text-text">
-          <option value="none">关闭</option>
-          <option value="daily">每日</option>
-          <option value="weekly">每周</option>
+          <option value="none">{t('admin.digestNone')}</option>
+          <option value="daily">{t('admin.digestDaily')}</option>
+          <option value="weekly">{t('admin.digestWeekly')}</option>
         </select>
       </div>
     </div>

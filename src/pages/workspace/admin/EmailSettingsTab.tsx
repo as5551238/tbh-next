@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { t } from '@/lib/i18nCore';
 
 export default function EmailSettingsTab() {
   const [emailSettings, setEmailSettings] = useState<{ address: string }>(() => {
@@ -11,16 +12,16 @@ export default function EmailSettingsTab() {
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-border bg-surface p-3 md:p-4 space-y-3">
-        <div className="text-xs font-bold text-text">收件邮箱</div>
-        <input type="email" aria-label="收件邮箱" placeholder="your@email.com" value={emailSettings.address} onChange={(e) => setEmailSettings((s) => ({ ...s, address: e.target.value }))} className="h-8 w-full rounded-md border border-border bg-bg px-3 text-xs text-text" />
-        <div className="text-[10px] text-text-3">用于接收通知摘要和告警邮件</div>
+        <div className="text-xs font-bold text-text">{t('admin.recipientEmail')}</div>
+        <input type="email" aria-label={t('admin.recipientEmail')} placeholder="your@email.com" value={emailSettings.address} onChange={(e) => setEmailSettings((s) => ({ ...s, address: e.target.value }))} className="h-8 w-full rounded-md border border-border bg-bg px-3 text-xs text-text" />
+        <div className="text-[10px] text-text-3">{t('admin.recipientEmailDesc')}</div>
       </div>
       <div className="rounded-xl border border-border bg-surface p-3 md:p-4 space-y-3">
-        <div className="text-xs font-bold text-text">测试发送</div>
+        <div className="text-xs font-bold text-text">{t('admin.testSend')}</div>
         <button onClick={async () => { setEmailTestSending(true); await new Promise((r) => setTimeout(r, 1200)); setEmailTestSending(false); }} disabled={emailTestSending || !emailSettings.address} className="rounded-lg bg-brand-accent px-4 py-1.5 text-xs font-bold text-white disabled:opacity-40">
-          {emailTestSending ? '发送中…' : '发送测试邮件'}
+          {emailTestSending ? t('admin.sending') : t('admin.testSendBtn')}
         </button>
-        <div className="text-[10px] text-text-3">模拟发送一封测试邮件到上方邮箱</div>
+        <div className="text-[10px] text-text-3">{t('admin.testSendDesc')}</div>
       </div>
     </div>
   );

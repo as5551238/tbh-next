@@ -1,10 +1,11 @@
 import { Lock } from 'lucide-react';
 import { hasFeature, PLAN_LIMITS, getCurrentPlan } from '@/lib/subscription';
+import { t } from '@/lib/i18nCore';
 
 export default function FeatureFlagsTab() {
   return (
     <div className="space-y-2">
-      <div className="text-[10px] text-text-3 mb-2">当前方案: <span className="text-brand-accent font-bold">{getCurrentPlan() === 'free' ? '免费版' : getCurrentPlan() === 'pro' ? '专业版' : '企业版'}</span></div>
+      <div className="text-[10px] text-text-3 mb-2">{t('admin.currentPlan')}<span className="text-brand-accent font-bold">{getCurrentPlan() === 'free' ? t('admin.planFree') : getCurrentPlan() === 'pro' ? t('admin.planPro') : t('admin.planEnterprise')}</span></div>
       {(
         Object.entries(PLAN_LIMITS.free).filter(([, v]) => typeof v === 'boolean') as [string, boolean][]
       ).map(([key, freeVal]) => {
@@ -16,8 +17,8 @@ export default function FeatureFlagsTab() {
               {freeVal === false && !enabled && <Lock size={11} className="text-text-3" />}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-[10px] ${enabled ? 'text-accent' : 'text-text-3'}`}>{enabled ? '已启用' : '未启用'}</span>
-              {!enabled && <a href="#/ai/subscription" className="text-[10px] text-brand-accent hover:underline">升级</a>}
+              <span className={`text-[10px] ${enabled ? 'text-accent' : 'text-text-3'}`}>{enabled ? t('admin.enabled') : t('admin.disabled')}</span>
+              {!enabled && <a href="#/ai/subscription" className="text-[10px] text-brand-accent hover:underline">{t('admin.upgrade')}</a>}
             </div>
           </div>
         );

@@ -6,12 +6,13 @@ import { useRealtime, usePresence } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
 import { getCurrentPlan, PLAN_LIMITS } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
-import { Send, Bot, User, Hash, Users, ChevronDown, Circle, Plus, X } from 'lucide-react';
+import { Send, Bot, User, Hash, Users, ChevronDown, Circle, Plus, X, Search } from 'lucide-react';
 import { chatCompletion, buildSystemPrompt, type ChatMessage } from '@/lib/aiService';
 import { createMessage, fetchChannels, createChannel, type ChannelRow } from '@/lib/dataLayer';
 import { addChannelMember, removeChannelMember, fetchChannelMembers, type ChannelMemberRow } from '@/lib/dataLayer/extended-insights';
 import { useModal, btnPrimary, btnSecondary, inputCls } from '@/components/Modal';
 import { useLocale } from '@/lib/i18n';
+import { useMembers } from '@/hooks/useMatrix';
 
 interface ChatMsg {
   id: number;
@@ -37,6 +38,7 @@ export default function ChannelsView() {
   const { cell, loading } = useMatrixCell();
   const defaultChannels = cell.channels;
   const { user } = useAuth();
+  const { members: teamMembers } = useMembers();
 
   const [channels, setChannels] = useState<string[]>(defaultChannels);
   const [channelRows, setChannelRows] = useState<ChannelRow[]>([]);
@@ -49,6 +51,7 @@ export default function ChannelsView() {
   const [channelMembers, setChannelMembers] = useState<ChannelMemberRow[]>([]);
   const [inviteMemberId, setInviteMemberId] = useState('');
   const [inviteError, setInviteError] = useState('');
+  const [memberSearch, setMemberSearch] = useState('');
   const inviteModal = useModal();
   const scrollRef = useRef<HTMLDivElement>(null);
   const createChModal = useModal();
@@ -202,6 +205,7 @@ export default function ChannelsView() {
         setChannelMembers((prev) => [...prev, newMember]);
       }
       setInviteMemberId('');
+      setMemberSearch('');
       inviteModal.closeModal();
     } catch (err: unknown) {
       setInviteError(err instanceof Error ? err.message : '邀请失败');
@@ -368,28 +372,68 @@ export default function ChannelsView() {
       )}
       {/* Invite Member Modal */}
       {inviteModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={inviteModal.closeModal}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { inviteModal.closeModal(); setInviteMemberId(''); setMemberSearch(''); setInviteError(''); }}>
           <div className="w-80 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold">{t('channels.inviteTitle', { channel: activeCh })}</span>
-              <button onClick={inviteModal.closeModal} aria-label={t('channels.closeAria')} className="text-text-3 hover:text-text"><X size={16} /></button>
+              <button onClick={inviteModal.closeModal} aria-label={t('channels.closeAria')} className="text-text-3 hover:text-text" onClickCapture={() => { setInviteMemberId(''); setMemberSearch(''); }}><X size={16} /></button>
             </div>
-            <div>
-              <label className="text-[10px] text-text-3 mb-1 block">{t('channels.memberId')}</label>
-              <input value={inviteMemberId} onChange={(e) => { setInviteMemberId(e.target.value); setInviteError(''); }} placeholder={t('channels.memberIdPlaceholder')} className={inputCls + ' w-full'} onKeyDown={(e) => e.key === 'Enter' && handleInviteMember()} />
-            </div>
+            {/* Member Picker */}
+            {inviteMemberId ? (
+              <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+                <span className="text-xs text-text">{teamMembers.find((m) => m.id === inviteMemberId)?.name ?? inviteMemberId}</span>
+                <button onClick={() => { setInviteMemberId(''); setMemberSearch(''); }} className="ml-auto text-text-3 hover:text-text"><X size={12} /></button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+                  <Search size={13} className="text-text-3" />
+                  <input
+                    value={memberSearch}
+                    onChange={(e) => { setMemberSearch(e.target.value); setInviteError(''); }}
+                    placeholder={t('members.searchPlaceholder')}
+                    className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3"
+                    autoFocus
+                  />
+                </div>
+                {memberSearch && (() => {
+                  const existingIds = new Set(channelMembers.map((cm) => cm.member_id));
+                  const filtered = teamMembers
+                    .filter((m) => !existingIds.has(m.id))
+                    .filter((m) => m.name.toLowerCase().includes(memberSearch.toLowerCase()) || m.email.toLowerCase().includes(memberSearch.toLowerCase()) || m.id.toLowerCase().includes(memberSearch.toLowerCase()));
+                  if (filtered.length === 0) return <div className="mt-2 text-[10px] text-text-3">{t('channels.memberIdPlaceholder')}</div>;
+                  return (
+                    <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-border bg-surface">
+                      {filtered.slice(0, 20).map((m) => (
+                        <button key={m.id} onClick={() => { setInviteMemberId(m.id); setMemberSearch(''); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-2 hover:bg-surface-2 transition-colors">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary-2">{m.name.charAt(0)}</div>
+                          <div className="min-w-0 flex-1 text-left">
+                            <div className="text-[11px] font-medium text-text truncate">{m.name}</div>
+                            <div className="text-[9px] text-text-3 truncate">{m.email || m.id}</div>
+                          </div>
+                          <span className="text-[9px] text-text-3">{m.role}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
             {inviteError && <div className="mt-2 text-[10px] text-danger">{inviteError}</div>}
             {channelMembers.length > 0 && (
               <div className="mt-3 space-y-1">
                 <div className="text-[9px] text-text-3 font-bold">{t('channels.currentMembers')}</div>
-                {channelMembers.map((cm) => (
-                  <div key={cm.id} className="flex items-center justify-between text-[10px] text-text-2">
-                    <span>{cm.member_id} <span className="text-text-3">({cm.role})</span></span>
-                    {cm.role !== 'creator' && (
-                      <button onClick={async () => { await removeChannelMember(cm.channel_id, cm.member_id); setChannelMembers((prev) => prev.filter((m) => m.id !== cm.id)); }} className="text-danger hover:underline">{t('channels.remove')}</button>
-                    )}
-                  </div>
-                ))}
+                {channelMembers.map((cm) => {
+                  const memberInfo = teamMembers.find((m) => m.id === cm.member_id);
+                  return (
+                    <div key={cm.id} className="flex items-center justify-between text-[10px] text-text-2">
+                      <span>{memberInfo?.name ?? cm.member_id} <span className="text-text-3">({cm.role})</span></span>
+                      {cm.role !== 'creator' && (
+                        <button onClick={async () => { await removeChannelMember(cm.channel_id, cm.member_id); setChannelMembers((prev) => prev.filter((m) => m.id !== cm.id)); }} className="text-danger hover:underline">{t('channels.remove')}</button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2 mt-4">
