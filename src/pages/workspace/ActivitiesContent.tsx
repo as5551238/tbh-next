@@ -7,13 +7,14 @@ import { cn } from '@/lib/utils';
 import { Activity, Plus, Filter, Search, CalendarDays } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { useAppStore } from '@/stores/appStore';
+import { t } from '@/lib/i18nCore';
 
-const TYPE_CFG: Record<string, { label: string; color: string }> = {
-  created: { label: '创建', color: 'bg-blue-500/20 text-blue-400' },
-  updated: { label: '更新', color: 'bg-yellow-500/20 text-yellow-400' },
-  completed: { label: '完成', color: 'bg-green-500/20 text-green-400' },
-  commented: { label: '评论', color: 'bg-purple-500/20 text-purple-400' },
-  mentioned: { label: '提及', color: 'bg-orange-500/20 text-orange-400' },
+const TYPE_CFG: Record<string, { label: () => string; color: string }> = {
+  created: { label: () => t('activities.typeCreated'), color: 'bg-blue-500/20 text-blue-400' },
+  updated: { label: () => t('activities.typeUpdated'), color: 'bg-yellow-500/20 text-yellow-400' },
+  completed: { label: () => t('activities.typeCompleted'), color: 'bg-green-500/20 text-green-400' },
+  commented: { label: () => t('activities.typeCommented'), color: 'bg-purple-500/20 text-purple-400' },
+  mentioned: { label: () => t('activities.typeMentioned'), color: 'bg-orange-500/20 text-orange-400' },
 };
 
 const ENTITY_TYPE_MAP: Record<string, { module: string; iface: string }> = {
@@ -55,8 +56,8 @@ export default function ActivitiesContent() {
 
   const handleAdd = async () => {
     if (!newItem.title.trim()) return;
-    await addActivity({ title: newItem.title, description: newItem.description, type: newItem.type, actor: newItem.actor || '系统', target_type: null, target_id: null, team_id: '__default__' });
-    success('活动已添加');
+    await addActivity({ title: newItem.title, description: newItem.description, type: newItem.type, actor: newItem.actor || t('activities.systemActor'), target_type: null, target_id: null, team_id: '__default__' });
+    success(t('activities.activityAdded'));
     setNewItem({ title: '', description: '', type: 'created', actor: '' });
     addModal.closeModal();
   };
@@ -72,27 +73,27 @@ export default function ActivitiesContent() {
       <ToastOverlay toasts={toasts} />
       <div className="flex flex-wrap items-center gap-2">
         <Activity size={18} className="text-primary-2" />
-        <span className="text-sm font-bold">活动动态</span>
-        <span className="text-[10px] text-text-3">{filtered.length} 条</span>
+        <span className="text-sm font-bold">{t('activities.title')}</span>
+        <span className="text-[10px] text-text-3">{t('activities.countLabel', { count: filtered.length })}</span>
         <div className="flex-1" />
         <button onClick={() => addModal.openModal()} className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary-2 transition-all hover:bg-primary/20">
           <Plus size={12} />
-          添加活动
+          {t('activities.addActivity')}
         </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex-1 flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
           <Search size={14} className="text-text-3" />
-          <input type="text" value={textSearch} onChange={(e) => setTextSearch(e.target.value)} placeholder="搜索活动..." aria-label="搜索活动" className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3" />
+          <input type="text" value={textSearch} onChange={(e) => setTextSearch(e.target.value)} placeholder={t('activities.searchPlaceholder')} aria-label={t('activities.searchAria')} className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3" />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         <Filter size={12} className="text-text-3 shrink-0" />
-        {ALL_TYPES.map((t) => (
-          <button key={t} onClick={() => setFilterType(t)} className={cn('shrink-0 rounded-full px-3 py-1 text-[11px] font-medium transition-all', filterType === t ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2')}>
-            {t === 'all' ? '全部' : TYPE_CFG[t]?.label ?? t}
+        {ALL_TYPES.map((ft) => (
+          <button key={ft} onClick={() => setFilterType(ft)} className={cn('shrink-0 rounded-full px-3 py-1 text-[11px] font-medium transition-all', filterType === ft ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2')}>
+            {ft === 'all' ? t('activities.filterAll') : TYPE_CFG[ft]?.label() ?? ft}
           </button>
         ))}
       </div>
@@ -101,7 +102,7 @@ export default function ActivitiesContent() {
         <CalendarDays size={12} className="text-text-3 shrink-0" />
         {DATE_RANGES.map((d) => (
           <button key={d} onClick={() => setDateRange(d)} className={cn('shrink-0 rounded-full px-3 py-1 text-[11px] font-medium transition-all', dateRange === d ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2')}>
-            {d === 'all' ? '不限' : d === 'today' ? '今天' : d === 'week' ? '近7天' : '近30天'}
+            {d === 'all' ? t('activities.dateAll') : d === 'today' ? t('activities.dateToday') : d === 'week' ? t('activities.dateWeek') : t('activities.dateMonth')}
           </button>
         ))}
       </div>
@@ -109,7 +110,7 @@ export default function ActivitiesContent() {
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-text-3">
           <Activity size={32} className="mb-2 opacity-30" />
-          <span className="text-xs">暂无活动</span>
+          <span className="text-xs">{t('activities.emptyState')}</span>
         </div>
       ) : (
         <div className="space-y-2">
@@ -128,7 +129,7 @@ export default function ActivitiesContent() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-semibold text-text">{item.title}</span>
-                    <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-semibold', cfg.color)}>{cfg.label}</span>
+                    <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-semibold', cfg.color)}>{cfg.label()}</span>
                   </div>
                   {item.description && (
                     <div className="text-[10px] text-text-3 mt-0.5 line-clamp-2">{item.description}</div>
@@ -147,26 +148,26 @@ export default function ActivitiesContent() {
         </div>
       )}
 
-      <Modal open={addModal.open} onClose={addModal.closeModal} title="添加活动"
+      <Modal open={addModal.open} onClose={addModal.closeModal} title={t('activities.addModalTitle')}
         footer={
           <div className="flex flex-wrap gap-2">
-            <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleAdd} disabled={!newItem.title.trim()}>添加</button>
+            <button className={btnSecondary} onClick={addModal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleAdd} disabled={!newItem.title.trim()}>{t('common.add')}</button>
           </div>
         }>
-        <ModalField label="标题">
-          <input className={inputCls} placeholder="活动标题" value={newItem.title} onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))} />
+        <ModalField label={t('activities.titleLabel')}>
+          <input className={inputCls} placeholder={t('activities.titlePlaceholder')} value={newItem.title} onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="描述">
-          <textarea className={cn(inputCls, 'min-h-[60px]')} placeholder="活动描述（可选）" value={newItem.description} onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))} />
+        <ModalField label={t('activities.descriptionLabel')}>
+          <textarea className={cn(inputCls, 'min-h-[60px]')} placeholder={t('activities.descriptionPlaceholder')} value={newItem.description} onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))} />
         </ModalField>
-        <ModalField label="类型">
+        <ModalField label={t('activities.typeLabel')}>
           <select className={inputCls} value={newItem.type} onChange={(e) => setNewItem((p) => ({ ...p, type: e.target.value }))}>
-            {Object.entries(TYPE_CFG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            {Object.entries(TYPE_CFG).map(([k, v]) => <option key={k} value={k}>{v.label()}</option>)}
           </select>
         </ModalField>
-        <ModalField label="操作人">
-          <input className={inputCls} placeholder="操作人（默认系统）" value={newItem.actor} onChange={(e) => setNewItem((p) => ({ ...p, actor: e.target.value }))} />
+        <ModalField label={t('activities.actorLabel')}>
+          <input className={inputCls} placeholder={t('activities.actorPlaceholder')} value={newItem.actor} onChange={(e) => setNewItem((p) => ({ ...p, actor: e.target.value }))} />
         </ModalField>
       </Modal>
     </div>
