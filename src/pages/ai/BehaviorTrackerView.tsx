@@ -3,22 +3,23 @@ import { fetchBehaviorEvents, summarizeEvents, setTrackingEnabled, isTrackingEna
 import { Activity, BarChart3, ToggleLeft, ToggleRight, RefreshCw, Clock, Zap, Download, Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { exportToCSV, exportToJSON } from '@/lib/export';
+import { t } from '@/lib/i18n';
 
-const EVENT_LABELS: Record<string, string> = {
-  task_create: '创建任务', task_update: '更新任务', task_complete: '完成任务', task_delete: '删除任务',
-  goal_create: '创建目标', goal_update: '更新目标', goal_complete: '完成目标',
-  project_create: '创建项目', project_update: '更新项目', project_delete: '删除项目',
-  doc_create: '创建文档', doc_update: '更新文档', doc_delete: '删除文档',
-  template_create: '创建模板', template_use: '使用模板', template_delete: '删除模板',
-  automation_rule_execute: '执行自动化', automation_rule_create: '创建自动化',
-  season_create: '创建赛季', season_phase_advance: '推进阶段',
-  ai_chat: 'AI对话', ai_tool_call: 'AI工具调用',
-  risk_create: '创建风险', risk_resolve: '解决风险',
-  action_item_create: '创建行动项', action_item_complete: '完成行动项',
-  report_generate: '生成报表', report_export: '导出报表',
-  notification_read: '已读通知', notification_dismiss: '删除通知',
-  page_view: '页面访问', module_switch: '模块切换',
-  login: '登录', logout: '登出',
+const EVENT_LABELS: Record<string, () => string> = {
+  task_create: () => t('behavior.taskCreate'), task_update: () => t('behavior.taskUpdate'), task_complete: () => t('behavior.taskComplete'), task_delete: () => t('behavior.taskDelete'),
+  goal_create: () => t('behavior.goalCreate'), goal_update: () => t('behavior.goalUpdate'), goal_complete: () => t('behavior.goalComplete'),
+  project_create: () => t('behavior.projectCreate'), project_update: () => t('behavior.projectUpdate'), project_delete: () => t('behavior.projectDelete'),
+  doc_create: () => t('behavior.docCreate'), doc_update: () => t('behavior.docUpdate'), doc_delete: () => t('behavior.docDelete'),
+  template_create: () => t('behavior.templateCreate'), template_use: () => t('behavior.templateUse'), template_delete: () => t('behavior.templateDelete'),
+  automation_rule_execute: () => t('behavior.automationExec'), automation_rule_create: () => t('behavior.automationCreate'),
+  season_create: () => t('behavior.seasonCreate'), season_phase_advance: () => t('behavior.seasonPhase'),
+  ai_chat: () => t('behavior.aiChat'), ai_tool_call: () => t('behavior.aiToolCall'),
+  risk_create: () => t('behavior.riskCreate'), risk_resolve: () => t('behavior.riskResolve'),
+  action_item_create: () => t('behavior.actionCreate'), action_item_complete: () => t('behavior.actionComplete'),
+  report_generate: () => t('behavior.reportGenerate'), report_export: () => t('behavior.reportExport'),
+  notification_read: () => t('behavior.notifRead'), notification_dismiss: () => t('behavior.notifDismiss'),
+  page_view: () => t('behavior.pageView'), module_switch: () => t('behavior.moduleSwitch'),
+  login: () => t('behavior.login'), logout: () => t('behavior.logout'),
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -37,26 +38,30 @@ const EVENT_COLORS: Record<string, string> = {
 };
 
 /** All unique event type categories for filtering */
-const EVENT_CATEGORIES = [
-  { key: 'all', label: '全部' },
-  { key: 'task', label: '任务' },
-  { key: 'goal', label: '目标' },
-  { key: 'project', label: '项目' },
-  { key: 'doc', label: '文档' },
-  { key: 'template', label: '模板' },
-  { key: 'automation', label: '自动化' },
-  { key: 'season', label: 'DSTE' },
-  { key: 'ai', label: 'AI' },
-  { key: 'risk', label: '风险' },
-  { key: 'action', label: '行动项' },
-  { key: 'report', label: '报表' },
-  { key: 'notification', label: '通知' },
-  { key: 'nav', label: '导航' },
+const EVENT_CATEGORIES: { key: string; label: () => string }[] = [
+  { key: 'all', label: () => t('behavior.catAll') },
+  { key: 'task', label: () => t('behavior.catTask') },
+  { key: 'goal', label: () => t('behavior.catGoal') },
+  { key: 'project', label: () => t('behavior.catProject') },
+  { key: 'doc', label: () => t('behavior.catDoc') },
+  { key: 'template', label: () => t('behavior.catTemplate') },
+  { key: 'automation', label: () => t('behavior.catAutomation') },
+  { key: 'season', label: () => t('behavior.catSeason') },
+  { key: 'ai', label: () => t('behavior.catAi') },
+  { key: 'risk', label: () => t('behavior.catRisk') },
+  { key: 'action', label: () => t('behavior.catAction') },
+  { key: 'report', label: () => t('behavior.catReport') },
+  { key: 'notification', label: () => t('behavior.catNotif') },
+  { key: 'nav', label: () => t('behavior.catNav') },
 ];
 
 function eventMatchesCategory(eventType: string, category: string): boolean {
   if (category === 'all') return true;
   return eventType.startsWith(category);
+}
+
+function eventLabelText(eventType: string): string {
+  return EVENT_LABELS[eventType] ? EVENT_LABELS[eventType]() : eventType;
 }
 
 export default function BehaviorTrackerView() {
@@ -88,7 +93,7 @@ export default function BehaviorTrackerView() {
     if (!eventMatchesCategory(e.event_type, filterCat)) return false;
     if (searchText.trim()) {
       const q = searchText.toLowerCase();
-      const label = EVENT_LABELS[e.event_type] ?? e.event_type;
+      const label = eventLabelText(e.event_type);
       const detail = JSON.stringify(e.detail).toLowerCase();
       return label.toLowerCase().includes(q) || detail.includes(q);
     }
@@ -97,11 +102,11 @@ export default function BehaviorTrackerView() {
 
   // Export handlers
   const handleExportCSV = useCallback(() => {
-    const headers = ['时间', '事件类型', '详细'];
+    const headers = [t('behavior.expTime'), t('behavior.expEventType'), t('behavior.expDetail')];
     const rows = filteredEvents.map((e) => ({
-      '时间': new Date(e.timestamp).toLocaleString('zh-CN'),
-      '事件类型': EVENT_LABELS[e.event_type] ?? e.event_type,
-      '详细': JSON.stringify(e.detail),
+      [t('behavior.expTime')]: new Date(e.timestamp).toLocaleString('zh-CN'),
+      [t('behavior.expEventType')]: eventLabelText(e.event_type),
+      [t('behavior.expDetail')]: JSON.stringify(e.detail),
     }));
     exportToCSV(headers, rows, 'behavior-events');
   }, [filteredEvents]);
@@ -124,14 +129,14 @@ export default function BehaviorTrackerView() {
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <Activity size={16} className="text-accent" />
-        <span className="text-sm font-bold">行为追踪</span>
-        <span className="text-[10px] text-text-3">{filteredEvents.length}/{events.length} 条记录</span>
+        <span className="text-sm font-bold">{t('behavior.title')}</span>
+        <span className="text-[10px] text-text-3">{t('behavior.recordCount', { filtered: filteredEvents.length, total: events.length })}</span>
         <button className={cn('flex items-center gap-1 rounded-lg px-3 py-1 text-[11px] font-semibold', tracking ? 'bg-success/10 text-success' : 'bg-surface-2 text-text-3')} onClick={handleToggleTracking}>
           {tracking ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-          {tracking ? '追踪: 开' : '追踪: 关'}
+          {tracking ? t('behavior.trackingOn') : t('behavior.trackingOff')}
         </button>
         <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-3 py-1 text-[11px] font-semibold text-text-3 hover:text-text" onClick={loadData}>
-          <RefreshCw size={12} />刷新
+          <RefreshCw size={12} />{t('behavior.refresh')}
         </button>
       </div>
 
@@ -141,21 +146,21 @@ export default function BehaviorTrackerView() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <div className="rounded-lg bg-surface p-3 text-center">
               <div className="text-lg font-bold text-primary-2">{summary.totalEvents}</div>
-              <div className="text-[9px] text-text-3">总事件数</div>
+              <div className="text-[9px] text-text-3">{t('behavior.totalEvents')}</div>
             </div>
             <div className="rounded-lg bg-surface p-3 text-center">
               <div className="text-lg font-bold text-accent">{Object.keys(summary.byType).length}</div>
-              <div className="text-[9px] text-text-3">事件类型</div>
+              <div className="text-[9px] text-text-3">{t('behavior.eventTypes')}</div>
             </div>
             <div className="rounded-lg bg-surface p-3 text-center">
               <div className="text-lg font-bold text-success">{Object.keys(summary.byDay).length}</div>
-              <div className="text-[9px] text-text-3">活跃天数</div>
+              <div className="text-[9px] text-text-3">{t('behavior.activeDays')}</div>
             </div>
             <div className="rounded-lg bg-surface p-3 text-center">
               <div className="text-lg font-bold text-warn">
                 {summary.lastActiveAt ? new Date(summary.lastActiveAt).toLocaleDateString('zh-CN') : '-'}
               </div>
-              <div className="text-[9px] text-text-3">最近活跃</div>
+              <div className="text-[9px] text-text-3">{t('behavior.lastActive')}</div>
             </div>
           </div>
         )}
@@ -165,7 +170,7 @@ export default function BehaviorTrackerView() {
           <div className="rounded-xl border border-border bg-surface p-3">
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 size={14} className="text-primary-2" />
-              <span className="text-xs font-semibold text-text">近14天活跃度</span>
+              <span className="text-xs font-semibold text-text">{t('behavior.recentActivity')}</span>
             </div>
             <div className="flex items-end gap-1 h-20">
               {dayEntries.map(([day, count]) => (
@@ -184,7 +189,7 @@ export default function BehaviorTrackerView() {
           <div className="rounded-xl border border-border bg-surface p-3">
             <div className="flex items-center gap-2 mb-2">
               <Zap size={14} className="text-accent" />
-              <span className="text-xs font-semibold text-text">高频操作 TOP10</span>
+              <span className="text-xs font-semibold text-text">{t('behavior.topActions')}</span>
             </div>
             <div className="space-y-1.5">
               {summary.topActions.map((a, i) => {
@@ -192,7 +197,7 @@ export default function BehaviorTrackerView() {
                 return (
                   <div key={a.action} className="flex items-center gap-2">
                     <span className="text-[10px] text-text-3 w-4 text-right">{i + 1}</span>
-                    <span className="text-[10px] text-text min-w-[60px]">{EVENT_LABELS[a.action] ?? a.action}</span>
+                    <span className="text-[10px] text-text min-w-[60px]">{eventLabelText(a.action)}</span>
                     <div className="flex-1 h-3 rounded-full bg-surface-2 overflow-hidden">
                       <div className="h-full rounded-full bg-accent/60 transition-all" style={{ width: `${(a.count / maxCount) * 100}%` }} />
                     </div>
@@ -208,7 +213,7 @@ export default function BehaviorTrackerView() {
         <div className="rounded-xl border border-border bg-surface p-3 space-y-2">
           <div className="flex items-center gap-2">
             <Filter size={12} className="text-text-3" />
-            <span className="text-[10px] font-bold text-text-3 uppercase tracking-wider">事件过滤</span>
+            <span className="text-[10px] font-bold text-text-3 uppercase tracking-wider">{t('behavior.eventFilter')}</span>
             <div className="ml-auto flex gap-1">
               <button className="flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-0.5 text-[9px] text-text-3 hover:text-text" onClick={handleExportCSV}>
                 <Download size={9} />CSV
@@ -222,7 +227,7 @@ export default function BehaviorTrackerView() {
           <div className="relative">
             <input
               className="w-full rounded-lg bg-surface-2 border border-border/50 px-3 py-1.5 text-[11px] text-text placeholder-text-3 focus:outline-none focus:border-primary"
-              placeholder="搜索事件类型或详情..."
+              placeholder={t('behavior.searchPlaceholder')}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
@@ -236,7 +241,7 @@ export default function BehaviorTrackerView() {
                 className={cn('rounded-full px-2 py-0.5 text-[9px] font-semibold transition-colors', filterCat === c.key ? 'bg-primary/15 text-primary-2' : 'bg-surface-2 text-text-3 hover:text-text')}
                 onClick={() => setFilterCat(c.key)}
               >
-                {c.label}
+                {c.label()}
               </button>
             ))}
           </div>
@@ -244,17 +249,17 @@ export default function BehaviorTrackerView() {
 
         {/* Event timeline */}
         <div>
-          <div className="text-xs font-bold text-text-3 uppercase tracking-wider mb-2">事件时间线</div>
+          <div className="text-xs font-bold text-text-3 uppercase tracking-wider mb-2">{t('behavior.eventTimeline')}</div>
           {loading ? (
-            <div className="text-[11px] text-text-3">加载中...</div>
+            <div className="text-[11px] text-text-3">{t('common.loading')}</div>
           ) : filteredEvents.length === 0 ? (
-            <div className="text-[11px] text-text-3">{events.length === 0 ? '暂无行为追踪数据' : '当前过滤条件下无匹配事件'}</div>
+            <div className="text-[11px] text-text-3">{events.length === 0 ? t('behavior.noData') : t('behavior.noMatch')}</div>
           ) : (
             <div className="space-y-1">
               {filteredEvents.slice(0, 50).map((e, i) => (
                 <div key={`${e.timestamp}-${i}`} className="flex items-center gap-3 rounded-lg border border-border/50 bg-surface px-3 py-2">
                   <div className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold shrink-0', EVENT_COLORS[e.event_type] ?? 'bg-surface-2 text-text-3')}>
-                    {EVENT_LABELS[e.event_type] ?? e.event_type}
+                    {eventLabelText(e.event_type)}
                   </div>
                   <span className="text-[10px] text-text-2 truncate flex-1">
                     {JSON.stringify(e.detail).slice(0, 80)}

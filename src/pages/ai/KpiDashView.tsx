@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { t } from '@/lib/i18n';
 import { useMatrixCell, useIndustryColor } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
@@ -60,31 +61,31 @@ export default function KpiDashView() {
         {isDemoData && (
           <div className="flex items-center gap-2 bg-warn/10 px-4 py-2 text-[11px] text-warn">
             <AlertTriangle size={14} />
-            <span className="font-semibold">演示数据</span>
-            <span className="text-text-2">— 当前指标来自矩阵单元格默认值</span>
+            <span className="font-semibold">{t('kpi.demoData')}</span>
+            <span className="text-text-2">{t('kpi.demoDescBasic')}</span>
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <BarChart3 size={16} className="text-primary-2" />
-          <span className="text-sm font-bold">KPI 仪表盘</span>
-          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] text-text-3">基础版</span>
+          <span className="text-sm font-bold">{t('kpi.dashboard')}</span>
+          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] text-text-3">{t('kpi.basicEdition')}</span>
         </div>
         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
           {/* Show basic health score only */}
           <div className="rounded-xl border border-border bg-surface p-3 md:p-4 text-center">
             <div className="text-3xl font-extrabold text-text">{healthScore}</div>
-            <div className="text-[9px] text-text-3 mt-0.5">健康分</div>
+            <div className="text-[9px] text-text-3 mt-0.5">{t('kpi.healthScore')}</div>
           </div>
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 md:p-6 text-center">
             <Lock size={24} className="mx-auto mb-2 text-primary-2" />
-            <div className="text-sm font-semibold text-text mb-1">高级KPI分析</div>
-            <p className="text-xs text-text-3 mb-3">解锁目标趋势预测、偏差预警、自定义KPI看板等高级功能</p>
+            <div className="text-sm font-semibold text-text mb-1">{t('kpi.advancedKpiAnalytics')}</div>
+            <p className="text-xs text-text-3 mb-3">{t('kpi.advancedKpiDesc')}</p>
             <button className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:opacity-80" onClick={() => setShowPaywall(true)}>
-              升级专业版
+              {t('kpi.upgradePro')}
             </button>
           </div>
         </div>
-        <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="高级KPI分析需要专业版或企业版" feature="advanced_analytics" />
+        <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason={t('kpi.paywallReason')} feature="advanced_analytics" />
       </div>
     );
   }
@@ -112,19 +113,19 @@ export default function KpiDashView() {
       {isDemoData && (
         <div className="flex items-center gap-2 bg-warn/10 px-4 py-2 text-[11px] text-warn">
           <AlertTriangle size={14} />
-          <span className="font-semibold">演示数据</span>
-          <span className="text-text-2">— 当前指标来自矩阵单元格默认值，非实时计算结果</span>
+          <span className="font-semibold">{t('kpi.demoData')}</span>
+          <span className="text-text-2">{t('kpi.demoDescFull')}</span>
           <button className="ml-auto flex items-center gap-1 rounded-lg bg-warn/10 px-2 py-1 text-[10px] font-semibold text-warn hover:bg-warn/20" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />刷新指标
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />{t('kpi.refreshMetrics')}
           </button>
         </div>
       )}
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <BarChart3 size={16} className="text-primary-2" />
-        <span className="text-sm font-bold">KPI 仪表盘</span>
+        <span className="text-sm font-bold">{t('kpi.dashboard')}</span>
         <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
         <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />刷新指标
+          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />{t('kpi.refreshMetrics')}
         </button>
       </div>
 
@@ -132,7 +133,7 @@ export default function KpiDashView() {
       <div className="mx-4 mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="col-span-1 rounded-xl border border-border bg-surface p-3 md:p-4 flex flex-col items-center justify-center">
           <div className="text-3xl font-extrabold text-text">{healthScore}</div>
-          <div className="text-[9px] text-text-3 mt-0.5">健康分</div>
+          <div className="text-[9px] text-text-3 mt-0.5">{t('kpi.healthScore')}</div>
           <div className="mt-2 h-2 w-full rounded-full bg-surface-2 overflow-hidden">
             <div className={cn('h-full rounded-full transition-all', healthScore >= 80 ? 'bg-success' : healthScore >= 60 ? 'bg-warn' : 'bg-danger')} style={{ width: `${healthScore}%` }} />
           </div>
@@ -140,15 +141,15 @@ export default function KpiDashView() {
         <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="rounded-xl border border-border bg-surface p-3 text-center">
             <div className="text-2xl font-extrabold text-success">{goodCount}</div>
-            <div className="text-[9px] text-text-3">达标</div>
+            <div className="text-[9px] text-text-3">{t('kpi.statusGood')}</div>
           </div>
           <div className="rounded-xl border border-border bg-surface p-3 text-center">
             <div className="text-2xl font-extrabold text-warn">{warnCount}</div>
-            <div className="text-[9px] text-text-3">预警</div>
+            <div className="text-[9px] text-text-3">{t('kpi.statusWarn')}</div>
           </div>
           <div className="rounded-xl border border-border bg-surface p-3 text-center">
             <div className="text-2xl font-extrabold text-danger">{badCount}</div>
-            <div className="text-[9px] text-text-3">异常</div>
+            <div className="text-[9px] text-text-3">{t('kpi.statusBad')}</div>
           </div>
         </div>
       </div>
@@ -174,7 +175,7 @@ export default function KpiDashView() {
                     <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold',
                       kpi.status === 'good' ? 'bg-success/10 text-success' : kpi.status === 'warn' ? 'bg-warn/10 text-warn' : 'bg-danger/10 text-danger'
                     )}>
-                      {kpi.status === 'good' ? '达标' : kpi.status === 'warn' ? '预警' : '异常'}
+                      {kpi.status === 'good' ? t('kpi.statusGood') : kpi.status === 'warn' ? t('kpi.statusWarn') : t('kpi.statusBad')}
                     </span>
                     {isExpanded ? <ChevronUp size={12} className="text-text-3" /> : <ChevronDown size={12} className="text-text-3" />}
                   </div>
@@ -183,7 +184,7 @@ export default function KpiDashView() {
                   <div className={cn('text-3xl font-extrabold', kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger')}>
                     {kpi.value}
                   </div>
-                  <div className="text-xs text-text-3 pb-1">目标 {displayTarget}</div>
+                  <div className="text-xs text-text-3 pb-1">{t('kpi.target')} {displayTarget}</div>
                   {gap !== 0 && (
                     <div className={cn('text-[11px] font-semibold pb-1', gap > 0 ? 'text-success' : 'text-danger')}>
                       {gap > 0 ? '+' : ''}{gapPct}%
@@ -211,15 +212,15 @@ export default function KpiDashView() {
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div className="rounded-lg bg-surface-2 p-2">
                       <div className="text-lg font-extrabold text-text">{kpi.value}</div>
-                      <div className="text-[9px] text-text-3">当前值</div>
+                      <div className="text-[9px] text-text-3">{t('kpi.currentValue')}</div>
                     </div>
                     <div className="rounded-lg bg-surface-2 p-2">
                        <div className="text-lg font-extrabold text-text">{displayTarget}</div>
-                       <div className="text-[9px] text-text-3">目标值</div>
+                       <div className="text-[9px] text-text-3">{t('kpi.targetValue')}</div>
                      </div>
                     <div className="rounded-lg bg-surface-2 p-2">
                       <div className={cn('text-lg font-extrabold', progress >= 100 ? 'text-success' : progress >= 70 ? 'text-warn' : 'text-danger')}>{progress}%</div>
-                      <div className="text-[9px] text-text-3">完成率</div>
+                      <div className="text-[9px] text-text-3">{t('kpi.completionRate')}</div>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -227,20 +228,20 @@ export default function KpiDashView() {
                     {editingTarget === kpi.name ? (
                       <div className="flex flex-wrap items-center gap-2 flex-1">
                         <input className="rounded-lg border border-primary/50 bg-surface-2 px-2 py-1 text-sm text-text outline-none w-24" value={targetValue} onChange={(e) => setTargetValue(e.target.value)} autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveTarget(); if (e.key === 'Escape') setEditingTarget(null); }} />
-                        <button onClick={saveTarget} className="rounded-lg bg-success/10 p-1" aria-label="保存"><Check size={12} className="text-success" /></button>
-                        <button onClick={() => setEditingTarget(null)} className="rounded-lg bg-danger/10 p-1" aria-label="取消"><X size={12} className="text-danger" /></button>
+                        <button onClick={saveTarget} className="rounded-lg bg-success/10 p-1" aria-label={t('kpi.saveAria')}><Check size={12} className="text-success" /></button>
+                        <button onClick={() => setEditingTarget(null)} className="rounded-lg bg-danger/10 p-1" aria-label={t('kpi.cancelAria')}><X size={12} className="text-danger" /></button>
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center gap-2 flex-1">
-                        <span className="text-xs text-text-2">目标: {displayTarget}</span>
-                        <button onClick={(e) => { e.stopPropagation(); handleEditTarget(kpi.name, String(displayTarget)); }} className="rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80" aria-label="编辑目标值">
+                        <span className="text-xs text-text-2">{t('kpi.target')}: {displayTarget}</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleEditTarget(kpi.name, String(displayTarget)); }} className="rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80" aria-label={t('kpi.editTargetAria')}>
                           <Edit3 size={10} className="text-text-3" />
                         </button>
                       </div>
                     )}
                   </div>
                   <div className="text-[10px] text-text-3">
-                    趋势: {kpi.trend === 'up' ? '上升' : kpi.trend === 'down' ? '下降' : '持平'} | 状态: {kpi.status === 'good' ? '达标' : kpi.status === 'warn' ? '预警' : '异常'}
+                    {t('kpi.trend')} {kpi.trend === 'up' ? t('kpi.trendUp') : kpi.trend === 'down' ? t('kpi.trendDown') : t('kpi.trendFlat')} | {t('kpi.status')} {kpi.status === 'good' ? t('kpi.statusGood') : kpi.status === 'warn' ? t('kpi.statusWarn') : t('kpi.statusBad')}
                   </div>
                 </div>
               )}

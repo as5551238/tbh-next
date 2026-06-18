@@ -9,6 +9,7 @@ import { CardSkeleton } from '@/components/Skeleton';
 import { hasFeature } from '@/lib/subscription';
 import PaywallModal from '@/components/PaywallModal';
 import { usePersistedState } from '@/hooks/usePersistedState';
+import { t } from '@/lib/i18n';
 
 export default function KnowledgeOSPView() {
   const [showPaywall, setShowPaywall] = useState(false);
@@ -28,7 +29,7 @@ export default function KnowledgeOSPView() {
       fetchKnowledgePacks(showAllIndustries ? undefined : industry, search || undefined).then((data) => {
         setPacks(data);
         setLoading(false);
-      }).catch((err) => { console.error("[knowledge]", err); error("知识包加载失败，请重试"); setLoading(false); });
+      }).catch((err) => { console.error("[knowledge]", err); error(t('knowledgeOSP.loadFailed')); setLoading(false); });
     }, 300);
     return () => clearTimeout(timer);
   }, [industry, showAllIndustries, search]);
@@ -62,10 +63,10 @@ export default function KnowledgeOSPView() {
       setInstalledIds(newIds);
       try { await insertInstalledPack(pack.id); } catch { /* already recorded locally */ }
       setPacks((prev) => prev.map((p) => p.id === pack.id ? { ...p, isInstalled: true } : p));
-      success(`知识包"${pack.title}"已导入`);
+      success(t('knowledgeOSP.importSuccess', { title: pack.title }));
     } catch {
       // Import actually failed — do NOT mark as installed
-      error(`知识包"${pack.title}"导入失败，请重试`);
+      error(t('knowledgeOSP.importFailed', { title: pack.title }));
     } finally {
       setImporting(null);
     }
@@ -108,7 +109,7 @@ export default function KnowledgeOSPView() {
     setInstalledIds(newIds);
     setPacks((prev) => prev.map((p) => p.id === id ? { ...p, isInstalled: nowInstalled } : p));
     setSelectedPack((prev) => prev ? { ...prev, isInstalled: nowInstalled } : null);
-    success(nowInstalled ? `知识包"${selectedPack.title}"已安装` : `知识包"${selectedPack.title}"已卸载`);
+    success(nowInstalled ? t('knowledgeOSP.installSuccess', { title: selectedPack.title }) : t('knowledgeOSP.uninstallSuccess', { title: selectedPack.title }));
   }
 
   return (
@@ -118,21 +119,21 @@ export default function KnowledgeOSPView() {
       <div className="flex flex-1 flex-col min-w-0">
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <BookOpen size={16} className="text-primary-2" />
-          <span className="text-sm font-bold">行业知识库</span>
-          <span className="text-[10px] text-text-3">{packs.length} 个知识包</span>
+          <span className="text-sm font-bold">{t('knowledgeOSP.title')}</span>
+          <span className="text-[10px] text-text-3">{t('knowledgeOSP.packCount', { count: packs.length })}</span>
           <label className="ml-auto flex flex-wrap items-center gap-1.5 text-[10px] text-text-3 cursor-pointer">
             <input type="checkbox" id="show-all-industries" checked={showAllIndustries} onChange={(e) => setShowAllIndustries(e.target.checked)} className="rounded" />
-            <label htmlFor="show-all-industries" className="text-[10px] text-text-3 cursor-pointer">全部行业</label>
+            <label htmlFor="show-all-industries" className="text-[10px] text-text-3 cursor-pointer">{t('knowledgeOSP.allIndustries')}</label>
           </label>
           <div className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5">
             <Search size={13} className="text-text-3" />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索知识..." aria-label="搜索知识库" className="bg-transparent text-xs text-text outline-none placeholder:text-text-3 w-28" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('knowledgeOSP.searchPlaceholder')} aria-label={t('knowledgeOSP.searchAria')} className="bg-transparent text-xs text-text outline-none placeholder:text-text-3 w-28" />
           </div>
         </div>
 
         {/* Category tabs */}
         <div className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2 overflow-x-auto">
-          <button onClick={() => setCategory('all')} className={cn('rounded-full px-3 py-1 text-[11px] font-medium transition-all whitespace-nowrap', category === 'all' ? 'bg-primary/10 text-primary-2 font-semibold' : 'bg-surface-2 text-text-3 hover:text-text')}>全部</button>
+          <button onClick={() => setCategory('all')} className={cn('rounded-full px-3 py-1 text-[11px] font-medium transition-all whitespace-nowrap', category === 'all' ? 'bg-primary/10 text-primary-2 font-semibold' : 'bg-surface-2 text-text-3 hover:text-text')}>{t('knowledgeOSP.all')}</button>
           {KNOWLEDGE_CATEGORIES.map((cat) => (
             <button key={cat.id} onClick={() => setCategory(cat.id)} className={cn('flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-all whitespace-nowrap', category === cat.id ? 'bg-primary/10 text-primary-2 font-semibold' : 'bg-surface-2 text-text-3 hover:text-text')}>
               <span>{cat.icon}</span> {cat.label}
@@ -154,8 +155,8 @@ export default function KnowledgeOSPView() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-0.5">
                     <span className="text-xs font-bold text-text truncate">{pack.title}</span>
-                    {pack.isOfficial && <span className="rounded bg-primary/10 px-1 py-[1px] text-[7px] font-bold text-primary-2">官方</span>}
-                    {pack.isInstalled && <span className="flex flex-wrap items-center gap-0.5 rounded bg-success/10 px-1 py-[1px] text-[7px] font-bold text-success"><Check size={7} />已安装</span>}
+                    {pack.isOfficial && <span className="rounded bg-primary/10 px-1 py-[1px] text-[7px] font-bold text-primary-2">{t('knowledgeOSP.official')}</span>}
+                    {pack.isInstalled && <span className="flex flex-wrap items-center gap-0.5 rounded bg-success/10 px-1 py-[1px] text-[7px] font-bold text-success"><Check size={7} />{t('knowledgeOSP.installedBadge')}</span>}
                   </div>
                   <p className="text-[10px] text-text-3 truncate">{pack.description}</p>
                   <div className="flex flex-wrap items-center gap-3 text-[9px] text-text-3 mt-1">
@@ -166,7 +167,7 @@ export default function KnowledgeOSPView() {
                   </div>
                   {!pack.isInstalled && (
                     <button onClick={(e) => handleImport(pack, e)} className="mt-2 w-full rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 disabled:opacity-50" disabled={importing === pack.id}>
-                      {importing === pack.id ? <Loader2 size={10} className="animate-spin inline mr-1" /> : <Upload size={9} className="inline mr-1" />}导入
+                      {importing === pack.id ? <Loader2 size={10} className="animate-spin inline mr-1" /> : <Upload size={9} className="inline mr-1" />}{t('knowledgeOSP.importBtn')}
                     </button>
                   )}
                 </div>
@@ -181,7 +182,7 @@ export default function KnowledgeOSPView() {
         <div className="flex w-full md:w-[360px] lg:w-[420px] shrink-0 flex-col border-l border-border bg-surface">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <span className="text-sm font-bold">{selectedPack.categoryLabel}</span>
-            <button onClick={() => setSelectedPack(null)} aria-label="关闭" className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2"><X size={14} /></button>
+            <button onClick={() => setSelectedPack(null)} aria-label={t('knowledgeOSP.closeAria')} className="flex h-7 w-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-2"><X size={14} /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
             <div>
@@ -190,8 +191,8 @@ export default function KnowledgeOSPView() {
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
-              <div className="text-center"><div className="text-lg font-bold text-text">{selectedPack.rating}</div><div className="text-[9px] text-text-3">评分</div></div>
-              <div className="text-center"><div className="text-lg font-bold text-text">{selectedPack.downloads}</div><div className="text-[9px] text-text-3">下载</div></div>
+              <div className="text-center"><div className="text-lg font-bold text-text">{selectedPack.rating}</div><div className="text-[9px] text-text-3">{t('knowledgeOSP.rating')}</div></div>
+              <div className="text-center"><div className="text-lg font-bold text-text">{selectedPack.downloads}</div><div className="text-[9px] text-text-3">{t('knowledgeOSP.downloads')}</div></div>
             </div>
 
             <div className="rounded-xl bg-surface-2 p-3 md:p-4">
@@ -199,7 +200,7 @@ export default function KnowledgeOSPView() {
             </div>
 
             <div>
-              <div className="flex flex-wrap items-center gap-1 text-[10px] font-bold text-text-3 mb-1.5"><Tag size={10} />标签</div>
+              <div className="flex flex-wrap items-center gap-1 text-[10px] font-bold text-text-3 mb-1.5"><Tag size={10} />{t('knowledgeOSP.tags')}</div>
               <div className="flex flex-wrap gap-1.5">
                 {selectedPack.tags.map((tag) => (
                   <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary-2">#{tag}</span>
@@ -212,13 +213,13 @@ export default function KnowledgeOSPView() {
             <button onClick={toggleInstall} className={cn('w-full rounded-xl py-3 text-sm font-bold transition-all',
               selectedPack.isInstalled ? 'bg-success/10 text-success border border-success/20 hover:bg-success/20' : 'bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:shadow-primary/20'
             )}>
-              {selectedPack.isInstalled ? '✓ 已安装 · 点击卸载' : selectedPack.plan === 'free' ? '免费安装' : `${selectedPack.plan === 'pro' ? '专业版' : '企业版'} 解锁`}
+              {selectedPack.isInstalled ? t('knowledgeOSP.installedClickUninstall') : selectedPack.plan === 'free' ? t('knowledgeOSP.freeInstall') : t('knowledgeOSP.planUnlock', { plan: selectedPack.plan === 'pro' ? t('knowledgeOSP.pro') : t('knowledgeOSP.enterprise') })}
             </button>
           </div>
         </div>
       )}
     
-      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="知识OSP需要专业版或企业版" feature="ai_knowledge_osp" />
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason={t('knowledgeOSP.paywallReason')} feature="ai_knowledge_osp" />
 </div>
   );
 }

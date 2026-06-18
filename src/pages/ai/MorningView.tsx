@@ -60,7 +60,7 @@ export default function MorningView() {
     const systemPrompt = MORNING_AGENT.systemPrompt(cell, industry, dept, undefined, industryRaw, deptRaw);
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: '请生成今日晨间播报，包含：1)核心状态概括 2)今日重点(3-5项) 3)告警指标行动建议' },
+      { role: 'user', content: t('morningView.briefingPrompt') },
     ];
 
     try {

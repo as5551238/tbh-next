@@ -5,6 +5,7 @@ import { useGoals, useTasks } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
 import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { Wand2, ChevronRight, Check, SkipForward, Sparkles } from 'lucide-react';
+import { t } from '@/lib/i18n';
 
 type WizardPhase = 'browse' | 'preview' | 'apply';
 
@@ -56,11 +57,11 @@ export default function TemplateWizardView() {
           category: pt.category,
         });
       }
-      success(`已应用模板"${selectedTemplate.name}"：${selectedTemplate.presetGoals.length}个目标 + ${selectedTemplate.presetTasks.length}个任务`);
+      success(t('templateWizard.appliedSuccess', { name: selectedTemplate.name, goals: selectedTemplate.presetGoals.length, tasks: selectedTemplate.presetTasks.length }));
       setPhase('browse');
       setSelectedTemplate(null);
     } catch {
-      errorToast('模板应用失败，请检查目标与任务列表后重试');
+      errorToast(t('templateWizard.applyFailed'));
     } finally {
       setApplying(false);
     }
@@ -75,8 +76,8 @@ export default function TemplateWizardView() {
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <Wand2 size={16} className="text-accent" />
-        <span className="text-sm font-bold">行业模板向导</span>
-        <span className="text-[10px] text-text-3">{industry} · {displayTemplates.length} 个模板</span>
+        <span className="text-sm font-bold">{t('templateWizard.title')}</span>
+        <span className="text-[10px] text-text-3">{industry} · {t('templateWizard.templateCount', { count: displayTemplates.length })}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
@@ -86,9 +87,9 @@ export default function TemplateWizardView() {
             <div className="rounded-xl border border-accent/20 bg-accent/5 p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles size={14} className="text-accent" />
-                <span className="text-xs font-semibold text-accent">快速启动</span>
+                <span className="text-xs font-semibold text-accent">{t('templateWizard.quickStart')}</span>
               </div>
-              <p className="text-[11px] text-text-2">选择行业模板，一键生成目标和任务。你也可以随时手动创建。</p>
+              <p className="text-[11px] text-text-2">{t('templateWizard.quickStartDesc')}</p>
             </div>
 
             <div className="space-y-2">
@@ -100,7 +101,7 @@ export default function TemplateWizardView() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-semibold text-text">{tpl.name}</div>
-                      <div className="text-[10px] text-text-3">{tpl.industry} · {tpl.presetGoals.length}目标 / {tpl.presetTasks.length}任务</div>
+                      <div className="text-[10px] text-text-3">{tpl.industry} · {t('templateWizard.goalTaskCount', { goals: tpl.presetGoals.length, tasks: tpl.presetTasks.length })}</div>
                     </div>
                     <ChevronRight size={14} className="text-text-3 group-hover:text-primary-2 transition-colors" />
                   </div>
@@ -109,8 +110,8 @@ export default function TemplateWizardView() {
               ))}
             </div>
 
-            <button className="flex items-center gap-1 text-[11px] text-text-3 hover:text-text" onClick={() => success('已跳过模板向导')}>
-              <SkipForward size={12} />跳过，手动创建
+            <button className="flex items-center gap-1 text-[11px] text-text-3 hover:text-text" onClick={() => success(t('templateWizard.skipped'))}>
+              <SkipForward size={12} />{t('templateWizard.skipManual')}
             </button>
           </>
         )}
@@ -125,14 +126,14 @@ export default function TemplateWizardView() {
 
             {/* Goals preview */}
             <div>
-              <div className="text-xs font-bold text-text-3 uppercase tracking-wider mb-2">将创建的目标 ({selectedTemplate.presetGoals.length})</div>
+              <div className="text-xs font-bold text-text-3 uppercase tracking-wider mb-2">{t('templateWizard.goalsToCreate', { count: selectedTemplate.presetGoals.length })}</div>
               <div className="space-y-1.5">
                 {selectedTemplate.presetGoals.map((g, i) => (
                   <div key={i} className="rounded-lg border border-border bg-surface p-3">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[11px] font-semibold text-text">{g.title}</span>
                       <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold', g.priority === 'critical' ? 'bg-danger/10 text-danger' : g.priority === 'high' ? 'bg-warn/10 text-warn' : 'bg-primary/10 text-primary-2')}>
-                        {g.priority === 'critical' ? '紧急' : g.priority === 'high' ? '高' : '中'}
+                        {g.priority === 'critical' ? t('templateWizard.priorityUrgent') : g.priority === 'high' ? t('templateWizard.priorityHigh') : t('templateWizard.priorityMedium')}
                       </span>
                     </div>
                     <div className="space-y-0.5 pl-2">
@@ -150,13 +151,13 @@ export default function TemplateWizardView() {
 
             {/* Tasks preview */}
             <div>
-              <div className="text-xs font-bold text-text-3 uppercase tracking-wider mb-2">将创建的任务 ({selectedTemplate.presetTasks.length})</div>
+              <div className="text-xs font-bold text-text-3 uppercase tracking-wider mb-2">{t('templateWizard.tasksToCreate', { count: selectedTemplate.presetTasks.length })}</div>
               <div className="space-y-1">
-                {selectedTemplate.presetTasks.map((t, i) => (
+                {selectedTemplate.presetTasks.map((task, i) => (
                   <div key={i} className="flex items-center gap-2 rounded-lg border border-border/50 bg-surface px-3 py-1.5">
-                    <div className={cn('h-1.5 w-1.5 rounded-full', t.priority === 'critical' || t.priority === 'high' ? 'bg-warn' : 'bg-text-3')} />
-                    <span className="text-[10px] text-text flex-1">{t.title}</span>
-                    <span className="text-[8px] text-text-3 rounded-full bg-surface-2 px-1.5 py-0.5">{t.category}</span>
+                    <div className={cn('h-1.5 w-1.5 rounded-full', task.priority === 'critical' || task.priority === 'high' ? 'bg-warn' : 'bg-text-3')} />
+                    <span className="text-[10px] text-text flex-1">{task.title}</span>
+                    <span className="text-[8px] text-text-3 rounded-full bg-surface-2 px-1.5 py-0.5">{task.category}</span>
                   </div>
                 ))}
               </div>
@@ -165,7 +166,7 @@ export default function TemplateWizardView() {
             {/* Milestones preview */}
             {selectedTemplate.milestones.length > 0 && (
               <div>
-                <div className="text-xs font-bold text-text-3 uppercase tracking-wider mb-2">里程碑</div>
+                <div className="text-xs font-bold text-text-3 uppercase tracking-wider mb-2">{t('templateWizard.milestones')}</div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {selectedTemplate.milestones.map((ms, i) => (
                     <div key={i} className="flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[9px] text-accent">
@@ -179,10 +180,10 @@ export default function TemplateWizardView() {
             {/* Action buttons */}
             <div className="flex items-center gap-3 pt-2">
               <button className={cn('flex items-center gap-1 rounded-lg px-4 py-2 text-[11px] font-semibold text-white', applying ? 'bg-surface-2 text-text-3' : 'bg-primary hover:opacity-80')} onClick={handleApply} disabled={applying}>
-                {applying ? '应用中...' : <><Check size={12} />应用模板</>}
+                {applying ? t('templateWizard.applying') : <><Check size={12} />{t('templateWizard.applyTemplate')}</>}
               </button>
               <button className="text-[11px] text-text-3 hover:text-text" onClick={() => { setPhase('browse'); setSelectedTemplate(null); }}>
-                返回
+                {t('templateWizard.back')}
               </button>
             </div>
           </>

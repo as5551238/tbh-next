@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,49 @@ import { upsertSubscription } from '@/lib/dataLayer';
 import { Crown, Zap, Building2, TrendingUp, Users, Bot, FileText, FolderKanban, Lock, CheckCircle2, CreditCard } from 'lucide-react';
 import { useAgentDetails, useMembers, useProjects, useKnowledgeDocs, useGoals, useTasks } from '@/hooks/useMatrix';
 import { CardSkeleton } from '@/components/Skeleton';
+import { t, getLocale } from '@/lib/i18n';
+
+const PLAN_LABEL_KEYS: Record<string, string> = {
+  free: 'subscription.freePlan',
+  pro: 'subscription.proPlan',
+  enterprise: 'subscription.enterprisePlan',
+};
+
+const CHECKOUT_PLAN_NAME_KEYS: Record<string, string> = {
+  pro_monthly: 'subscription.proPlan',
+  pro_yearly: 'subscription.proPlanYearly',
+  enterprise_monthly: 'subscription.enterprisePlan',
+  enterprise_yearly: 'subscription.enterprisePlanYearly',
+};
+
+const FEAT_KEYS: Record<string, string> = {
+  '500次/天AI查询': 'subscription.feat500AiQueries',
+  '10个Agent': 'subscription.feat10Agents',
+  '50人团队': 'subscription.feat50Team',
+  '高级分析': 'subscription.featAdvancedAnalytics',
+  '自定义工作流': 'subscription.featCustomWorkflow',
+  '批量操作': 'subscription.featBatchOps',
+  '年付省17%': 'subscription.featYearlySave17',
+  '无限AI查询': 'subscription.featUnlimitedAiQueries',
+  '无限Agent': 'subscription.featUnlimitedAgents',
+  '无限团队': 'subscription.featUnlimitedTeam',
+  'SSO集成': 'subscription.featSso',
+  '审计导出': 'subscription.featAuditExport',
+  'API访问': 'subscription.featApiAccess',
+  '优先支持': 'subscription.featPrioritySupport',
+};
+
+function getPlanLabel(planKey: string): string {
+  return t(PLAN_LABEL_KEYS[planKey] ?? 'subscription.freePlan');
+}
+
+function getCheckoutPlanName(planId: string): string {
+  return t(CHECKOUT_PLAN_NAME_KEYS[planId] ?? planId);
+}
+
+function getFeatureLabel(feat: string): string {
+  return FEAT_KEYS[feat] ? t(FEAT_KEYS[feat]) : feat;
+}
 
 
 function CheckoutPlanCard({ plan, isCurrent, onCheckout }: { plan: typeof CHECKOUT_PLANS[number]; isCurrent: boolean; onCheckout: () => Promise<void> }) {
@@ -19,18 +62,18 @@ function CheckoutPlanCard({ plan, isCurrent, onCheckout }: { plan: typeof CHECKO
       isCurrent && 'ring-1 ring-success/30'
     )}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold text-text">{plan.name}</span>
-        {plan.highlighted && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">推荐</span>}
-        {isCurrent && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">当前</span>}
+        <span className="text-sm font-bold text-text">{getCheckoutPlanName(plan.id)}</span>
+        {plan.highlighted && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">{t('subscription.recommended')}</span>}
+        {isCurrent && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[8px] font-bold text-success">{t('subscription.current')}</span>}
       </div>
       <div className="mb-3">
         <span className="text-2xl font-extrabold text-text">${plan.price}</span>
-        <span className="text-xs text-text-3">/{plan.period === 'monthly' ? '月' : '年'}</span>
+        <span className="text-xs text-text-3">/{plan.period === 'monthly' ? t('subscription.month') : t('subscription.year')}</span>
       </div>
       <ul className="space-y-1 mb-3">
         {plan.features.map((f) => (
           <li key={f} className="flex flex-wrap items-center gap-1 text-[10px] text-text-2">
-            <CheckCircle2 size={8} className="text-success shrink-0" />{f}
+            <CheckCircle2 size={8} className="text-success shrink-0" />{getFeatureLabel(f)}
           </li>
         ))}
       </ul>
@@ -44,7 +87,7 @@ function CheckoutPlanCard({ plan, isCurrent, onCheckout }: { plan: typeof CHECKO
             processing && 'opacity-60'
           )}
         >
-          {processing ? '处理中...' : '立即订阅'}
+          {processing ? t('subscription.processing') : t('subscription.subscribeNow')}
         </button>
       )}
     </div>
@@ -120,32 +163,32 @@ export default function SubscriptionView() {
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">{planIcon}</div>
             <div>
-              <h2 className="text-lg font-extrabold text-text">{price.label}</h2>
-              <p className="text-xs text-text-3">状态: {sub.status === 'active' ? '活跃' : '暂停'}</p>
+              <h2 className="text-lg font-extrabold text-text">{getPlanLabel(sub.plan)}</h2>
+              <p className="text-xs text-text-3">{t('subscription.status')}: {sub.status === 'active' ? t('subscription.active') : t('subscription.paused')}</p>
             </div>
             <div className="ml-auto text-right">
               <div className="text-2xl font-extrabold text-text">${price.monthly}</div>
-              <div className="text-[10px] text-text-3">/用户/月</div>
+              <div className="text-[10px] text-text-3">{t('subscription.perUserPerMonth')}</div>
             </div>
           </div>
 
           {sub.currentPeriodEnd && (
-            <p className="text-xs text-text-3">当前周期截止: {new Date(sub.currentPeriodEnd).toLocaleDateString('zh-CN')}</p>
+            <p className="text-xs text-text-3">{t('subscription.currentPeriodEnd')}: {new Date(sub.currentPeriodEnd).toLocaleDateString(getLocale() === 'zh' ? 'zh-CN' : 'en-US')}</p>
           )}
         </div>
 
         {/* Usage meters */}
         {usage && (
           <div className="rounded-xl border border-border p-5">
-            <h3 className="text-sm font-bold text-text mb-4">今日用量</h3>
+            <h3 className="text-sm font-bold text-text mb-4">{t('subscription.todayUsage')}</h3>
             <div className="space-y-4">
-              <UsageMeter icon={<Bot size={14} />} label="AI 查询" current={usage.aiQueries} limit={usage.aiQueriesLimit} color='var(--brand-accent)' />
-              <UsageMeter icon={<Users size={14} />} label="团队成员" current={usage.teamMembers} limit={usage.teamMembersLimit} color='var(--status-success)' />
-              <UsageMeter icon={<Bot size={14} />} label="Agent" current={usage.agents} limit={usage.agentsLimit} color="var(--color-warn)" />
-              <UsageMeter icon={<FolderKanban size={14} />} label="项目" current={usage.projects} limit={usage.projectsLimit} color="var(--color-danger)" />
-              <UsageMeter icon={<FileText size={14} />} label="文档" current={usage.docs} limit={usage.docsLimit} color='var(--brand-accent)' />
-              <UsageMeter icon={<TrendingUp size={14} />} label="目标" current={usage.goals} limit={usage.goalsLimit} color="var(--color-primary-2, var(--brand-accent))" />
-              <UsageMeter icon={<FileText size={14} />} label="任务" current={usage.tasks} limit={usage.tasksLimit} color="var(--color-primary-2, var(--brand-accent))" />
+              <UsageMeter icon={<Bot size={14} />} label={t('subscription.aiQueries')} current={usage.aiQueries} limit={usage.aiQueriesLimit} color='var(--brand-accent)' />
+              <UsageMeter icon={<Users size={14} />} label={t('subscription.teamMembers')} current={usage.teamMembers} limit={usage.teamMembersLimit} color='var(--status-success)' />
+              <UsageMeter icon={<Bot size={14} />} label={t('subscription.agents')} current={usage.agents} limit={usage.agentsLimit} color="var(--color-warn)" />
+              <UsageMeter icon={<FolderKanban size={14} />} label={t('subscription.projects')} current={usage.projects} limit={usage.projectsLimit} color="var(--color-danger)" />
+              <UsageMeter icon={<FileText size={14} />} label={t('subscription.docs')} current={usage.docs} limit={usage.docsLimit} color='var(--brand-accent)' />
+              <UsageMeter icon={<TrendingUp size={14} />} label={t('subscription.goals')} current={usage.goals} limit={usage.goalsLimit} color="var(--color-primary-2, var(--brand-accent))" />
+              <UsageMeter icon={<FileText size={14} />} label={t('subscription.tasks')} current={usage.tasks} limit={usage.tasksLimit} color="var(--color-primary-2, var(--brand-accent))" />
             </div>
             {/* Upgrade CTA when near limit */}
             {sub.plan === 'free' && (() => {
@@ -159,8 +202,8 @@ export default function SubscriptionView() {
               if (!nearLimit) return null;
               return (
                 <div className="mt-4 rounded-lg bg-warn/10 border border-warn/30 px-3 py-2">
-                  <div className="text-[11px] font-semibold text-warn">部分资源接近上限</div>
-                  <div className="text-[10px] text-text-2 mt-0.5">升级专业版可解锁 10x 额度，避免工作中断。</div>
+                  <div className="text-[11px] font-semibold text-warn">{t('subscription.nearLimit')}</div>
+                  <div className="text-[10px] text-text-2 mt-0.5">{t('subscription.upgradeForMore')}</div>
                 </div>
               );
             })()}
@@ -169,7 +212,7 @@ export default function SubscriptionView() {
 
         {/* Plan switcher */}
         <div className="rounded-xl border border-border p-5">
-          <h3 className="text-sm font-bold text-text mb-4">选择方案</h3>
+          <h3 className="text-sm font-bold text-text mb-4">{t('subscription.selectPlan')}</h3>
           <div className="grid grid-cols-3 gap-3">
             {(['free', 'pro', 'enterprise'] as const).map((p) => {
               const pPrice = PLAN_PRICES[p];
@@ -183,18 +226,18 @@ export default function SubscriptionView() {
                   'rounded-xl border p-4 text-center transition-all',
                   isCurrent ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-border',
                 )}>
-                  <div className="text-sm font-bold text-text mb-1">{pPrice.label}</div>
+                  <div className="text-sm font-bold text-text mb-1">{getPlanLabel(p)}</div>
                   <div className="text-lg font-extrabold text-text">${pPrice.monthly}</div>
-                  <div className="text-[9px] text-text-3">/用户/月</div>
+                  <div className="text-[9px] text-text-3">{t('subscription.perUserPerMonth')}</div>
                   {isCurrent && (
                     <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
                       <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary-2">
-                        <CheckCircle2 size={10} /> 当前方案
+                        <CheckCircle2 size={10} /> {t('subscription.currentPlan')}
                       </span>
                       {sub.plan !== 'free' && (
                         <button className="flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[8px] font-semibold text-text-3 hover:text-danger hover:bg-danger/10 transition-colors"
                           onClick={async () => {
-                            if (!confirm('确定要降级为免费版？降级后将失去Pro/Enterprise功能。')) return;
+                            if (!confirm(t('subscription.downgradeConfirm'))) return;
                             setCurrentPlan('free');
                             setSub((prev) => ({ ...prev, plan: 'free' }));
                             // Update usage limits to free tier
@@ -211,7 +254,7 @@ export default function SubscriptionView() {
                             } : null);
                             try { await cancelSubscription(); } catch { /* demo mode graceful fallback */ }
                           }}>
-                          降级为免费版
+                          {t('subscription.downgradeToFree')}
                         </button>
                       )}
                     </div>
@@ -255,17 +298,17 @@ export default function SubscriptionView() {
                         isSwitching && 'opacity-60'
                       )}
                     >
-                      {isSwitching ? '处理中...' : '升级体验'}
+                      {isSwitching ? t('subscription.processing') : t('subscription.upgradeToTry')}
                     </button>
                   )}
                   {isRequested && (
                     <div className="mt-2 rounded-full bg-accent/10 px-2 py-0.5 text-[8px] font-semibold text-accent">
-                      已激活试用
+                      {t('subscription.trialActivated')}
                     </div>
                   )}
                   {isUpgrade && !isCurrent && !isRequested && !isSwitching && p !== ('free' as typeof p) && (
                     <div className="mt-1 flex flex-wrap items-center justify-center gap-0.5 text-[8px] text-text-3">
-                      <Lock size={8} /> 需升级
+                      <Lock size={8} /> {t('subscription.upgradeRequired')}
                     </div>
                   )}
                 </div>
@@ -273,14 +316,14 @@ export default function SubscriptionView() {
             })}
           </div>
           <p className="text-[10px] text-text-3 mt-3">
-            当前为试用模式，升级即时生效。正式版将通过Stripe安全支付，支持按月/按年付费。
+            {t('subscription.trialModeNote')}
           </p>
         </div>
 
         {/* Payment checkout */}
         <div className="rounded-xl border border-border p-5">
           <h3 className="text-sm font-bold text-text mb-4 flex flex-wrap items-center gap-2">
-            <CreditCard size={14} className="text-primary-2" /> 选择方案并支付
+            <CreditCard size={14} className="text-primary-2" /> {t('subscription.selectPlanAndPay')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {CHECKOUT_PLANS.map((plan) => (
@@ -288,33 +331,33 @@ export default function SubscriptionView() {
               ))}
           </div>
           <p className="text-[10px] text-text-3 mt-3">
-            当前为演示模式，订阅即时生效。正式版将通过Stripe安全支付，支持信用卡/借记卡。
+            {t('subscription.demoModeNote')}
           </p>
         </div>
 
         {/* Feature matrix */}
         <div className="rounded-xl border border-border p-5">
-          <h3 className="text-sm font-bold text-text mb-4">功能对比</h3>
+          <h3 className="text-sm font-bold text-text mb-4">{t('subscription.featureComparison')}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="py-2 text-left text-text-3 font-normal">功能</th>
-                  <th className="py-2 text-center text-text-3 font-normal">免费版</th>
-                  <th className="py-2 text-center font-semibold text-primary-2">专业版</th>
-                  <th className="py-2 text-center text-text-3 font-normal">企业版</th>
+                  <th className="py-2 text-left text-text-3 font-normal">{t('subscription.feature')}</th>
+                  <th className="py-2 text-center text-text-3 font-normal">{t('subscription.freePlan')}</th>
+                  <th className="py-2 text-center font-semibold text-primary-2">{t('subscription.proPlan')}</th>
+                  <th className="py-2 text-center text-text-3 font-normal">{t('subscription.enterprisePlan')}</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  ['AI查询/日', '50', '500', '无限'],
-                  ['Agent数量', '3', '10', '无限'],
-                  ['团队人数', '5', '50', '无限'],
-                  ['高级分析', '-', '✓', '✓'],
-                  ['自定义工作流', '-', '✓', '✓'],
-                  ['SSO集成', '-', '-', '✓'],
-                  ['审计导出', '-', '✓', '✓'],
-                  ['优先支持', '-', '✓', '✓'],
+                  [t('subscription.featAiQueries'), '50', '500', t('subscription.unlimited')],
+                  [t('subscription.featAgents'), '3', '10', t('subscription.unlimited')],
+                  [t('subscription.featTeamSize'), '5', '50', t('subscription.unlimited')],
+                  [t('subscription.featAdvancedAnalytics'), '-', '✓', '✓'],
+                  [t('subscription.featCustomWorkflow'), '-', '✓', '✓'],
+                  [t('subscription.featSso'), '-', '-', '✓'],
+                  [t('subscription.featAuditExport'), '-', '✓', '✓'],
+                  [t('subscription.featPrioritySupport'), '-', '✓', '✓'],
                 ].map(([feature, free, pro, ent]) => (
                   <tr key={feature} className="border-b border-border/50">
                     <td className="py-2 text-text-2">{feature}</td>

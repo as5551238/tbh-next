@@ -7,6 +7,21 @@ import { TrendingUp, TrendingDown, Minus, Factory, BarChart3, Target, Edit3, Che
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { fetchInsights, createInsight, updateInsight } from '@/lib/dataLayer';
 import type { InsightRow } from '@/lib/dataLayer';
+import { t } from '@/lib/i18n';
+
+const INDUSTRY_KEYS = {
+  it: 'IT业',
+  mfg: '制造业',
+  edu: '教育业',
+  fin: '金融业',
+} as const;
+
+const INDUSTRY_DISPLAY: Record<string, () => string> = {
+  'IT业': () => t('industry.indIt'),
+  '制造业': () => t('industry.indMfg'),
+  '教育业': () => t('industry.indEdu'),
+  '金融业': () => t('industry.indFin'),
+};
 
 const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
 
@@ -18,45 +33,47 @@ interface PerspectiveValue {
 
 type PerspectivesMap = Record<string, PerspectiveValue>;
 
-const DEFAULT_PERSPECTIVES: PerspectivesMap = {
-  'IT业': {
-    focus: '需求交付效率与产品市场匹配',
-    trends: ['AI原生功能成为标配', '低代码平台渗透加速', 'SaaS向PaaS演进'],
-    benchmarks: [
-      { label: '需求交付周期 ≤15天', met: false },
-      { label: 'PRD通过率 ≥80%', met: false },
-      { label: 'NPS ≥45', met: false },
-      { label: 'Sprint完成率 ≥85%', met: false },
-    ],
-  },
-  '制造业': {
-    focus: '生产良率与供应链韧性',
-    trends: ['数字孪生落地', '绿色制造合规', '柔性生产升级'],
-    benchmarks: [
-      { label: '生产良率 ≥98%', met: false },
-      { label: '交付准时率 ≥95%', met: false },
-      { label: '库存周转 ≤30天', met: false },
-    ],
-  },
-  '教育业': {
-    focus: '教学效果与学生留存',
-    trends: ['个性化学习路径', 'AI辅导助手', '混合式教学深化'],
-    benchmarks: [
-      { label: '课程完成率 ≥70%', met: false },
-      { label: '学生满意度 ≥4.2/5', met: false },
-      { label: '续费率 ≥60%', met: false },
-    ],
-  },
-  '金融业': {
-    focus: '风控合规与客户资产增长',
-    trends: ['监管科技(RegTech)升级', '嵌入式金融', 'ESG投资主流化'],
-    benchmarks: [
-      { label: '风控准确率 ≥99.5%', met: false },
-      { label: '客户资产增长率 ≥8%', met: false },
-      { label: '合规事件 =0', met: false },
-    ],
-  },
-};
+function getDefaultPerspectives(): PerspectivesMap {
+  return {
+    [INDUSTRY_KEYS.it]: {
+      focus: t('industry.focusIt'),
+      trends: [t('industry.trendIt1'), t('industry.trendIt2'), t('industry.trendIt3')],
+      benchmarks: [
+        { label: t('industry.bmIt1'), met: false },
+        { label: t('industry.bmIt2'), met: false },
+        { label: t('industry.bmIt3'), met: false },
+        { label: t('industry.bmIt4'), met: false },
+      ],
+    },
+    [INDUSTRY_KEYS.mfg]: {
+      focus: t('industry.focusMfg'),
+      trends: [t('industry.trendMfg1'), t('industry.trendMfg2'), t('industry.trendMfg3')],
+      benchmarks: [
+        { label: t('industry.bmMfg1'), met: false },
+        { label: t('industry.bmMfg2'), met: false },
+        { label: t('industry.bmMfg3'), met: false },
+      ],
+    },
+    [INDUSTRY_KEYS.edu]: {
+      focus: t('industry.focusEdu'),
+      trends: [t('industry.trendEdu1'), t('industry.trendEdu2'), t('industry.trendEdu3')],
+      benchmarks: [
+        { label: t('industry.bmEdu1'), met: false },
+        { label: t('industry.bmEdu2'), met: false },
+        { label: t('industry.bmEdu3'), met: false },
+      ],
+    },
+    [INDUSTRY_KEYS.fin]: {
+      focus: t('industry.focusFin'),
+      trends: [t('industry.trendFin1'), t('industry.trendFin2'), t('industry.trendFin3')],
+      benchmarks: [
+        { label: t('industry.bmFin1'), met: false },
+        { label: t('industry.bmFin2'), met: false },
+        { label: t('industry.bmFin3'), met: false },
+      ],
+    },
+  };
+}
 
 export default function IndustryView() {
   const industry = useAppStore((s) => s.industry);
@@ -71,7 +88,7 @@ export default function IndustryView() {
   const [editIdx, setEditIdx] = useState(0);
   const [editValue, setEditValue] = useState('');
 
-  const [perspectives, setPerspectives] = useState<PerspectivesMap>(DEFAULT_PERSPECTIVES);
+  const [perspectives, setPerspectives] = useState<PerspectivesMap>(getDefaultPerspectives);
   const [insightsLoaded, setInsightsLoaded] = useState(false);
 
   useEffect(() => {
@@ -79,9 +96,9 @@ export default function IndustryView() {
     fetchInsights().then((rows: InsightRow[]) => {
       if (cancelled) return;
       if (rows.length === 0) { setInsightsLoaded(true); return; }
-      const mapped = { ...DEFAULT_PERSPECTIVES };
+      const mapped = { ...getDefaultPerspectives() };
       for (const row of rows) {
-        const ind = row.kpi || 'IT业';
+        const ind = row.kpi || INDUSTRY_KEYS.it;
         if (!mapped[ind]) continue;
         try {
           const payload = JSON.parse(row.description || '{}');
@@ -97,18 +114,18 @@ export default function IndustryView() {
   }, []);
 
   const persistToSupabase = useCallback(async (next: typeof perspectives, ind: string) => {
-    const p = next[ind] ?? next['IT业'];
+    const p = next[ind] ?? next[INDUSTRY_KEYS.it];
     const payload = JSON.stringify({ focus: p.focus, trends: p.trends, benchmarks: p.benchmarks });
     const existing = await fetchInsights();
     const match = existing.find((r) => r.kpi === ind);
     if (match) {
       await updateInsight(match.id, { summary: payload } as Record<string, unknown> as Parameters<typeof updateInsight>[1]);
     } else {
-      await createInsight({ title: `${ind}行业洞察`, type: 'industry_perspective', summary: payload, team_id: '' });
+      await createInsight({ title: t('industry.insightTitle', { industry: INDUSTRY_DISPLAY[ind]?.() ?? ind }), type: 'industry_perspective', summary: payload, team_id: '' });
     }
   }, []);
 
-  const perspective = perspectives[industry] ?? perspectives['IT业'];
+  const perspective = perspectives[industry] ?? perspectives[INDUSTRY_KEYS.it];
 
   // Auto-check benchmarks against current KPI values
   const checkedBenchmarks = useMemo(() => {
@@ -149,7 +166,7 @@ export default function IndustryView() {
 
   const handleToggleBenchmark = (idx: number) => {
     setPerspectives((prev) => {
-      const current = prev[industry] ?? prev['IT业'];
+      const current = prev[industry] ?? prev[INDUSTRY_KEYS.it];
       const newBenchmarks = [...current.benchmarks];
       newBenchmarks[idx] = { ...newBenchmarks[idx], met: !newBenchmarks[idx].met };
       const next = { ...prev, [industry]: { ...current, benchmarks: newBenchmarks } };
@@ -174,7 +191,7 @@ export default function IndustryView() {
 
   const handleSave = () => {
     setPerspectives((prev) => {
-      const current = prev[industry] ?? prev['IT业'];
+      const current = prev[industry] ?? prev[INDUSTRY_KEYS.it];
       let next: PerspectivesMap;
       if (editField === 'focus') {
         next = { ...prev, [industry]: { ...current, focus: editValue } };
@@ -203,11 +220,11 @@ export default function IndustryView() {
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <Factory size={16} className="text-primary-2" />
-        <span className="text-sm font-bold">行业视图</span>
-        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry}</span>
+        <span className="text-sm font-bold">{t('industry.title')}</span>
+        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{INDUSTRY_DISPLAY[industry]?.() ?? industry}</span>
         <span className="text-[10px] text-text-3">{dept}</span>
         <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={navigateToKpi}>
-          <BarChart3 size={12} />KPI详情
+          <BarChart3 size={12} />{t('industry.kpiDetail')}
         </button>
       </div>
 
@@ -218,8 +235,8 @@ export default function IndustryView() {
           <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <Target size={14} style={{ color: indColor }} />
-              <span className="text-xs font-bold">核心关注</span>
-              <button onClick={handleEditFocus} aria-label="编辑核心关注" className="ml-auto rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80">
+              <span className="text-xs font-bold">{t('industry.coreFocus')}</span>
+              <button onClick={handleEditFocus} aria-label={t('industry.editCoreFocus')} className="ml-auto rounded-lg bg-surface-2 p-1 hover:bg-surface-2/80">
                 <Edit3 size={10} className="text-text-3" />
               </button>
             </div>
@@ -230,9 +247,9 @@ export default function IndustryView() {
         {/* KPIs with navigation */}
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">当前KPI</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">{t('industry.currentKpi')}</span>
             <button onClick={navigateToKpi} className="flex flex-wrap items-center gap-1 text-[10px] text-primary-2 hover:underline">
-              查看详情 <ChevronRight size={10} />
+              {t('industry.viewDetail')} <ChevronRight size={10} />
             </button>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -246,7 +263,7 @@ export default function IndustryView() {
                     <TrendIcon size={12} className={kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger'} />
                   </div>
                   <div className={cn('text-lg font-extrabold', kpi.status === 'good' ? 'text-success' : kpi.status === 'warn' ? 'text-warn' : 'text-danger')}>{kpi.value}</div>
-                  <div className="text-[9px] text-text-3">目标 {kpi.target}</div>
+                  <div className="text-[9px] text-text-3">{t('industry.targetLabel', { value: kpi.target })}</div>
                   <div className="mt-1 h-1 rounded-full bg-surface-2 overflow-hidden">
                     <div className={cn('h-full rounded-full', kpi.status === 'good' ? 'bg-success' : kpi.status === 'warn' ? 'bg-warn' : 'bg-danger')} style={{ width: `${progress}%` }} />
                   </div>
@@ -259,8 +276,8 @@ export default function IndustryView() {
         {/* Trends - Editable + Addable */}
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">行业趋势</span>
-            <button onClick={handleAddTrend} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ 添加</button>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">{t('industry.industryTrend')}</span>
+            <button onClick={handleAddTrend} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ {t('common.add')}</button>
           </div>
           <div className="space-y-2">
             {perspective.trends.map((trend, i) => (
@@ -269,7 +286,7 @@ export default function IndustryView() {
                   <TrendingUp size={14} className="text-primary-2" />
                 </div>
                 <span className="text-xs text-text flex-1">{trend}</span>
-                <button onClick={() => handleEditTrend(i)} aria-label="编辑趋势" className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => handleEditTrend(i)} aria-label={t('industry.editTrend')} className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Edit3 size={10} className="text-text-3" />
                 </button>
               </div>
@@ -280,15 +297,15 @@ export default function IndustryView() {
         {/* Benchmarks - Checkable + Editable */}
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">行业基准</span>
-            <button onClick={handleAddBenchmark} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ 添加</button>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-3">{t('industry.industryBenchmark')}</span>
+            <button onClick={handleAddBenchmark} className="rounded-lg bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary-2 hover:bg-primary/20">+ {t('common.add')}</button>
           </div>
           <div className="space-y-1.5">
             {checkedBenchmarks.map((bm, i) => (
               <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-2.5 group">
                 <button
                   onClick={() => handleToggleBenchmark(i)}
-                  aria-label="切换达标状态"
+                  aria-label={t('industry.toggleMet')}
                   className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
                     bm.met ? 'bg-success border-success' : 'border-border hover:border-primary/40'
                   )}
@@ -296,7 +313,7 @@ export default function IndustryView() {
                   {bm.met ? <Check size={12} className="text-white" /> : null}
                 </button>
                 <span className={cn('text-[11px] flex-1', bm.met ? 'text-success line-through' : 'text-text-2')}>{bm.label}</span>
-                <button onClick={() => handleEditBenchmark(i)} aria-label="编辑对标" className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => handleEditBenchmark(i)} aria-label={t('industry.editBenchmark')} className="rounded-lg bg-surface-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Edit3 size={10} className="text-text-3" />
                 </button>
               </div>
@@ -307,24 +324,23 @@ export default function IndustryView() {
         {/* AI Insight */}
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 md:p-4">
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-primary-2 mb-2">
-            <Sparkles size={14} />AI 行业洞察
+            <Sparkles size={14} />{t('industry.aiInsight')}
           </div>
           <p className="text-[11px] text-text-2 leading-relaxed">
-            基于{industry}行业{dept}部门的当前数据，AI将持续监控KPI偏离情况并自动生成行业对比分析。
-            前往「个人AI台 → 工作助手」获取个性化洞察建议。
+            {t('industry.aiInsightDesc', { industry: INDUSTRY_DISPLAY[industry]?.() ?? industry, dept })}
           </p>
         </div>
       </div>
 
       {/* Edit Modal */}
-      <Modal open={editModal.open} onClose={editModal.closeModal} title={editField === 'focus' ? '编辑核心关注' : editField === 'trend' ? '编辑趋势' : '编辑基准'}
+      <Modal open={editModal.open} onClose={editModal.closeModal} title={editField === 'focus' ? t('industry.editFocusTitle') : editField === 'trend' ? t('industry.editTrendTitle') : t('industry.editBenchmarkTitle')}
         footer={
           <div className="flex flex-wrap gap-2">
-            <button className={btnSecondary} onClick={editModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleSave} disabled={!editValue.trim()}>保存</button>
+            <button className={btnSecondary} onClick={editModal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleSave} disabled={!editValue.trim()}>{t('common.save')}</button>
           </div>
         }>
-        <ModalField label={editField === 'focus' ? '核心关注描述' : editField === 'trend' ? '趋势描述' : '基准描述'}>
+        <ModalField label={editField === 'focus' ? t('industry.focusDesc') : editField === 'trend' ? t('industry.trendDesc') : t('industry.benchmarkDesc')}>
           {editField === 'focus' ? (
             <textarea className={inputCls} rows={3} value={editValue} onChange={(e) => setEditValue(e.target.value)} />
           ) : (

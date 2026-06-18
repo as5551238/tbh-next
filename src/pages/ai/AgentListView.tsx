@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '@/lib/i18n';
 import { useAgentDetails, useIndustryColor } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
 import { Bot, ToggleLeft, ToggleRight, BarChart3, Cpu, Zap, Plus, Check, Edit3 } from 'lucide-react';
@@ -8,7 +9,7 @@ import PageHeader from '@/components/PageHeader';
 import PaywallModal from '@/components/PaywallModal';
 
 const STATUS_DOT: Record<string, string> = { running: 'bg-success', idle: 'bg-warn', error: 'bg-danger' };
-const STATUS_LABEL: Record<string, string> = { running: '运行中', idle: '空闲', error: '异常' };
+const STATUS_LABEL: Record<string, () => string> = { running: () => t('agentList.statusRunning'), idle: () => t('agentList.statusIdle'), error: () => t('agentList.statusError') };
 
 export default function AgentListView() {
   const [showPaywall, setShowPaywall] = useState(false);
@@ -33,28 +34,28 @@ export default function AgentListView() {
     const nextEnabled = !agent.enabled;
     setAgents((prev) => prev.map((a) => a.id === id ? { ...a, enabled: nextEnabled } : a));
     await editAgent(id, { enabled: nextEnabled });
-    showToast(nextEnabled ? `${agent.name} 已启用` : `${agent.name} 已禁用`);
+    showToast(nextEnabled ? t('agentList.agentEnabled', { name: agent.name }) : t('agentList.agentDisabled', { name: agent.name }));
   }
 
   async function handleRegister() {
     if (!formName.trim()) return;
     if (editingId) {
-      await editAgent(editingId, { name: formName.trim(), description: formDesc.trim() || '自定义Agent', system_prompt: formSystemPrompt });
+      await editAgent(editingId, { name: formName.trim(), description: formDesc.trim() || t('agentList.customAgent'), system_prompt: formSystemPrompt });
       setEditingId(null);
-      showToast(`Agent"${formName.trim()}"已更新`);
+      showToast(t('agentList.agentUpdated', { name: formName.trim() }));
     } else {
       const row = await addAgent({
         name: formName.trim(),
         model: formModel,
-        description: formDesc.trim() || '自定义Agent',
+        description: formDesc.trim() || t('agentList.customAgent'),
         status: 'idle',
         enabled: true,
         tasks_completed: 0,
         uptime: '0%',
-        capabilities: ['自定义'],
+        capabilities: [t('agentList.customCapability')],
         system_prompt: formSystemPrompt,
       });
-      showToast(`Agent"${row.name}"已注册`);
+      showToast(t('agentList.agentRegistered', { name: row.name }));
     }
     setFormName('');
     setFormModel('gpt-4o');
@@ -87,16 +88,16 @@ export default function AgentListView() {
           <Check size={12} className="mr-1.5 inline" />{toast}
         </div>
       )}
-      <PageHeader icon={<Bot size={16} />} title="Agent 列表" badge={`${runningCount} 运行中 · ${agents.length} 总计`}>
-        <button onClick={registerModal.openModal} className="rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors"><Plus size={12} className="mr-1 inline" />新建Agent</button>
+      <PageHeader icon={<Bot size={16} />} title={t('agentList.title')} badge={t('agentList.badgeText', { running: runningCount, total: agents.length })}>
+        <button onClick={registerModal.openModal} className="rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors"><Plus size={12} className="mr-1 inline" />{t('agentList.newAgent')}</button>
       </PageHeader>
 
       {/* Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mx-4 mt-3">
         {[
-          { label: '总任务完成', value: agents.reduce((s, a) => s + a.tasks_completed, 0).toString(), icon: BarChart3 },
-          { label: '平均可用率', value: agents.length ? (agents.reduce((s, a) => s + parseFloat(a.uptime), 0) / agents.length).toFixed(1) + '%' : '0%', icon: Zap },
-          { label: '启用/总数', value: `${agents.filter((a) => a.enabled).length}/${agents.length}`, icon: Cpu },
+          { label: t('agentList.totalTasksCompleted'), value: agents.reduce((s, a) => s + a.tasks_completed, 0).toString(), icon: BarChart3 },
+          { label: t('agentList.avgAvailability'), value: agents.length ? (agents.reduce((s, a) => s + parseFloat(a.uptime), 0) / agents.length).toFixed(1) + '%' : '0%', icon: Zap },
+          { label: t('agentList.enabledTotal'), value: `${agents.filter((a) => a.enabled).length}/${agents.length}`, icon: Cpu },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl border border-border bg-surface p-3 text-center">
             <stat.icon size={14} className="mx-auto text-primary-2 mb-1" />
@@ -123,15 +124,15 @@ export default function AgentListView() {
                   <span className="text-sm font-semibold text-text">{agent.name}</span>
                   <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold',
                     agent.status === 'running' ? 'bg-success/10 text-success' : agent.status === 'idle' ? 'bg-warn/10 text-warn' : 'bg-danger/10 text-danger'
-                  )}>{STATUS_LABEL[agent.status]}</span>
+                  )}>{STATUS_LABEL[agent.status]()}</span>
                   <span className="text-[9px] text-text-3">{agent.model}</span>
                 </div>
                 <div className="text-[11px] text-text-3 mt-0.5">{agent.description}</div>
               </div>
-              <button onClick={() => handleEditOpen(agent)} aria-label="编辑Agent" className="shrink-0 rounded-lg p-1 text-text-3 hover:bg-surface-2 hover:text-primary-2">
+              <button onClick={() => handleEditOpen(agent)} aria-label={t('agentList.editAgentAria')} className="shrink-0 rounded-lg p-1 text-text-3 hover:bg-surface-2 hover:text-primary-2">
                 <Edit3 size={14} />
               </button>
-              <button onClick={() => toggleAgent(agent.id)} aria-label="启用/禁用Agent" className="shrink-0">
+              <button onClick={() => toggleAgent(agent.id)} aria-label={t('agentList.toggleAgentAria')} className="shrink-0">
                 {agent.enabled ? <ToggleRight size={28} className="text-primary-2" /> : <ToggleLeft size={28} className="text-text-3" />}
               </button>
             </div>
@@ -140,40 +141,40 @@ export default function AgentListView() {
                 <span key={cap} className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] text-text-3">{cap}</span>
               ))}
               <div className="ml-auto flex flex-wrap items-center gap-3 text-[10px] text-text-3">
-                <span>{agent.tasks_completed} 任务</span>
-                <span>{agent.uptime} 可用</span>
+                <span>{agent.tasks_completed} {t('agentList.tasks')}</span>
+                <span>{agent.uptime} {t('agentList.available')}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <Modal open={registerModal.open} onClose={() => { setEditingId(null); registerModal.closeModal(); }} title={editingId ? '编辑Agent' : '新建Agent'}
+      <Modal open={registerModal.open} onClose={() => { setEditingId(null); registerModal.closeModal(); }} title={editingId ? t('agentList.editAgent') : t('agentList.newAgent')}
         footer={
           <>
-            <button onClick={() => { setEditingId(null); registerModal.closeModal(); }} className={btnSecondary}>取消</button>
-            <button onClick={handleRegister} className={btnPrimary} disabled={!formName.trim()}>{editingId ? '保存' : '创建'}</button>
+            <button onClick={() => { setEditingId(null); registerModal.closeModal(); }} className={btnSecondary}>{t('agentList.cancel')}</button>
+            <button onClick={handleRegister} className={btnPrimary} disabled={!formName.trim()}>{editingId ? t('agentList.save') : t('agentList.create')}</button>
           </>
         }>
-        <ModalField label="Agent名称">
-          <input className={inputCls} value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="输入Agent名称" />
+        <ModalField label={t('agentList.agentNameLabel')}>
+          <input className={inputCls} value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t('agentList.agentNamePlaceholder')} />
         </ModalField>
-        <ModalField label="模型">
+        <ModalField label={t('agentList.modelLabel')}>
           <select className={inputCls} value={formModel} onChange={(e) => setFormModel(e.target.value)}>
             <option value="gpt-4o">GPT-4o</option>
             <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
             <option value="gpt-4o-mini">GPT-4o-mini</option>
           </select>
         </ModalField>
-        <ModalField label="描述">
-          <input className={inputCls} value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="输入Agent描述" />
+        <ModalField label={t('agentList.descLabel')}>
+          <input className={inputCls} value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder={t('agentList.descPlaceholder')} />
         </ModalField>
         <ModalField label="System Prompt">
-          <textarea className={inputCls} rows={4} value={formSystemPrompt} onChange={(e) => setFormSystemPrompt(e.target.value)} placeholder="定义Agent的行为指令..." />
+          <textarea className={inputCls} rows={4} value={formSystemPrompt} onChange={(e) => setFormSystemPrompt(e.target.value)} placeholder={t('agentList.systemPromptPlaceholder')} />
         </ModalField>
       </Modal>
     
-      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason="AI代理列表需要专业版或企业版" feature="ai_agent_list" />
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} reason={t('agentList.paywallReason')} feature="ai_agent_list" />
 </div>
   );
 }

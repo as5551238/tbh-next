@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { t } from '@/lib/i18n';
 import {
   createSeason, canAdvancePhase, getNextPhase, computeSeasonProgress,
   getCurrentQuarter, getNextQuarter, loadSeasons, loadSeasonsFromDB, saveSeasons,
@@ -21,27 +22,23 @@ export default function DSTEView() {
   const { toasts, success } = useToast();
   const createModal = useModal();
   const milestoneModal = useModal();
-  // Persisted seasons: load from localStorage immediately, then upgrade from Supabase
   const [seasons, setSeasons] = useState<OKRSeason[]>(() => loadSeasons());
   const [dbLoaded, setDbLoaded] = useState(false);
   const seasonsRef = useRef(seasons);
   seasonsRef.current = seasons;
 
-  // Supabase-first load: try DB, fallback to localStorage
   useEffect(() => {
     if (dbLoaded) return;
     loadSeasonsFromDB().then((db) => {
       if (db.length > 0) {
         setSeasons(db);
         seasonsRef.current = db;
-        // sync to localStorage so offline access works
         saveSeasons(db);
       }
       setDbLoaded(true);
     }).catch(() => setDbLoaded(true));
   }, [dbLoaded]);
 
-  // Helper: update seasons + persist
   const updateSeasons = useCallback((updater: (prev: OKRSeason[]) => OKRSeason[]) => {
     setSeasons((prev) => {
       const next = updater(prev);
@@ -61,7 +58,7 @@ export default function DSTEView() {
     updateSeasons((prev) => [s, ...prev]);
     createModal.closeModal();
     trackEvent('season_create', { name: s.name });
-    success(`赛季"${s.name}"已创建`);
+    success(t('dste.seasonCreated', { name: s.name }));
     setSeasonForm({ name: '', startDate: '', endDate: '' });
   }, [seasonForm, createModal, success, updateSeasons]);
 
@@ -75,7 +72,7 @@ export default function DSTEView() {
       return { ...s, phase: next, updatedAt: new Date().toISOString() };
     }));
     trackEvent('season_phase_advance', { seasonId });
-    success('阶段已推进');
+    success(t('dste.phaseAdvanced'));
   }, [success, updateSeasons]);
 
   const handleAddMilestone = useCallback(() => {
@@ -92,7 +89,7 @@ export default function DSTEView() {
       return { ...s, milestones: [...s.milestones, m], updatedAt: new Date().toISOString() };
     }));
     milestoneModal.closeModal();
-    success('里程碑已添加');
+    success(t('dste.milestoneAdded'));
     setMilestoneForm({ title: '', dueDate: '' });
   }, [milestoneForm, editingMilestoneSeason, milestoneModal, success, updateSeasons]);
 
@@ -122,30 +119,28 @@ export default function DSTEView() {
     deleteSeasonFromDB(seasonId);
     if (selectedSeason?.id === seasonId) setSelectedSeason(null);
     trackEvent('season_delete', { seasonId });
-    success('赛季已删除');
+    success(t('dste.seasonDeleted'));
   }, [updateSeasons, selectedSeason, success]);
 
-  const activeSeason = seasons[0]; // latest season
+  const activeSeason = seasons[0];
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <ToastOverlay toasts={toasts} />
-      {/* Header */}
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <Trophy size={16} className="text-primary-2" />
-        <span className="text-sm font-bold">DSTE 赛季管理</span>
+        <span className="text-sm font-bold">{t('dste.title')}</span>
         <span className="text-[10px] text-text-3">Define → Strategy → Track → Review → Evolve</span>
         <button className="ml-auto flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => {
           const nq = getNextQuarter();
-          setSeasonForm({ name: nq.period + ' 赛季', startDate: nq.startDate, endDate: nq.endDate });
+          setSeasonForm({ name: t('dste.seasonNameAuto', { period: nq.period }), startDate: nq.startDate, endDate: nq.endDate });
           createModal.openModal();
         }}>
-          <Plus size={12} />新赛季
+          <Plus size={12} />{t('dste.newSeason')}
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
-        {/* Active Season Card */}
         {activeSeason && (
           <>
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
@@ -156,7 +151,6 @@ export default function DSTEView() {
                 <span className="text-[10px] text-text-3">{activeSeason.startDate} ~ {activeSeason.endDate}</span>
               </div>
 
-              {/* Phase progress bar */}
               <div className="flex items-center gap-1 mb-3">
                 {PHASE_ORDER.map((p, i) => (
                   <div key={p} className="flex items-center gap-1 flex-1">
@@ -174,7 +168,6 @@ export default function DSTEView() {
                 ))}
               </div>
 
-              {/* Current phase description + advance button */}
               <div className="flex items-start gap-3 rounded-lg bg-surface p-3">
                 <div className={cn('rounded-lg px-2 py-1 text-[9px] font-bold shrink-0', PHASE_COLORS[activeSeason.phase])}>
                   {PHASE_LABELS[activeSeason.phase]}
@@ -193,45 +186,43 @@ export default function DSTEView() {
                           title={check.reason}
                         >
                           <ArrowRight size={10} />
-                          推进到{PHASE_LABELS[next]}
+                          {t('dste.advanceTo', { phase: PHASE_LABELS[next] })}
                           {!check.canAdvance && <span className="ml-1 text-[8px]">({check.reason})</span>}
                         </button>
                       ) : (
-                        <span className="text-[10px] text-success font-semibold">赛季已完成，请创建新赛季</span>
+                        <span className="text-[10px] text-success font-semibold">{t('dste.seasonComplete')}</span>
                       );
                     })()}
                   </div>
                 </div>
               </div>
 
-              {/* Stats row */}
               <div className="grid grid-cols-3 gap-2 mt-3">
                 <div className="rounded-lg bg-surface p-2 text-center">
                   <div className="text-sm font-bold text-primary-2">{activeSeason.goals.length}</div>
-                  <div className="text-[9px] text-text-3">关联目标</div>
+                  <div className="text-[9px] text-text-3">{t('dste.linkedGoals')}</div>
                 </div>
                 <div className="rounded-lg bg-surface p-2 text-center">
                   <div className="text-sm font-bold text-accent">{computeSeasonProgress(activeSeason, goals.map(g => ({ id: g.id, progress: g.progress })))}%</div>
-                  <div className="text-[9px] text-text-3">综合进度</div>
+                  <div className="text-[9px] text-text-3">{t('dste.overallProgress')}</div>
                 </div>
                 <div className="rounded-lg bg-surface p-2 text-center">
                   <div className="text-sm font-bold text-warn">{activeSeason.milestones.filter(m => !m.completed).length}</div>
-                  <div className="text-[9px] text-text-3">待完成里程碑</div>
+                  <div className="text-[9px] text-text-3">{t('dste.pendingMilestones')}</div>
                 </div>
               </div>
             </div>
 
-            {/* Goals in this season */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-text-3 uppercase tracking-wider">关联目标</span>
+                <span className="text-xs font-bold text-text-3 uppercase tracking-wider">{t('dste.linkedGoals')}</span>
                 <button className="text-[10px] text-primary-2 hover:underline" onClick={() => navigateTo('workspace', 'goals')}>
-                  管理目标 →
+                  {t('dste.manageGoals')}
                 </button>
               </div>
               {activeSeason.goals.length === 0 ? (
                 <div className="rounded-lg border border-border bg-surface p-3 text-[11px] text-text-3">
-                  暂无关联目标。在"定义期"阶段，请为目标添加到此赛季。
+                  {t('dste.noLinkedGoals')}
                   <div className="mt-2 space-y-1">
                     {goals.slice(0, 5).map((g) => (
                       <button key={g.id} className="flex items-center gap-2 w-full rounded-lg bg-surface-2 px-2 py-1 text-[10px] text-text-2 hover:bg-primary/5" onClick={() => handleAddGoal(activeSeason.id, g.id)}>
@@ -257,16 +248,15 @@ export default function DSTEView() {
               )}
             </div>
 
-            {/* Milestones */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-text-3 uppercase tracking-wider">里程碑</span>
+                <span className="text-xs font-bold text-text-3 uppercase tracking-wider">{t('dste.milestones')}</span>
                 <button className="flex items-center gap-1 rounded-lg bg-accent/10 px-2 py-1 text-[10px] font-semibold text-accent hover:bg-accent/20" onClick={() => { setEditingMilestoneSeason(activeSeason.id); milestoneModal.openModal(); }}>
-                  <Plus size={10} />添加
+                  <Plus size={10} />{t('dste.add')}
                 </button>
               </div>
               {activeSeason.milestones.length === 0 ? (
-                <div className="text-[11px] text-text-3">暂无里程碑。推进到"策略期"时建议添加。</div>
+                <div className="text-[11px] text-text-3">{t('dste.noMilestones')}</div>
               ) : (
                 <div className="space-y-1">
                   {activeSeason.milestones.map((m) => (
@@ -274,33 +264,31 @@ export default function DSTEView() {
                       <Milestone size={13} className={m.completed ? 'text-success' : 'text-text-3'} />
                       <span className={cn('text-[11px] flex-1', m.completed ? 'line-through text-text-3' : 'text-text')}>{m.title}</span>
                       <span className="text-[9px] text-text-3">{m.dueDate}</span>
-                      {m.completed && <span className="text-[8px] text-success">已完成</span>}
+                      {m.completed && <span className="text-[8px] text-success">{t('dste.completed')}</span>}
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Quick action: start review */}
             {activeSeason.phase === 'review' && (
               <div className="rounded-xl border border-warn/20 bg-warn/5 p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <RotateCcw size={14} className="text-warn" />
-                  <span className="text-xs font-semibold text-warn">复盘期</span>
+                  <span className="text-xs font-semibold text-warn">{t('dste.reviewPhase')}</span>
                 </div>
-                <p className="text-[11px] text-text-2 mb-2">当前处于复盘期，建议完成至少一次复盘后推进。</p>
+                <p className="text-[11px] text-text-2 mb-2">{t('dste.reviewPhaseDesc')}</p>
                 <button className="flex items-center gap-1 rounded-lg bg-warn/10 px-3 py-1 text-[10px] font-semibold text-warn hover:bg-warn/20" onClick={() => navigateTo('workspace', 'review')}>
-                  <Zap size={10} />前往复盘
+                  <Zap size={10} />{t('dste.goReview')}
                 </button>
               </div>
             )}
           </>
         )}
 
-        {/* Past seasons */}
         {seasons.length > 1 && (
           <div>
-            <span className="text-xs font-bold text-text-3 uppercase tracking-wider">历史赛季</span>
+            <span className="text-xs font-bold text-text-3 uppercase tracking-wider">{t('dste.pastSeasons')}</span>
             <div className="space-y-1.5 mt-2">
               {seasons.slice(1).map((s) => (
                 <div key={s.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 opacity-60">
@@ -308,7 +296,7 @@ export default function DSTEView() {
                   <span className="text-[11px] text-text-2">{s.name}</span>
                   <span className="text-[9px] text-text-3">{s.period}</span>
                   <span className="text-[9px] text-success">{PHASE_LABELS[s.phase]}</span>
-                  <button className="ml-auto text-[9px] text-red-400 hover:text-red-600 transition-colors" onClick={() => handleDeleteSeason(s.id)}>删除</button>
+                  <button className="ml-auto text-[9px] text-red-400 hover:text-red-600 transition-colors" onClick={() => handleDeleteSeason(s.id)}>{t('dste.delete')}</button>
                 </div>
               ))}
             </div>
@@ -316,27 +304,25 @@ export default function DSTEView() {
         )}
       </div>
 
-      {/* Create Season Modal */}
-      <Modal open={createModal.open} onClose={createModal.closeModal} title="创建新赛季"
-        footer={<><button className={btnSecondary} onClick={createModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleCreateSeason} disabled={!seasonForm.name.trim()}>创建</button></>}>
-        <ModalField label="赛季名称">
-          <input className={inputCls} placeholder="如 2026-Q3 赛季" value={seasonForm.name} onChange={(e) => setSeasonForm((p) => ({ ...p, name: e.target.value }))} />
+      <Modal open={createModal.open} onClose={createModal.closeModal} title={t('dste.createSeason')}
+        footer={<><button className={btnSecondary} onClick={createModal.closeModal}>{t('dste.cancel')}</button><button className={btnPrimary} onClick={handleCreateSeason} disabled={!seasonForm.name.trim()}>{t('dste.create')}</button></>}>
+        <ModalField label={t('dste.seasonName')}>
+          <input className={inputCls} placeholder={t('dste.seasonNamePlaceholder')} value={seasonForm.name} onChange={(e) => setSeasonForm((p) => ({ ...p, name: e.target.value }))} />
         </ModalField>
-        <ModalField label="开始日期">
+        <ModalField label={t('dste.startDate')}>
           <input type="date" className={inputCls} value={seasonForm.startDate} onChange={(e) => setSeasonForm((p) => ({ ...p, startDate: e.target.value }))} />
         </ModalField>
-        <ModalField label="结束日期">
+        <ModalField label={t('dste.endDate')}>
           <input type="date" className={inputCls} value={seasonForm.endDate} onChange={(e) => setSeasonForm((p) => ({ ...p, endDate: e.target.value }))} />
         </ModalField>
       </Modal>
 
-      {/* Add Milestone Modal */}
-      <Modal open={milestoneModal.open} onClose={milestoneModal.closeModal} title="添加里程碑"
-        footer={<><button className={btnSecondary} onClick={milestoneModal.closeModal}>取消</button><button className={btnPrimary} onClick={handleAddMilestone} disabled={!milestoneForm.title.trim()}>添加</button></>}>
-        <ModalField label="里程碑标题">
-          <input className={inputCls} placeholder="输入里程碑标题" value={milestoneForm.title} onChange={(e) => setMilestoneForm((p) => ({ ...p, title: e.target.value }))} />
+      <Modal open={milestoneModal.open} onClose={milestoneModal.closeModal} title={t('dste.addMilestone')}
+        footer={<><button className={btnSecondary} onClick={milestoneModal.closeModal}>{t('dste.cancel')}</button><button className={btnPrimary} onClick={handleAddMilestone} disabled={!milestoneForm.title.trim()}>{t('dste.add')}</button></>}>
+        <ModalField label={t('dste.milestoneTitle')}>
+          <input className={inputCls} placeholder={t('dste.milestoneTitlePlaceholder')} value={milestoneForm.title} onChange={(e) => setMilestoneForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="截止日期">
+        <ModalField label={t('dste.dueDate')}>
           <input type="date" className={inputCls} value={milestoneForm.dueDate} onChange={(e) => setMilestoneForm((p) => ({ ...p, dueDate: e.target.value }))} />
         </ModalField>
       </Modal>
