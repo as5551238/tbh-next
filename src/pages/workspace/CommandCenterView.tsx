@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { CardSkeleton } from '@/components/Skeleton';
 import { useToast } from '@/hooks/useToast';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { t } from '@/lib/i18n';
 
 const CACHE_KEY = 'command-center';
 
@@ -78,12 +79,12 @@ export default function CommandCenterView() {
     const taskRate = tasks.length > 0 ? Math.round(completedTasks.length / tasks.length * 100) : 0;
 
     return [
-      { icon: <Target size={16} />, label: '目标完成率', value: `${goalRate}%`, sub: `${completedGoals.length}/${goals.length}`, trend: goalRate >= 70 ? 'up' : goalRate >= 40 ? 'flat' : 'down', color: goalRate >= 70 ? 'var(--status-success)' : goalRate >= 40 ? 'var(--color-warn)' : 'var(--color-danger)', route: '/workspace/goals' },
-      { icon: <CheckCircle2 size={16} />, label: '任务完成率', value: `${taskRate}%`, sub: `${completedTasks.length}/${tasks.length}`, trend: taskRate >= 70 ? 'up' : taskRate >= 40 ? 'flat' : 'down', color: taskRate >= 70 ? 'var(--status-success)' : taskRate >= 40 ? 'var(--color-warn)' : 'var(--color-danger)', route: '/workspace/tasks' },
-      { icon: <AlertTriangle size={16} />, label: '逾期任务', value: overdueTasks.length, sub: overdueTasks.length > 0 ? '需关注' : '全部正常', color: overdueTasks.length > 0 ? 'var(--color-danger)' : 'var(--status-success)', route: '/workspace/tasks' },
-      { icon: <Clock size={16} />, label: '风险目标', value: atRiskGoals.length, sub: atRiskGoals.length > 0 ? '偏离轨道' : '全部正常', color: atRiskGoals.length > 0 ? 'var(--color-warn)' : 'var(--status-success)', route: '/workspace/goals' },
-      { icon: <Zap size={16} />, label: '待办行动项', value: openActionItems.length, sub: `${actionItems.filter(a => a.priority === 'critical').length} 紧急`, color: openActionItems.length > 10 ? 'var(--color-danger)' : 'var(--color-warn)', route: '/workspace/actionItems' },
-      { icon: <Shield size={16} />, label: '偏差预警', value: unreadAlerts.length, sub: `${alerts.length} 总计`, color: unreadAlerts.length > 0 ? 'var(--color-danger)' : 'var(--status-success)', route: '/ai/risk' },
+      { icon: <Target size={16} />, label: t('cmd.goalRate'), value: `${goalRate}%`, sub: `${completedGoals.length}/${goals.length}`, trend: goalRate >= 70 ? 'up' : goalRate >= 40 ? 'flat' : 'down', color: goalRate >= 70 ? 'var(--status-success)' : goalRate >= 40 ? 'var(--color-warn)' : 'var(--color-danger)', route: '/workspace/goals' },
+      { icon: <CheckCircle2 size={16} />, label: t('cmd.taskRate'), value: `${taskRate}%`, sub: `${completedTasks.length}/${tasks.length}`, trend: taskRate >= 70 ? 'up' : taskRate >= 40 ? 'flat' : 'down', color: taskRate >= 70 ? 'var(--status-success)' : taskRate >= 40 ? 'var(--color-warn)' : 'var(--color-danger)', route: '/workspace/tasks' },
+      { icon: <AlertTriangle size={16} />, label: t('cmd.overdueTasks'), value: overdueTasks.length, sub: overdueTasks.length > 0 ? t('cmd.needAttention') : t('cmd.allNormal'), color: overdueTasks.length > 0 ? 'var(--color-danger)' : 'var(--status-success)', route: '/workspace/tasks' },
+      { icon: <Clock size={16} />, label: t('cmd.atRiskGoals'), value: atRiskGoals.length, sub: atRiskGoals.length > 0 ? t('cmd.offTrack') : t('cmd.allNormal'), color: atRiskGoals.length > 0 ? 'var(--color-warn)' : 'var(--status-success)', route: '/workspace/goals' },
+      { icon: <Zap size={16} />, label: t('cmd.openActions'), value: openActionItems.length, sub: t('cmd.criticalCount', { count: actionItems.filter(a => a.priority === 'critical').length }), color: openActionItems.length > 10 ? 'var(--color-danger)' : 'var(--color-warn)', route: '/workspace/actionItems' },
+      { icon: <Shield size={16} />, label: t('cmd.deviationAlerts'), value: unreadAlerts.length, sub: t('cmd.totalCount', { count: alerts.length }), color: unreadAlerts.length > 0 ? 'var(--color-danger)' : 'var(--status-success)', route: '/ai/risk' },
     ];
   }, [goals, tasks, actionItems, alerts, loading, todayStr, now]);
 
@@ -109,8 +110,8 @@ export default function CommandCenterView() {
   const taskPipeline = useMemo(() => {
     if (tasksLoading) return [];
     const statusCount: Record<string, number> = {};
-    for (const t of tasks) {
-      const s = t.status || 'todo';
+    for (const task of tasks) {
+      const s = task.status || 'todo';
       statusCount[s] = (statusCount[s] || 0) + 1;
     }
     return Object.entries(statusCount)
@@ -145,14 +146,14 @@ export default function CommandCenterView() {
   // ── Quick Actions ───────────────────────────────────────────────────
 
   const quickActions = useMemo(() => [
-    { icon: <Target size={14} />, label: '查看目标', module: 'goals', iface: 'workspace' },
-    { icon: <CheckCircle2 size={14} />, label: '任务中心', module: 'tasks', iface: 'workspace' },
-    { icon: <AlertTriangle size={14} />, label: '风险预警', module: 'risk', iface: 'ai' },
-    { icon: <Zap size={14} />, label: '行动项', module: 'actionItems', iface: 'workspace' },
-    { icon: <GitBranch size={14} />, label: 'DSTE赛季', module: 'dste', iface: 'ai' },
-    { icon: <Shield size={14} />, label: '风险预警', module: 'risk', iface: 'ai' },
-    { icon: <Activity size={14} />, label: '复盘', module: 'review', iface: 'workspace' },
-    { icon: <TrendingUp size={14} />, label: '报表', module: 'reports', iface: 'workspace' },
+    { icon: <Target size={14} />, label: t('cmd.qaGoals'), module: 'goals', iface: 'workspace' },
+    { icon: <CheckCircle2 size={14} />, label: t('cmd.qaTasks'), module: 'tasks', iface: 'workspace' },
+    { icon: <AlertTriangle size={14} />, label: t('cmd.qaRisk'), module: 'risk', iface: 'ai' },
+    { icon: <Zap size={14} />, label: t('cmd.qaActions'), module: 'actionItems', iface: 'workspace' },
+    { icon: <GitBranch size={14} />, label: t('cmd.qaDSTE'), module: 'dste', iface: 'ai' },
+    { icon: <Shield size={14} />, label: t('cmd.qaRisk'), module: 'risk', iface: 'ai' },
+    { icon: <Activity size={14} />, label: t('cmd.qaReview'), module: 'review', iface: 'workspace' },
+    { icon: <TrendingUp size={14} />, label: t('cmd.qaReports'), module: 'reports', iface: 'workspace' },
   ], []);
 
   // Quick create state
@@ -175,19 +176,31 @@ export default function CommandCenterView() {
     switch (quickType) {
       case 'task':
         await addTask({ title: quickForm.title, status: 'todo', priority: quickForm.priority, due_date: quickForm.due_date || null, description: quickForm.description, team_id: '__default__' } as any);
-        success('任务已创建');
+        success(t('cmd.taskCreated'));
         break;
       case 'goal':
         await addGoal({ title: quickForm.title, status: 'in_progress', progress: 0, start_date: new Date().toISOString().slice(0, 10), end_date: quickForm.due_date || null, description: quickForm.description, team_id: '__default__' } as any);
-        success('目标已创建');
+        success(t('cmd.goalCreated'));
         break;
       case 'actionItem':
         await addActionItem({ title: quickForm.title, status: 'open', priority: quickForm.priority, due_date: quickForm.due_date || null, team_id: '__default__' } as any);
-        success('行动项已创建');
+        success(t('cmd.actionCreated'));
         break;
     }
     quickModal.closeModal();
   }, [quickType, quickForm, addTask, addGoal, addActionItem, quickModal, success]);
+
+  /** Lazy i18n lookup for task pipeline status labels */
+  const STATUS_LABEL: Record<string, () => string> = {
+    todo: () => t('tasks.statusTodo'),
+    in_progress: () => t('tasks.statusInProgress'),
+    done: () => t('tasks.statusDone'),
+    completed: () => t('tasks.statusDone'),
+    review: () => t('cmd.statusReview'),
+    blocked: () => t('tasks.statusBlocked'),
+  };
+
+  const STATUS_COLOR: Record<string, string> = { todo: 'bg-text-3', in_progress: 'bg-primary', done: 'bg-success', completed: 'bg-success', review: 'bg-accent', blocked: 'bg-danger' };
 
   if (loading) return <CardSkeleton />;
 
@@ -196,8 +209,8 @@ export default function CommandCenterView() {
       {/* Header */}
       <div className="flex items-center gap-2">
         <TrendingUp size={18} className="text-primary-2" />
-        <span className="text-sm font-bold">全景指挥中心</span>
-        <span className="ml-auto text-[10px] text-text-3">{members.length} 成员 · {new Date().toLocaleDateString('zh-CN')}</span>
+        <span className="text-sm font-bold">{t('cmd.title')}</span>
+        <span className="ml-auto text-[10px] text-text-3">{t('cmd.memberDate', { count: members.length, date: new Date().toLocaleDateString() })}</span>
       </div>
 
       {/* KPI Cards */}
@@ -221,13 +234,13 @@ export default function CommandCenterView() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Goal Health */}
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="text-xs font-bold text-text mb-3">目标健康分布</div>
+          <div className="text-xs font-bold text-text mb-3">{t('cmd.goalHealth')}</div>
           <div className="space-y-2">
             {[
-              { label: '正常推进', count: goalHealth.onTrack, color: 'bg-success', textColor: 'text-success' },
-              { label: '偏离风险', count: goalHealth.atRisk, color: 'bg-warn', textColor: 'text-warn' },
-              { label: '已逾期', count: goalHealth.overdue, color: 'bg-danger', textColor: 'text-danger' },
-              { label: '已完成', count: goalHealth.completed, color: 'bg-primary', textColor: 'text-primary-2' },
+              { label: t('cmd.onTrack'), count: goalHealth.onTrack, color: 'bg-success', textColor: 'text-success' },
+              { label: t('cmd.atRiskLabel'), count: goalHealth.atRisk, color: 'bg-warn', textColor: 'text-warn' },
+              { label: t('cmd.overdue'), count: goalHealth.overdue, color: 'bg-danger', textColor: 'text-danger' },
+              { label: t('cmd.completed'), count: goalHealth.completed, color: 'bg-primary', textColor: 'text-primary-2' },
             ].map(item => {
               const total = Math.max(1, goalHealth.onTrack + goalHealth.atRisk + goalHealth.overdue + goalHealth.completed);
               const pct = (item.count / total) * 100;
@@ -247,22 +260,20 @@ export default function CommandCenterView() {
 
         {/* Task Pipeline */}
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="text-xs font-bold text-text mb-3">任务状态分布</div>
+          <div className="text-xs font-bold text-text mb-3">{t('cmd.taskPipeline')}</div>
           <div className="space-y-2">
             {taskPipeline.length === 0 ? (
-              <div className="text-[10px] text-text-3">暂无任务数据</div>
+              <div className="text-[10px] text-text-3">{t('cmd.noTaskData')}</div>
             ) : (
               taskPipeline.map(({ status, count }) => {
                 const total = Math.max(1, tasks.length);
                 const pct = (count / total) * 100;
-                const statusLabel: Record<string, string> = { todo: '待办', in_progress: '进行中', done: '已完成', completed: '已完成', review: '评审中', blocked: '阻塞' };
-                const statusColor: Record<string, string> = { todo: 'bg-text-3', in_progress: 'bg-primary', done: 'bg-success', completed: 'bg-success', review: 'bg-accent', blocked: 'bg-danger' };
                 return (
                   <div key={status} className="flex items-center gap-2">
-                    <span className={cn('w-2 h-2 rounded-full', statusColor[status] || 'bg-text-3')} />
-                    <span className="text-[10px] text-text-2 w-16">{statusLabel[status] || status}</span>
+                    <span className={cn('w-2 h-2 rounded-full', STATUS_COLOR[status] || 'bg-text-3')} />
+                    <span className="text-[10px] text-text-2 w-16">{STATUS_LABEL[status] ? STATUS_LABEL[status]() : status}</span>
                     <div className="flex-1 h-2 rounded-full bg-surface-2">
-                      <div className={cn('h-full rounded-full transition-all', statusColor[status] || 'bg-text-3')} style={{ width: `${pct}%` }} />
+                      <div className={cn('h-full rounded-full transition-all', STATUS_COLOR[status] || 'bg-text-3')} style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-xs font-semibold text-text w-6 text-right">{count}</span>
                   </div>
@@ -279,22 +290,22 @@ export default function CommandCenterView() {
         <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2 mb-3">
             <GitBranch size={14} className="text-primary-2" />
-            <span className="text-xs font-bold text-text">自动化概览</span>
+            <span className="text-xs font-bold text-text">{t('cmd.automationOverview')}</span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
               <div className="text-lg font-extrabold text-text">{automationStats.activeChains}</div>
-              <div className="text-[9px] text-text-3">活跃规则链</div>
+              <div className="text-[9px] text-text-3">{t('cmd.activeChains')}</div>
             </div>
             <div>
               <div className="text-lg font-extrabold text-text">{automationStats.executionsThisWeek}</div>
-              <div className="text-[9px] text-text-3">本周执行</div>
+              <div className="text-[9px] text-text-3">{t('cmd.execThisWeek')}</div>
             </div>
             <div>
               <div className={cn('text-lg font-extrabold', automationStats.successRate >= 90 ? 'text-success' : 'text-warn')}>
                 {automationStats.successRate}%
               </div>
-              <div className="text-[9px] text-text-3">成功率</div>
+              <div className="text-[9px] text-text-3">{t('cmd.successRate')}</div>
             </div>
           </div>
         </div>
@@ -303,18 +314,18 @@ export default function CommandCenterView() {
         <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2 mb-3">
             <Shield size={14} className="text-warn" />
-            <span className="text-xs font-bold text-text">预警汇总</span>
+            <span className="text-xs font-bold text-text">{t('cmd.alertSummary')}</span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-center">
             <div>
               <div className="text-lg font-extrabold text-danger">{alerts.filter(a => !a.is_read).length}</div>
-              <div className="text-[9px] text-text-3">未读偏差</div>
+              <div className="text-[9px] text-text-3">{t('cmd.unreadDeviation')}</div>
             </div>
             <div>
               <div className={cn('text-lg font-extrabold', usageAlerts > 0 ? 'text-warn' : 'text-success')}>
                 {usageAlerts}
               </div>
-              <div className="text-[9px] text-text-3">用量预警</div>
+              <div className="text-[9px] text-text-3">{t('cmd.usageAlerts')}</div>
             </div>
           </div>
         </div>
@@ -322,7 +333,7 @@ export default function CommandCenterView() {
 
       {/* Quick Actions */}
       <div className="rounded-xl border border-border bg-surface p-4">
-        <div className="text-xs font-bold text-text mb-3">快速导航</div>
+        <div className="text-xs font-bold text-text mb-3">{t('cmd.quickNav')}</div>
         <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
           {quickActions.map((qa) => (
             <button
@@ -341,13 +352,13 @@ export default function CommandCenterView() {
       <div className="rounded-xl border border-border bg-surface p-4">
         <div className="flex items-center gap-2 mb-3">
           <Plus size={14} className="text-success" />
-          <span className="text-xs font-bold text-text">快速创建</span>
+          <span className="text-xs font-bold text-text">{t('cmd.quickCreate')}</span>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { type: 'task' as const, label: '新建任务', icon: <CheckCircle2 size={16} />, color: 'bg-primary/10 text-primary-2 hover:bg-primary/20' },
-            { type: 'goal' as const, label: '新建目标', icon: <Target size={16} />, color: 'bg-success/10 text-success hover:bg-success/20' },
-            { type: 'actionItem' as const, label: '新建行动项', icon: <Zap size={16} />, color: 'bg-accent/10 text-accent hover:bg-accent/20' },
+            { type: 'task' as const, label: t('cmd.newTask'), icon: <CheckCircle2 size={16} />, color: 'bg-primary/10 text-primary-2 hover:bg-primary/20' },
+            { type: 'goal' as const, label: t('cmd.newGoal'), icon: <Target size={16} />, color: 'bg-success/10 text-success hover:bg-success/20' },
+            { type: 'actionItem' as const, label: t('cmd.newAction'), icon: <Zap size={16} />, color: 'bg-accent/10 text-accent hover:bg-accent/20' },
           ].map((btn) => (
             <button key={btn.type} className={cn('flex flex-col items-center gap-1.5 rounded-xl py-4 text-[11px] font-semibold transition-colors', btn.color)} onClick={() => openQuickCreate(btn.type)}>
               {btn.icon}
@@ -358,32 +369,32 @@ export default function CommandCenterView() {
       </div>
 
       {/* Quick Create Modal */}
-      <Modal open={quickModal.open} onClose={quickModal.closeModal} title={`快速创建${quickType === 'task' ? '任务' : quickType === 'goal' ? '目标' : '行动项'}`}
+      <Modal open={quickModal.open} onClose={quickModal.closeModal} title={t('cmd.quickCreateTitle', { type: quickType === 'task' ? t('cmd.taskType') : quickType === 'goal' ? t('cmd.goalType') : t('cmd.actionType') })}
         footer={
           <div className="flex gap-2">
-            <button className={btnSecondary} onClick={quickModal.closeModal}>取消</button>
+            <button className={btnSecondary} onClick={quickModal.closeModal}>{t('common.cancel')}</button>
             <button className={btnPrimary} onClick={handleQuickCreate} disabled={!quickForm.title.trim()}>
-              <span className="flex items-center gap-1"><Send size={10} />创建</span>
+              <span className="flex items-center gap-1"><Send size={10} />{t('common.create')}</span>
             </button>
           </div>
         }
       >
-        <ModalField label="标题">
-          <input className={inputCls} placeholder={`输入${quickType === 'task' ? '任务' : quickType === 'goal' ? '目标' : '行动项'}名称`} value={quickForm.title} onChange={(e) => setQuickForm((p) => ({ ...p, title: e.target.value }))} />
+        <ModalField label={t('cmd.titleLabel')}>
+          <input className={inputCls} placeholder={t('cmd.titlePlaceholder', { type: quickType === 'task' ? t('cmd.taskType') : quickType === 'goal' ? t('cmd.goalType') : t('cmd.actionType') })} value={quickForm.title} onChange={(e) => setQuickForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="描述（可选）">
-          <textarea className={inputCls} rows={2} placeholder="简要描述..." value={quickForm.description} onChange={(e) => setQuickForm((p) => ({ ...p, description: e.target.value }))} />
+        <ModalField label={t('cmd.descLabel')}>
+          <textarea className={inputCls} rows={2} placeholder={t('cmd.descPlaceholder')} value={quickForm.description} onChange={(e) => setQuickForm((p) => ({ ...p, description: e.target.value }))} />
         </ModalField>
-        <ModalField label="截止日期（可选）">
+        <ModalField label={t('cmd.dueDateLabel')}>
           <input type="date" className={inputCls} value={quickForm.due_date} onChange={(e) => setQuickForm((p) => ({ ...p, due_date: e.target.value }))} />
         </ModalField>
         {(quickType === 'task' || quickType === 'actionItem') && (
-          <ModalField label="优先级">
+          <ModalField label={t('cmd.priorityLabel')}>
             <select className={inputCls} value={quickForm.priority} onChange={(e) => setQuickForm((p) => ({ ...p, priority: e.target.value }))}>
-              <option value="low">低</option>
-              <option value="medium">中</option>
-              <option value="high">高</option>
-              <option value="critical">紧急</option>
+              <option value="low">{t('tasks.priorityLow')}</option>
+              <option value="medium">{t('tasks.priorityMedium')}</option>
+              <option value="high">{t('tasks.priorityHigh')}</option>
+              <option value="critical">{t('tasks.priorityUrgent')}</option>
             </select>
           </ModalField>
         )}

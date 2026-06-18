@@ -172,8 +172,8 @@ export default function OverviewContent() {
                     className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 text-[9px] font-semibold text-primary-2 hover:bg-primary/20"
                     onClick={() => navigate(navigateTo('workspace', targetModule))}
                   >
-                    去处理
-                  </button>
+                    {t('overview.goHandle')}
+                   </button>
                 </div>
               );
             })}
@@ -217,13 +217,13 @@ export default function OverviewContent() {
         completionRate={goals.length > 0 ? Math.round(goals.filter((g) => g.status === 'completed').length / goals.length * 100) : 0}
       />
 
-      {/* 项目进度 & 风险概览 — 管理端驾驶舱核心 */}
+      {/* Project progress & risk overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* 项目进度卡片 */}
+        {/* Project Progress Card */}
         <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-text-3 uppercase tracking-wider">项目进度</span>
-            <button onClick={() => navigate(navigateTo('workspace', 'projects'))} className="text-[10px] text-primary-2 hover:underline">查看全部</button>
+            <span className="text-xs font-bold text-text-3 uppercase tracking-wider">{t('overview.projectProgress')}</span>
+            <button onClick={() => navigate(navigateTo('workspace', 'projects'))} className="text-[10px] text-primary-2 hover:underline">{t('overview.viewAll')}</button>
           </div>
           {goals.filter((g) => g.status === 'in_progress' || g.status === 'active').slice(0, 4).map((g) => {
             const pct = Math.min(100, Math.max(0, g.progress || 0));
@@ -241,33 +241,33 @@ export default function OverviewContent() {
             );
           })}
           {goals.filter((g) => g.status === 'in_progress' || g.status === 'active').length === 0 && (
-            <div className="text-center py-4 text-xs text-text-3">暂无进行中的目标</div>
+            <div className="text-center py-4 text-xs text-text-3">{t('overview.noActiveGoals')}</div>
           )}
         </div>
 
-        {/* 风险项 + 周报入口 */}
+        {/* Risk items + Weekly report entry */}
         <div className="space-y-3">
           <div className="rounded-xl border border-border bg-surface p-3 md:p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-text-3 uppercase tracking-wider">风险预警</span>
-              <button onClick={() => navigate(navigateTo('ai', 'risk'))} className="text-[10px] text-primary-2 hover:underline">AI分析</button>
+              <span className="text-xs font-bold text-text-3 uppercase tracking-wider">{t('overview.riskAlert')}</span>
+              <button onClick={() => navigate(navigateTo('ai', 'risk'))} className="text-[10px] text-primary-2 hover:underline">{t('overview.aiAnalysis')}</button>
             </div>
             {todayFocus.overdueCount > 0 && (
               <div className="flex items-center gap-2 rounded-lg bg-danger/5 border border-danger/20 px-2.5 py-2 mb-1.5">
                 <AlertTriangle size={12} className="text-danger shrink-0" />
-                <span className="text-xs text-danger font-medium">{todayFocus.overdueCount}个逾期任务需处理</span>
+                <span className="text-xs text-danger font-medium">{t('overview.overdueTasksNeedAction', { count: todayFocus.overdueCount })}</span>
               </div>
             )}
             {todayFocus.atRiskCount > 0 && (
               <div className="flex items-center gap-2 rounded-lg bg-warn/5 border border-warn/20 px-2.5 py-2 mb-1.5">
                 <TrendingDown size={12} className="text-warn shrink-0" />
-                <span className="text-xs text-warn font-medium">{todayFocus.atRiskCount}个目标进度落后</span>
+                <span className="text-xs text-warn font-medium">{t('overview.goalsBehind', { count: todayFocus.atRiskCount })}</span>
               </div>
             )}
             {todayFocus.overdueCount === 0 && todayFocus.atRiskCount === 0 && (
               <div className="flex items-center gap-2 rounded-lg bg-success/5 border border-success/20 px-2.5 py-2">
                 <CheckCircle2 size={12} className="text-success shrink-0" />
-                <span className="text-xs text-success font-medium">当前无风险项</span>
+                <span className="text-xs text-success font-medium">{t('overview.noRisks')}</span>
               </div>
             )}
           </div>
@@ -279,8 +279,8 @@ export default function OverviewContent() {
             <div className="flex items-center gap-2">
               <span className="text-lg">⚠️</span>
               <div>
-                <div className="text-xs font-semibold text-text">AI风险预警</div>
-                <div className="text-[10px] text-text-3 mt-0.5">智能风险识别与预警</div>
+                <div className="text-xs font-semibold text-text">{t('overview.aiRiskAlert')}</div>
+                <div className="text-[10px] text-text-3 mt-0.5">{t('overview.aiRiskDesc')}</div>
               </div>
             </div>
             <ArrowRight size={16} className="text-text-3 transition-transform group-hover:translate-x-1" />
