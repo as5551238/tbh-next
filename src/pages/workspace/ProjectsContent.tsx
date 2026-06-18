@@ -97,13 +97,13 @@ export default function ProjectsContent() {
     });
   }, [memberProjectId, editProject]);
 
-  const projExportHeaders = ['名称', '描述', '状态', '进度', '负责人', '开始日期', '截止日期'];
+  const projExportHeaders = [t('projects.expName'), t('projects.expDesc'), t('projects.expStatus'), t('projects.expProgress'), t('projects.expOwner'), t('projects.expStartDate'), t('projects.expEndDate')];
   const handleExportProjectsCSV = useCallback(() => {
-    const rows = projects.map((p) => ({ '名称': String(p.title ?? ''), '描述': '', '状态': String(p.status ?? ''), '进度': String(p.progress ?? ''), '负责人': '', '开始日期': String(p.start_date ?? ''), '截止日期': String(p.end_date ?? '') }));
+    const rows = projects.map((p) => ({ [t('projects.expName')]: String(p.title ?? ''), [t('projects.expDesc')]: '', [t('projects.expStatus')]: String(p.status ?? ''), [t('projects.expProgress')]: String(p.progress ?? ''), [t('projects.expOwner')]: '', [t('projects.expStartDate')]: String(p.start_date ?? ''), [t('projects.expEndDate')]: String(p.end_date ?? '') }));
     exportToCSV(projExportHeaders, rows, 'projects');
   }, [projects]);
   const handleExportProjectsJSON = useCallback(() => {
-    const rows = projects.map((p) => ({ '名称': String(p.title ?? ''), '描述': '', '状态': String(p.status ?? ''), '进度': String(p.progress ?? ''), '负责人': '', '开始日期': String(p.start_date ?? ''), '截止日期': String(p.end_date ?? '') }));
+    const rows = projects.map((p) => ({ [t('projects.expName')]: String(p.title ?? ''), [t('projects.expDesc')]: '', [t('projects.expStatus')]: String(p.status ?? ''), [t('projects.expProgress')]: String(p.progress ?? ''), [t('projects.expOwner')]: '', [t('projects.expStartDate')]: String(p.start_date ?? ''), [t('projects.expEndDate')]: String(p.end_date ?? '') }));
     exportToJSON(rows, 'projects');
   }, [projects]);
 
@@ -112,11 +112,11 @@ export default function ProjectsContent() {
     setAiAnalyzing(true);
     setAiHealthInsight(null);
     try {
-      const summary = projects.map((p) => `「${p.title}」状态=${p.status} 进度=${p.progress}% 截止=${p.end_date ?? '未设'}`).join('\n');
-      const res = await chatCompletion([{ role: 'user', content: `分析以下项目组合的健康状态，指出风险和改进建议（200字内）：\n${summary}` }]);
-      setAiHealthInsight(res?.text ?? 'AI暂无建议');
+      const summary = projects.map((p) => `${t('projects.aiSummaryEntry', { title: p.title, status: p.status, progress: p.progress, endDate: p.end_date ?? t('projects.notSet') })}`).join('\n');
+      const res = await chatCompletion([{ role: 'user', content: t('projects.aiSummaryPrompt', { summary }) }]);
+      setAiHealthInsight(res?.text ?? t('projects.aiNoSuggestion'));
     } catch {
-      setAiHealthInsight('AI健康检查暂不可用，请稍后再试。');
+      setAiHealthInsight(t('projects.aiUnavailable'));
     } finally {
       setAiAnalyzing(false);
     }

@@ -64,10 +64,10 @@ export default function TasksContent() {
     { key: 'status', label: t('tasks.status'), type: 'select', options: [{ value: 'todo', label: t('tasks.statusTodo') }, { value: 'in_progress', label: t('tasks.statusInProgress') }, { value: 'done', label: t('tasks.statusDone') }, { value: 'blocked', label: t('tasks.statusBlocked') }, { value: 'cancelled', label: t('tasks.statusCancelled') }] },
     { key: 'due_date', label: t('tasks.dueDate'), type: 'date' },
     { key: 'assignee_id', label: t('tasks.assignee'), type: 'text' },
-    { key: 'milestone', label: '里程碑', type: 'text' },
-    { key: 'tags', label: '标签', type: 'text' },
-    { key: 'estimated_hours', label: '预估工时(h)', type: 'number' },
-    { key: 'actual_hours', label: '实际工时(h)', type: 'number' },
+    { key: 'milestone', label: t('tasks.milestone'), type: 'text' },
+    { key: 'tags', label: t('tasks.tags'), type: 'text' },
+    { key: 'estimated_hours', label: t('tasks.estimatedHours'), type: 'number' },
+    { key: 'actual_hours', label: t('tasks.actualHours'), type: 'number' },
   ];
 
   const handleStatusChange = useCallback((id: string, status: string) => {
@@ -132,13 +132,13 @@ export default function TasksContent() {
     setSelectedIds(new Set());
   }, [selectedIds, editTask]);
 
-  const taskExportHeaders = ['名称', '描述', '状态', '优先级', '负责人', '截止日期', '标签'];
+  const taskExportHeaders = [t('tasks.expName'), t('tasks.expDesc'), t('tasks.expStatus'), t('tasks.expPriority'), t('tasks.expOwner'), t('tasks.expDueDate'), t('tasks.expTags')];
   const handleExportTasksCSV = useCallback(() => {
-    const rows = tasks.map((task) => ({ '名称': String(task.title ?? ''), '描述': '', '状态': String(task.status ?? ''), '优先级': String(task.priority ?? ''), '负责人': String(task.assignee_id ?? ''), '截止日期': String(task.due_date ?? ''), '标签': '' }));
+    const rows = tasks.map((task) => ({ [t('tasks.expName')]: String(task.title ?? ''), [t('tasks.expDesc')]: '', [t('tasks.expStatus')]: String(task.status ?? ''), [t('tasks.expPriority')]: String(task.priority ?? ''), [t('tasks.expOwner')]: String(task.assignee_id ?? ''), [t('tasks.expDueDate')]: String(task.due_date ?? ''), [t('tasks.expTags')]: '' }));
     exportToCSV(taskExportHeaders, rows, 'tasks');
   }, [tasks]);
   const handleExportTasksJSON = useCallback(() => {
-    const rows = tasks.map((task) => ({ '名称': String(task.title ?? ''), '描述': '', '状态': String(task.status ?? ''), '优先级': String(task.priority ?? ''), '负责人': String(task.assignee_id ?? ''), '截止日期': String(task.due_date ?? ''), '标签': '' }));
+    const rows = tasks.map((task) => ({ [t('tasks.expName')]: String(task.title ?? ''), [t('tasks.expDesc')]: '', [t('tasks.expStatus')]: String(task.status ?? ''), [t('tasks.expPriority')]: String(task.priority ?? ''), [t('tasks.expOwner')]: String(task.assignee_id ?? ''), [t('tasks.expDueDate')]: String(task.due_date ?? ''), [t('tasks.expTags')]: '' }));
     exportToJSON(rows, 'tasks');
   }, [tasks]);
 
@@ -146,18 +146,18 @@ export default function TasksContent() {
     <div className="flex flex-1 flex-col overflow-hidden">
       <PageHeader icon={<CheckCircle2 size={16} />} title={t('tasks.title')} badge={t('tasks.taskSummary', { total: tasks.length, done: tasks.filter(t => t.done).length, pending: tasks.filter(t => !t.done).length })}>
         {can('tasks:write') && (
-        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!tpLimit('maxTasks', tasks.length, '免费版最多创建20个任务，升级Pro解锁更多')) return; setNewTaskForm({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '', milestone: '', tags: '', estimated_hours: '' }); addTaskModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!tpLimit('maxTasks', tasks.length, t('tasks.paywallMsg'))) return; setNewTaskForm({ title: '', priority: 'medium', status: 'todo', due_date: '', assignee_id: '', goal_id: '', milestone: '', tags: '', estimated_hours: '' }); addTaskModal.openModal(); }}>
           <Plus size={12} />{t('tasks.newTask')}
         </button>
         )}
         {can('reports:export') && (
         <div className="relative">
-          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setTaskExportOpen((v) => !v)}>导出 ▾</button>
+          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setTaskExportOpen((v) => !v)}>{t('tasks.export')} ▾</button>
           {taskExportOpen && (<>
             <div className="fixed inset-0 z-40" onClick={() => setTaskExportOpen(false)} />
             <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-border bg-surface py-1 shadow-lg">
-              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setTaskExportOpen(false); handleExportTasksCSV(); }}>导出 CSV</button>
-              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setTaskExportOpen(false); handleExportTasksJSON(); }}>导出 JSON</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setTaskExportOpen(false); handleExportTasksCSV(); }}>{t('tasks.exportCSV')}</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setTaskExportOpen(false); handleExportTasksJSON(); }}>{t('tasks.exportJSON')}</button>
             </div>
           </>)}
         </div>
@@ -166,10 +166,10 @@ export default function TasksContent() {
       {/* View Mode Switcher */}
       <div className="flex items-center gap-1 px-3 md:px-4 pt-1 pb-2">
         {([
-          { key: 'list' as TaskViewMode, label: '列表', icon: LayoutList },
-          { key: 'kanban' as TaskViewMode, label: '看板', icon: Columns3 },
-          { key: 'gantt' as TaskViewMode, label: '甘特图', icon: GanttChart },
-          { key: 'calendar' as TaskViewMode, label: '日历', icon: Calendar },
+          { key: 'list' as TaskViewMode, label: t('tasks.viewList'), icon: LayoutList },
+          { key: 'kanban' as TaskViewMode, label: t('tasks.viewKanban'), icon: Columns3 },
+          { key: 'gantt' as TaskViewMode, label: t('tasks.viewGantt'), icon: GanttChart },
+          { key: 'calendar' as TaskViewMode, label: t('tasks.viewCalendar'), icon: Calendar },
         ]).map(v => (
           <button key={v.key} onClick={() => setViewMode(v.key)}
             className={cn('flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors', viewMode === v.key ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2')}>
@@ -191,17 +191,17 @@ export default function TasksContent() {
         <CalendarView tasks={tasks} onTaskClick={handleTaskClick} priorityStyle={priorityStyle} />
       ) : (
         /* ===== 列表视图（默认） ===== */
-        <>{tasks.map((t) => (
-        <div key={t.id} className={cn('flex items-center gap-2 md:gap-3 rounded-xl border border-border bg-surface px-3 md:px-4 py-2.5 md:py-3 transition-all hover:border-border-2 cursor-pointer', t.done && 'opacity-50')} onClick={() => handleTaskClick(t)}>
+        <>{tasks.map((task) => (
+        <div key={task.id} className={cn('flex items-center gap-2 md:gap-3 rounded-xl border border-border bg-surface px-3 md:px-4 py-2.5 md:py-3 transition-all hover:border-border-2 cursor-pointer', task.done && 'opacity-50')} onClick={() => handleTaskClick(task)}>
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-            <input type="checkbox" checked={selectedIds.has(t.id)} onChange={() => toggleSelect(t.id)} className="h-3.5 w-3.5 accent-primary rounded" />
+            <input type="checkbox" checked={selectedIds.has(task.id)} onChange={() => toggleSelect(task.id)} className="h-3.5 w-3.5 accent-primary rounded" />
           </div>
-          <div className={cn('h-4 w-4 rounded border-2 shrink-0 flex items-center justify-center', t.done ? 'bg-success border-success' : 'border-border')} onClick={(e) => handleToggleDone(e, t)}>
-            {t.done && <CheckCircle2 size={12} className="text-white" />}
+          <div className={cn('h-4 w-4 rounded border-2 shrink-0 flex items-center justify-center', task.done ? 'bg-success border-success' : 'border-border')} onClick={(e) => handleToggleDone(e, task)}>
+            {task.done && <CheckCircle2 size={12} className="text-white" />}
           </div>
-          <span className={cn('flex-1 text-xs text-text', t.done && 'line-through')}>{t.title}</span>
-          <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', priorityStyle[t.priority] || priorityStyle.medium)}>{priorityLabel[t.priority] || t.priority}</span>
-            <span className="text-[10px] text-text-3 shrink-0">{t.due_date}</span>
+          <span className={cn('flex-1 text-xs text-text', task.done && 'line-through')}>{task.title}</span>
+          <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold', priorityStyle[task.priority] || priorityStyle.medium)}>{priorityLabel[task.priority] || task.priority}</span>
+            <span className="text-[10px] text-text-3 shrink-0">{task.due_date}</span>
         </div>
         ))}</>
       )}
@@ -241,13 +241,13 @@ export default function TasksContent() {
         <ModalField label={t('tasks.linkedGoalId')}>
           <input className={inputCls} placeholder={t('tasks.linkedGoalIdPlaceholder')} value={newTaskForm.goal_id} onChange={(e) => setNewTaskForm((p) => ({ ...p, goal_id: e.target.value }))} />
         </ModalField>
-        <ModalField label="里程碑">
-          <input className={inputCls} placeholder="关联里程碑" value={newTaskForm.milestone} onChange={(e) => setNewTaskForm((p) => ({ ...p, milestone: e.target.value }))} />
+        <ModalField label={t('tasks.milestone')}>
+          <input className={inputCls} placeholder={t('tasks.milestonePlaceholder')} value={newTaskForm.milestone} onChange={(e) => setNewTaskForm((p) => ({ ...p, milestone: e.target.value }))} />
         </ModalField>
-        <ModalField label="标签">
-          <input className={inputCls} placeholder="逗号分隔，如: 前端,v2" value={newTaskForm.tags} onChange={(e) => setNewTaskForm((p) => ({ ...p, tags: e.target.value }))} />
+        <ModalField label={t('tasks.tags')}>
+          <input className={inputCls} placeholder={t('tasks.tagsPlaceholder')} value={newTaskForm.tags} onChange={(e) => setNewTaskForm((p) => ({ ...p, tags: e.target.value }))} />
         </ModalField>
-        <ModalField label="预估工时(h)">
+        <ModalField label={t('tasks.estimatedHours')}>
           <input type="number" className={inputCls} placeholder="0" value={newTaskForm.estimated_hours} onChange={(e) => setNewTaskForm((p) => ({ ...p, estimated_hours: e.target.value }))} />
         </ModalField>
       </Modal>
@@ -266,13 +266,16 @@ export default function TasksContent() {
   );
 }
 
-// ===== 看板视图 =====
+// ===== Kanban View =====
+
+// KANBAN_COLUMNS uses lazy i18n via t()
+import { t as ti18n } from '@/lib/i18n';
 
 const KANBAN_COLUMNS = [
-  { key: 'todo', label: '待办', color: 'border-l-surface-2', bg: 'bg-surface-2/30' },
-  { key: 'in_progress', label: '进行中', color: 'border-l-warn', bg: 'bg-warn/5' },
-  { key: 'done', label: '已完成', color: 'border-l-success', bg: 'bg-success/5' },
-  { key: 'blocked', label: '阻塞', color: 'border-l-danger', bg: 'bg-danger/5' },
+  { key: 'todo', label: () => ti18n('tasks.statusTodo'), color: 'border-l-surface-2', bg: 'bg-surface-2/30' },
+  { key: 'in_progress', label: () => ti18n('tasks.statusInProgress'), color: 'border-l-warn', bg: 'bg-warn/5' },
+  { key: 'done', label: () => ti18n('tasks.statusDone'), color: 'border-l-success', bg: 'bg-success/5' },
+  { key: 'blocked', label: () => ti18n('tasks.statusBlocked'), color: 'border-l-danger', bg: 'bg-danger/5' },
 ];
 
 function KanbanView({ tasks, onTaskClick, onToggleDone, onStatusChange, priorityStyle, priorityLabel }: KanbanViewProps) {
@@ -300,7 +303,7 @@ function KanbanView({ tasks, onTaskClick, onToggleDone, onStatusChange, priority
             }}
           >
             <div className="flex items-center justify-between mb-2 px-1">
-              <span className="text-[11px] font-bold text-text-2">{col.label}</span>
+              <span className="text-[11px] font-bold text-text-2">{col.label()}</span>
               <span className="text-[10px] text-text-3 bg-surface rounded-full px-1.5 py-0.5">{colTasks.length}</span>
             </div>
             <div className="space-y-1.5 min-h-[40px] max-h-[60vh] overflow-y-auto">
@@ -329,7 +332,7 @@ function KanbanView({ tasks, onTaskClick, onToggleDone, onStatusChange, priority
                   </div>
                 </div>
               ))}
-              {colTasks.length === 0 && <div className="text-center py-6 text-[10px] text-text-3">{dragOverCol === col.key ? '松开放入' : '暂无'}</div>}
+              {colTasks.length === 0 && <div className="text-center py-6 text-[10px] text-text-3">{dragOverCol === col.key ? t('tasks.dropHere') : t('tasks.empty')}</div>}
             </div>
           </div>
         );
@@ -338,7 +341,7 @@ function KanbanView({ tasks, onTaskClick, onToggleDone, onStatusChange, priority
   );
 }
 
-// ===== 甘特图视图 =====
+// ===== Gantt View =====
 
 function GanttView({ tasks, onTaskClick }: GanttViewProps) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -377,18 +380,18 @@ function GanttView({ tasks, onTaskClick }: GanttViewProps) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-3 flex-wrap">
-        <button onClick={() => setWeekOffset(w => w - 1)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">← 上一周</button>
-        <button onClick={() => setWeekOffset(0)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">今天</button>
-        <button onClick={() => setWeekOffset(w => w + 1)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">下一周 →</button>
+        <button onClick={() => setWeekOffset(w => w - 1)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">← {ti18n('tasks.prevWeek')}</button>
+        <button onClick={() => setWeekOffset(0)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">{ti18n('tasks.today')}</button>
+        <button onClick={() => setWeekOffset(w => w + 1)} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">{ti18n('tasks.nextWeek')} →</button>
         <span className="text-[10px] text-text-3">{rangeLabel}</span>
         <label className="flex items-center gap-1 ml-auto text-[10px] text-text-3 cursor-pointer">
           <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} className="h-3 w-3 accent-primary" />
-          显示已完成
+          {ti18n('tasks.showDone')}
         </label>
       </div>
       <div className="overflow-x-auto">
         <div className="flex border-b border-border mb-1 min-w-[800px]">
-          <div className="w-36 shrink-0 px-2 py-1 text-[10px] font-bold text-text-3">任务</div>
+          <div className="w-36 shrink-0 px-2 py-1 text-[10px] font-bold text-text-3">{ti18n('tasks.taskTitle')}</div>
           <div className="flex-1 flex">
             {dateRange.map((d, i) => (
               <div key={d} className={cn('flex-1 text-center text-[8px] py-1 min-w-[28px]', d === todayStr ? 'text-primary-2 font-bold bg-primary/5' : 'text-text-3')}>
@@ -416,13 +419,13 @@ function GanttView({ tasks, onTaskClick }: GanttViewProps) {
             </div>
           );
         })}
-        {visibleTasks.length === 0 && <div className="text-center py-8 text-xs text-text-3">暂无任务</div>}
+        {visibleTasks.length === 0 && <div className="text-center py-8 text-xs text-text-3">{ti18n('tasks.noTasks')}</div>}
       </div>
     </div>
   );
 }
 
-// ===== 日历视图 =====
+// ===== Calendar View =====
 
 function CalendarView({ tasks, onTaskClick, priorityStyle }: CalendarViewProps) {
   const today = new Date();
@@ -431,7 +434,7 @@ function CalendarView({ tasks, onTaskClick, priorityStyle }: CalendarViewProps) 
 
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
   const firstDayOfWeek = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
-  const monthLabel = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月`;
+  const monthLabel = ti18n('tasks.monthLabel', { year: viewDate.getFullYear(), month: viewDate.getMonth() + 1 });
 
   const taskMap = useMemo(() => {
     const m = new Map<string, TaskRow[]>();
@@ -456,18 +459,18 @@ function CalendarView({ tasks, onTaskClick, priorityStyle }: CalendarViewProps) 
   const nextMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
   const goToToday = () => setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
 
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+  const weekDays = [ti18n('tasks.weekSun'), ti18n('tasks.weekMon'), ti18n('tasks.weekTue'), ti18n('tasks.weekWed'), ti18n('tasks.weekThu'), ti18n('tasks.weekFri'), ti18n('tasks.weekSat')];
 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">← 上月</button>
-          <button onClick={goToToday} className="text-[10px] text-primary-2 px-2 py-1 rounded hover:bg-primary/10 font-medium">今天</button>
-          <button onClick={nextMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">下月 →</button>
+          <button onClick={prevMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">← {ti18n('tasks.prevMonth')}</button>
+          <button onClick={goToToday} className="text-[10px] text-primary-2 px-2 py-1 rounded hover:bg-primary/10 font-medium">{ti18n('tasks.today')}</button>
+          <button onClick={nextMonth} className="text-xs text-text-3 hover:text-text px-2 py-1 rounded hover:bg-surface-2">{ti18n('tasks.nextMonth')} →</button>
         </div>
         <span className="text-sm font-bold text-text">{monthLabel}</span>
-        <span className="text-[10px] text-text-3">本月 {taskCountThisMonth} 项</span>
+        <span className="text-[10px] text-text-3">{ti18n('tasks.monthCount', { count: taskCountThisMonth })}</span>
       </div>
       <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
         {weekDays.map(d => (
@@ -493,7 +496,7 @@ function CalendarView({ tasks, onTaskClick, priorityStyle }: CalendarViewProps) 
                   {t.title}
                 </div>
               ))}
-              {dayTasks.length > 2 && <div className="text-[8px] text-text-3 pl-1">+{dayTasks.length - 2}项</div>}
+              {dayTasks.length > 2 && <div className="text-[8px] text-text-3 pl-1">+{dayTasks.length - 2}{ti18n('tasks.items')}</div>}
             </div>
           );
         })}

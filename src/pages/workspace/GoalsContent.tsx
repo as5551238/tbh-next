@@ -113,13 +113,13 @@ export default function GoalsContent() {
     setEditGoalData((prev) => prev ? { ...prev, key_results: prev.key_results.filter((_, i) => i !== idx) } : null);
   }, []);
 
-  const goalExportHeaders = ['名称', '描述', '进度', '状态', '负责人', '截止日期', '关键结果数'];
+  const goalExportHeaders = [t('goals.expName'), t('goals.expDesc'), t('goals.expProgress'), t('goals.expStatus'), t('goals.expOwner'), t('goals.expEndDate'), t('goals.expKrCount')];
   const handleExportGoalsCSV = useCallback(() => {
-    const rows = goals.map((g) => ({ '名称': String(g.title ?? ''), '描述': '', '进度': String(g.progress ?? ''), '状态': String(g.status ?? ''), '负责人': String(g.owner_id ?? ''), '截止日期': formatDateForExport(g.end_date ?? undefined), '关键结果数': String(g.key_results?.length ?? 0) }));
+    const rows = goals.map((g) => ({ [t('goals.expName')]: String(g.title ?? ''), [t('goals.expDesc')]: '', [t('goals.expProgress')]: String(g.progress ?? ''), [t('goals.expStatus')]: String(g.status ?? ''), [t('goals.expOwner')]: String(g.owner_id ?? ''), [t('goals.expEndDate')]: formatDateForExport(g.end_date ?? undefined), [t('goals.expKrCount')]: String(g.key_results?.length ?? 0) }));
     exportToCSV(goalExportHeaders, rows, 'goals');
   }, [goals]);
   const handleExportGoalsJSON = useCallback(() => {
-    const rows = goals.map((g) => ({ '名称': String(g.title ?? ''), '描述': '', '进度': String(g.progress ?? ''), '状态': String(g.status ?? ''), '负责人': String(g.owner_id ?? ''), '截止日期': formatDateForExport(g.end_date ?? undefined), '关键结果数': String(g.key_results?.length ?? 0) }));
+    const rows = goals.map((g) => ({ [t('goals.expName')]: String(g.title ?? ''), [t('goals.expDesc')]: '', [t('goals.expProgress')]: String(g.progress ?? ''), [t('goals.expStatus')]: String(g.status ?? ''), [t('goals.expOwner')]: String(g.owner_id ?? ''), [t('goals.expEndDate')]: formatDateForExport(g.end_date ?? undefined), [t('goals.expKrCount')]: String(g.key_results?.length ?? 0) }));
     exportToJSON(rows, 'goals');
   }, [goals]);
 
@@ -127,18 +127,18 @@ export default function GoalsContent() {
     <div className="flex flex-1 flex-col overflow-hidden">
       <PageHeader icon={<Target size={16} />} title={t('goals.title')} badge={t('goals.inProgress', { count: goals.length })}>
         {can('goals:write') && (
-        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, '免费版最多创建5个目标，升级Pro解锁更多')) return; setNewGoalForm({ title: '', status: 'in_progress', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!requireLimit('maxGoals', goals.length, t('goals.paywallMsg'))) return; setNewGoalForm({ title: '', status: 'in_progress', progress: 0, end_date: '', start_date: '' }); addGoalModal.openModal(); }}>
           <Plus size={12} />{t('goals.newGoal')}
         </button>
         )}
         {can('reports:export') && (
         <div className="relative">
-          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setGoalExportOpen((v) => !v)}>导出 ▾</button>
+          <button className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-text-3 hover:text-text-2" onClick={() => setGoalExportOpen((v) => !v)}>{t('goals.export')} ▾</button>
           {goalExportOpen && (<>
             <div className="fixed inset-0 z-40" onClick={() => setGoalExportOpen(false)} />
             <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] rounded-lg border border-border bg-surface py-1 shadow-lg">
-              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setGoalExportOpen(false); handleExportGoalsCSV(); }}>导出 CSV</button>
-              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setGoalExportOpen(false); handleExportGoalsJSON(); }}>导出 JSON</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setGoalExportOpen(false); handleExportGoalsCSV(); }}>{t('goals.exportCSV')}</button>
+              <button className="w-full px-3 py-1.5 text-left text-xs text-text-3 hover:bg-surface-2 hover:text-text-2" onClick={() => { setGoalExportOpen(false); handleExportGoalsJSON(); }}>{t('goals.exportJSON')}</button>
             </div>
           </>)}
         </div>
@@ -160,7 +160,7 @@ export default function GoalsContent() {
               </div>
               <span className="text-sm font-semibold text-text">{g.title}</span>
               {goalProjectMap[g.id]?.length > 0 && (
-                <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-bold text-primary-2"><FolderOpen size={8} />{goalProjectMap[g.id].length}个项目</span>
+                <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-bold text-primary-2"><FolderOpen size={8} />{t('goals.projectCount', { count: goalProjectMap[g.id].length })}</span>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -233,15 +233,15 @@ export default function GoalsContent() {
             <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-text-3">{t('goals.keyResults')}</div>
             {editGoalData.key_results.map((kr, i) => (
               <div key={i} className="flex items-center gap-2 mb-2 flex-wrap">
-                <input className={inputCls} aria-label={`关键结果 ${i + 1}`} value={typeof kr === 'string' ? kr : String((kr as Record<string, unknown>).text ?? (kr as Record<string, unknown>).title ?? '')} placeholder={`KR ${i + 1}`} onChange={(e) => handleKrTextChange(i, e.target.value)} />
+                <input className={inputCls} aria-label={t('goals.keyResultN', { n: i + 1 })} value={typeof kr === 'string' ? kr : String((kr as Record<string, unknown>).text ?? (kr as Record<string, unknown>).title ?? '')} placeholder={`KR ${i + 1}`} onChange={(e) => handleKrTextChange(i, e.target.value)} />
                 <button className="shrink-0 text-[10px] text-danger hover:text-danger/80" onClick={() => handleRemoveKr(i)}>{t('goals.delete')}</button>
               </div>
             ))}
-            <button className={btnSecondary} onClick={handleAddKr}>+ 添加{t('goals.keyResults')}</button>
-            {/* 关联项目 */}
+            <button className={btnSecondary} onClick={handleAddKr}>+ {t('goals.addKeyResult')}</button>
+            {/* Linked projects */}
             {editGoalData.id && (
               <div className="mt-3">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-1.5">关联项目</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-1.5">{t('goals.linkedProjects')}</div>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {(goalProjectMap[editGoalData.id] ?? []).map((p) => (
                     <span key={p.id} className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary-2">
@@ -249,11 +249,11 @@ export default function GoalsContent() {
                       <button onClick={() => { editProject(p.id, { goal_id: null }); }}><X size={8} className="hover:text-danger" /></button>
                     </span>
                   ))}
-                  {(!goalProjectMap[editGoalData.id] || goalProjectMap[editGoalData.id].length === 0) && <span className="text-[10px] text-text-3">暂无关联项目</span>}
+                  {(!goalProjectMap[editGoalData.id] || goalProjectMap[editGoalData.id].length === 0) && <span className="text-[10px] text-text-3">{t('goals.noLinkedProjects')}</span>}
                 </div>
                 {projects.filter((p) => p.goal_id !== editGoalData.id).length > 0 && (
                   <select className={inputCls} value="" onChange={(e) => { if (e.target.value) editProject(e.target.value, { goal_id: editGoalData.id! }); }}>
-                    <option value="">+ 关联项目...</option>
+                    <option value="">{t('goals.linkProject')}</option>
                     {projects.filter((p) => p.goal_id !== editGoalData.id).map((p) => (
                       <option key={p.id} value={p.id}>{p.title}</option>
                     ))}
