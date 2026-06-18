@@ -12,9 +12,9 @@ import ItemLinksPanel from '@/components/ItemLinksPanel';
 
 export interface FieldDef {
   key: string;
-  label: string;
+  label: string | (() => string);
   type: 'text' | 'textarea' | 'select' | 'number' | 'date';
-  options?: { value: string; label: string }[];
+  options?: { value: string; label: string | (() => string) }[];
   editable?: boolean; // default true
 }
 
@@ -66,27 +66,28 @@ export default function ItemDetailModal<T extends Record<string, unknown> = Reco
       }>
       <form id="item-detail-form" onSubmit={handleSubmit} className="space-y-0">
         {fields.map((f) => {
+          const fLabel = typeof f.label === 'function' ? f.label() : f.label;
           const val = data[f.key] ?? '';
           if (f.editable === false) {
             return (
-              <ModalField key={f.key} label={f.label}>
+              <ModalField key={f.key} label={fLabel}>
                 <div className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-text-3">{String(val)}</div>
               </ModalField>
             );
           }
           if (f.type === 'textarea') {
             return (
-              <ModalField key={f.key} label={f.label}>
+              <ModalField key={f.key} label={fLabel}>
                 <textarea name={f.key} defaultValue={String(val)} rows={3} className={inputCls + ' min-h-[60px]'} />
               </ModalField>
             );
           }
           if (f.type === 'select') {
             return (
-              <ModalField key={f.key} label={f.label}>
+              <ModalField key={f.key} label={fLabel}>
                 <select name={f.key} defaultValue={String(val)} className={inputCls}>
                   {f.options?.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value}>{typeof o.label === 'function' ? o.label() : o.label}</option>
                   ))}
                 </select>
               </ModalField>
@@ -94,20 +95,20 @@ export default function ItemDetailModal<T extends Record<string, unknown> = Reco
           }
           if (f.type === 'number') {
             return (
-              <ModalField key={f.key} label={f.label}>
+              <ModalField key={f.key} label={fLabel}>
                 <input type="number" name={f.key} defaultValue={Number(val) || 0} className={inputCls} />
               </ModalField>
             );
           }
           if (f.type === 'date') {
             return (
-              <ModalField key={f.key} label={f.label}>
+              <ModalField key={f.key} label={fLabel}>
                 <input type="date" name={f.key} defaultValue={String(val).slice(0, 10)} className={inputCls} />
               </ModalField>
             );
           }
           return (
-            <ModalField key={f.key} label={f.label}>
+            <ModalField key={f.key} label={fLabel}>
               <input type="text" name={f.key} defaultValue={String(val)} className={inputCls} />
             </ModalField>
           );

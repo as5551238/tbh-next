@@ -8,6 +8,7 @@ import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { ContactRow } from '@/lib/dataLayer';
 import { CardSkeleton } from '@/components/Skeleton';
+import { t } from '@/lib/i18n';
 
 
 
@@ -18,11 +19,11 @@ const STATUS_STYLES: Record<string, string> = {
   offline: 'bg-text-3',
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  online: '在线',
-  busy: '忙碌',
-  away: '离开',
-  offline: '离线',
+const STATUS_LABELS: Record<string, () => string> = {
+  online: () => t('directory.statusOnline'),
+  busy: () => t('directory.statusBusy'),
+  away: () => t('directory.statusAway'),
+  offline: () => t('directory.statusOffline'),
 };
 
 const CONTACT_FIELDS: FieldDef[] = [
@@ -57,7 +58,7 @@ export default function DirectoryView() {
     await addContact({
       name: form.name.trim(),
       department: form.department || dept,
-      role: form.role || '成员',
+      role: form.role || t('directory.defaultRole'),
       email: form.email,
       phone: form.phone,
       status: form.status as ContactRow['status'],
@@ -69,20 +70,20 @@ export default function DirectoryView() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
-        <span className="text-sm font-bold">通讯录</span>
-        <span className="text-[10px] text-text-3">{contacts.length} 人</span>
-        <button onClick={createModal.openModal} className="ml-2 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ 添加</button>
+        <span className="text-sm font-bold">{t('directory.title')}</span>
+        <span className="text-[10px] text-text-3">{t('directory.contactCount', { count: contacts.length })}</span>
+        <button onClick={createModal.openModal} className="ml-2 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">+ {t('directory.add')}</button>
         <div className="ml-auto flex flex-wrap items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
           <Search size={12} className="text-text-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索联系人..."
-            aria-label="搜索联系人"
+            placeholder={t('directory.searchPlaceholder')}
+            aria-label={t('directory.searchAria')}
             className="bg-transparent text-xs text-text outline-none placeholder:text-text-3 w-40"
           />
-          {searchQuery && <button onClick={() => setSearchQuery('')} aria-label="清除搜索" className="text-text-3 hover:text-text"><X size={12} /></button>}
+          {searchQuery && <button onClick={() => setSearchQuery('')} aria-label={t('directory.clearSearchAria')} className="text-text-3 hover:text-text"><X size={12} /></button>}
         </div>
       </div>
 
@@ -92,7 +93,7 @@ export default function DirectoryView() {
         ) : (
         <>
         <div>
-          <div className="text-[9px] font-bold uppercase tracking-wider text-text-3 mb-2">团队成员</div>
+          <div className="text-[9px] font-bold uppercase tracking-wider text-text-3 mb-2">{t('directory.teamMembers')}</div>
           <div className="grid grid-cols-2 gap-2">
             {humanContacts.map((contact) => (
               <div key={contact.id} className="group rounded-xl border border-border bg-surface p-3 transition-all hover:border-border-2 hover:shadow-lg cursor-pointer"
@@ -113,12 +114,12 @@ export default function DirectoryView() {
                   <span className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold bg-surface-2 text-text-3">{contact.department}</span>
                   <span className={cn('ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-semibold',
                     contact.status === 'online' ? 'bg-success/10 text-success' : 'text-text-3'
-                  )}>{STATUS_LABELS[contact.status]}</span>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={(e) => { e.stopPropagation(); navigateTo('ai', 'main'); }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><MessageSquare size={9} />消息</button>
-                  <button onClick={(e) => { e.stopPropagation(); if (contact.phone) window.location.href = 'tel:' + contact.phone; }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Phone size={9} />电话</button>
-                  <button onClick={(e) => { e.stopPropagation(); if (contact.email) window.location.href = 'mailto:' + contact.email; }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Mail size={9} />邮件</button>
+                   )}>{STATUS_LABELS[contact.status]?.() ?? contact.status}</span>
+                 </div>
+                 <div className="flex flex-wrap gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button onClick={(e) => { e.stopPropagation(); navigateTo('ai', 'main'); }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><MessageSquare size={9} />{t('directory.msg')}</button>
+                   <button onClick={(e) => { e.stopPropagation(); if (contact.phone) window.location.href = 'tel:' + contact.phone; }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Phone size={9} />{t('directory.call')}</button>
+                   <button onClick={(e) => { e.stopPropagation(); if (contact.email) window.location.href = 'mailto:' + contact.email; }} className="flex flex-wrap items-center gap-1 rounded bg-surface-2 px-2 py-1 text-[9px] text-text-3 hover:text-text"><Mail size={9} />{t('directory.email')}</button>
                 </div>
               </div>
             ))}
@@ -128,7 +129,7 @@ export default function DirectoryView() {
         {/* AI Contacts */}
         <div>
           <div className="text-[9px] font-bold uppercase tracking-wider text-text-3 mb-2 flex flex-wrap items-center gap-1.5">
-            <span style={{ color: indColor }}>AI</span> 同事
+            <span style={{ color: indColor }}>AI</span> {t('directory.aiColleagues')}
           </div>
           <div className="grid grid-cols-2 gap-2">
             {aiContacts.map((contact) => (
@@ -143,7 +144,7 @@ export default function DirectoryView() {
                   </div>
                   <span className={cn('ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-semibold',
                     contact.status === 'online' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn'
-                  )}>{STATUS_LABELS[contact.status]}</span>
+                   )}>{STATUS_LABELS[contact.status]?.() ?? contact.status}</span>
                 </div>
               </div>
             ))}
@@ -153,45 +154,45 @@ export default function DirectoryView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="联系人详情" fields={CONTACT_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'contact', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editContact(selected.id, updated); setSelected({ ...selected, ...updated } as ContactRow); } }} onDelete={() => { if (selected) { removeContact(selected.id); detailModal.closeModal(); } }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title={t('directory.detailTitle')} fields={CONTACT_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'contact', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { editContact(selected.id, updated); setSelected({ ...selected, ...updated } as ContactRow); } }} onDelete={() => { if (selected) { removeContact(selected.id); detailModal.closeModal(); } }} />
 
       {/* Create Contact Modal */}
       {createModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={createModal.closeModal}>
           <div className="w-96 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold">添加联系人</span>
-              <button onClick={createModal.closeModal} aria-label="关闭" className="text-text-3 hover:text-text"><X size={16} /></button>
+              <span className="text-sm font-bold">{t('directory.addContact')}</span>
+              <button onClick={createModal.closeModal} aria-label={t('directory.closeAria')} className="text-text-3 hover:text-text"><X size={16} /></button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] text-text-3 mb-1 block">姓名 *</label>
-                <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="输入姓名" className={inputCls + ' w-full'} />
+                <label className="text-[10px] text-text-3 mb-1 block">{t('directory.nameRequired')}</label>
+                <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={t('directory.namePlaceholder')} className={inputCls + ' w-full'} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-text-3 mb-1 block">部门</label>
-                  <input value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} placeholder="部门" className={inputCls + ' w-full'} />
+                  <label className="text-[10px] text-text-3 mb-1 block">{t('directory.deptLabel')}</label>
+                  <input value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} placeholder={t('directory.deptPlaceholder')} className={inputCls + ' w-full'} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-text-3 mb-1 block">职位</label>
-                  <input value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} placeholder="职位" className={inputCls + ' w-full'} />
+                  <label className="text-[10px] text-text-3 mb-1 block">{t('directory.roleLabel')}</label>
+                  <input value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} placeholder={t('directory.rolePlaceholder')} className={inputCls + ' w-full'} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-text-3 mb-1 block">邮箱</label>
-                  <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="邮箱" className={inputCls + ' w-full'} />
+                  <label className="text-[10px] text-text-3 mb-1 block">{t('directory.emailLabel')}</label>
+                  <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder={t('directory.emailPlaceholder')} className={inputCls + ' w-full'} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-text-3 mb-1 block">电话</label>
-                  <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="电话" className={inputCls + ' w-full'} />
+                  <label className="text-[10px] text-text-3 mb-1 block">{t('directory.phoneLabel')}</label>
+                  <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder={t('directory.phonePlaceholder')} className={inputCls + ' w-full'} />
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-4">
-              <button onClick={handleCreate} disabled={!form.name.trim()} className={`${btnPrimary} disabled:opacity-40`}>添加</button>
-              <button onClick={createModal.closeModal} className={btnSecondary}>取消</button>
+              <button onClick={handleCreate} disabled={!form.name.trim()} className={`${btnPrimary} disabled:opacity-40`}>{t('directory.addBtn')}</button>
+              <button onClick={createModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
             </div>
           </div>
         </div>

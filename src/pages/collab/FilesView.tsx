@@ -8,6 +8,7 @@ import ItemDetailModal from '@/components/ItemDetailModal';
 import type { FieldDef } from '@/components/ItemDetailModal';
 import type { SharedFileRow } from '@/lib/dataLayer';
 import { CardSkeleton } from '@/components/Skeleton';
+import { useLocale, t } from '@/lib/i18n';
 
 
 
@@ -30,12 +31,13 @@ const FILE_COLORS: Record<string, string> = {
 };
 
 const FILE_FIELDS: FieldDef[] = [
-  { key: 'name', label: '文件名', type: 'text', editable: true },
-  { key: 'type', label: '类型', type: 'text', editable: false },
-  { key: 'uploaded_by', label: '上传者', type: 'text', editable: false },
+  { key: 'name', label: () => t('files.fieldFileName'), type: 'text', editable: true },
+  { key: 'type', label: () => t('files.fieldType'), type: 'text', editable: false },
+  { key: 'uploaded_by', label: () => t('files.fieldUploadedBy'), type: 'text', editable: false },
 ];
 
 export default function FilesView() {
+  const { t } = useLocale();
   const { files, setFiles, loading, addFile, editFile, removeFile } = useSharedFiles();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,7 +81,7 @@ export default function FilesView() {
       name: pendingFile.name,
       type: fileType,
       size: sizeStr,
-      uploaded_by: '我',
+      uploaded_by: t('files.me'),
       uploaded_at: new Date().toLocaleDateString('zh-CN'),
       downloads: 0,
     } as Partial<SharedFileRow>);
@@ -90,8 +92,8 @@ export default function FilesView() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
-        <span className="text-sm font-bold">文件共享</span>
-        <span className="text-[10px] text-text-3">{files.length} 个文件</span>
+        <span className="text-sm font-bold">{t('files.title')}</span>
+        <span className="text-[10px] text-text-3">{t('files.fileCount', { count: files.length })}</span>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5">
@@ -100,17 +102,17 @@ export default function FilesView() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索文件..."
-              aria-label="搜索文件"
+              placeholder={t('files.searchPlaceholder')}
+              aria-label={t('files.searchAria')}
               className="bg-transparent text-xs text-text outline-none placeholder:text-text-3 w-32"
             />
           </div>
           <div className="flex rounded-lg border border-border overflow-hidden">
-            <button onClick={() => setViewMode('list')} aria-label="列表视图" className={cn('p-1.5', viewMode === 'list' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><List size={14} /></button>
-            <button onClick={() => setViewMode('grid')} aria-label="网格视图" className={cn('p-1.5', viewMode === 'grid' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><Grid size={14} /></button>
+            <button onClick={() => setViewMode('list')} aria-label={t('files.listViewAria')} className={cn('p-1.5', viewMode === 'list' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><List size={14} /></button>
+            <button onClick={() => setViewMode('grid')} aria-label={t('files.gridViewAria')} className={cn('p-1.5', viewMode === 'grid' ? 'bg-primary/10 text-primary-2' : 'text-text-3')}><Grid size={14} /></button>
           </div>
           <button onClick={uploadModal.openModal} className="flex flex-wrap items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[10px] font-semibold text-primary-2 hover:bg-primary/20 transition-colors">
-            <Upload size={12} />上传
+            <Upload size={12} />{t('files.upload')}
           </button>
         </div>
       </div>
@@ -123,7 +125,7 @@ export default function FilesView() {
         return (
           <div className="mx-4 mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-surface-2 px-4 py-2.5">
             <HardDrive size={14} className="text-text-3" />
-            <span className="text-[10px] text-text-3">已使用 {usedGB} GB / {totalGB} GB</span>
+            <span className="text-[10px] text-text-3">{t('files.storageUsed', { used: usedGB, total: totalGB })}</span>
             <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
               <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
             </div>
@@ -134,7 +136,7 @@ export default function FilesView() {
       <div className="flex-1 overflow-y-auto p-3 md:p-4">
         {/* Breadcrumb */}
         <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-text-3 mb-3">
-          <span className="text-primary-2 cursor-pointer">全部文件</span>
+          <span className="text-primary-2 cursor-pointer">{t('files.allFiles')}</span>
         </div>
 
         {loading ? (
@@ -143,7 +145,7 @@ export default function FilesView() {
         viewMode === 'list' ? (
           <div className="space-y-1">
             <div className="grid grid-cols-[1fr_80px_100px_60px_60px] gap-2 px-3 py-1.5 text-[9px] font-bold uppercase text-text-3">
-              <span>文件名</span><span>大小</span><span>上传者</span><span>时间</span><span>下载</span>
+              <span>{t('files.headerFileName')}</span><span>{t('files.headerSize')}</span><span>{t('files.headerUploadedBy')}</span><span>{t('files.headerTime')}</span><span>{t('files.headerDownloads')}</span>
             </div>
             {filtered.map((file) => {
               const Icon = FILE_ICONS[file.type] ?? File;
@@ -184,28 +186,28 @@ export default function FilesView() {
         )}
       </div>
 
-      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title="文件详情" fields={FILE_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'file', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { const updatedFile = { ...selected, ...updated } as SharedFileRow; setSelected(updatedFile); editFile(selected.id, updatedFile); } }} onDelete={() => { if (selected) { removeFile(selected.id); setSelected(null); detailModal.closeModal(); } }} />
+      <ItemDetailModal open={detailModal.open} onClose={detailModal.closeModal} title={t('files.detailTitle')} fields={FILE_FIELDS} data={selected as unknown as Record<string, unknown> | null} commentTarget={selected?.id ? { type: 'file', id: String(selected.id) } : null} onSave={(updated) => { if (selected) { const updatedFile = { ...selected, ...updated } as SharedFileRow; setSelected(updatedFile); editFile(selected.id, updatedFile); } }} onDelete={() => { if (selected) { removeFile(selected.id); setSelected(null); detailModal.closeModal(); } }} />
 
       {/* Upload Modal */}
       {uploadModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={uploadModal.closeModal}>
           <div className="w-80 rounded-xl border border-border bg-surface-2 p-3 md:p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold">上传文件</span>
-              <button onClick={uploadModal.closeModal} aria-label="关闭" className="text-text-3 hover:text-text"><X size={16} /></button>
+              <span className="text-sm font-bold">{t('files.uploadTitle')}</span>
+              <button onClick={uploadModal.closeModal} aria-label={t('files.close')} className="text-text-3 hover:text-text"><X size={16} /></button>
             </div>
             <div className="mb-3">
               <button onClick={() => fileInputRef.current?.click()} className="flex flex-wrap w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-6 text-xs text-text-3 hover:border-primary/40 hover:text-primary-2 transition-colors">
-                <Upload size={16} />{pendingFile ? pendingFile.name : '点击选择文件'}
+                <Upload size={16} />{pendingFile ? pendingFile.name : t('files.selectFile')}
               </button>
               {pendingFile && <div className="mt-1.5 text-[10px] text-text-3">{formatSize(pendingFile.size)}</div>}
             </div>
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
             <div className="flex flex-wrap items-center gap-2">
               <button onClick={handleUpload} disabled={!pendingFile} className={`${btnPrimary} disabled:opacity-40`}>
-                <Check size={12} className="inline mr-1" />确认上传
+                <Check size={12} className="inline mr-1" />{t('files.confirmUpload')}
               </button>
-              <button onClick={uploadModal.closeModal} className={btnSecondary}>取消</button>
+              <button onClick={uploadModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
             </div>
           </div>
         </div>

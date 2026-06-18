@@ -79,7 +79,7 @@ export default function ChannelsView() {
     if (channelsLoaded && channels.length > 0 && !activeCh) {
       setActiveCh(channels[0]);
       setMessages([
-        { id: 1, role: 'system', sender: '系统', text: `欢迎来到「${channels[0]}」频道，当前行业：${industry} · ${dept}`, time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) },
+        { id: 1, role: 'system', sender: t('channels.systemSender'), text: t('channels.welcomeMsg', { channel: channels[0], industry, dept }), time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) },
       ]);
     }
   }, [channelsLoaded, channels, activeCh, industry, dept]);
@@ -137,7 +137,7 @@ export default function ChannelsView() {
   async function handleSend() {
     if (!msgInput.trim() || isTyping) return;
     const now = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-    const userMsg: ChatMsg = { id: Date.now(), role: 'user', sender: user?.name ?? '我', text: msgInput.trim(), time: now };
+    const userMsg: ChatMsg = { id: Date.now(), role: 'user', sender: user?.name ?? t('channels.me'), text: msgInput.trim(), time: now };
 
     setMessages((prev) => [...prev, userMsg]);
 
@@ -145,7 +145,7 @@ export default function ChannelsView() {
       channel: activeCh,
       content: msgInput.trim(),
       sender_type: 'user',
-      sender_name: user?.name ?? '我',
+      sender_name: user?.name ?? t('channels.me'),
     });
 
     setMsgInput('');
@@ -154,7 +154,7 @@ export default function ChannelsView() {
 
     const systemPrompt = buildSystemPrompt(cell, industry, dept, undefined, industryRaw, deptRaw);
     const aiMessages: ChatMessage[] = [
-      { role: 'system', content: `${systemPrompt}\n\n你正在「#${activeCh}」频道中作为AI同事与团队成员对话。语气像一位资深同事，简洁专业。` },
+      { role: 'system', content: `${systemPrompt}\n\n${t('channels.aiSystemPrompt', { channel: activeCh })}` },
       ...messages
         .filter((m) => m.role === 'user' || m.role === 'ai')
         .slice(-10)
@@ -171,7 +171,7 @@ export default function ChannelsView() {
       const aiMsg: ChatMsg = {
         id: Date.now() + 1,
         role: 'ai',
-        sender: 'AI同事',
+        sender: t('channels.aiColleague'),
         text: res.text,
         time: now,
       };
@@ -181,12 +181,12 @@ export default function ChannelsView() {
         channel: activeCh,
         content: res.text,
         sender_type: 'ai',
-        sender_name: 'AI同事',
+        sender_name: t('channels.aiColleague'),
       });
     } catch {
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: 'system', sender: '系统', text: 'AI暂时无法回复，请稍后再试。', time: now },
+        { id: Date.now() + 1, role: 'system', sender: t('channels.systemSender'), text: t('channels.aiUnavailable'), time: now },
       ]);
     } finally {
       setIsTyping(false);
@@ -198,7 +198,7 @@ export default function ChannelsView() {
     if (!inviteMemberId.trim()) return;
     setInviteError('');
     const currentRow = channelRows.find((r) => r.name === activeCh);
-    if (!currentRow) { setInviteError('频道信息未找到'); return; }
+    if (!currentRow) { setInviteError(t('channels.channelNotFound')); return; }
     try {
       const newMember = await addChannelMember(currentRow.id, inviteMemberId.trim());
       if (newMember) {
@@ -208,7 +208,7 @@ export default function ChannelsView() {
       setMemberSearch('');
       inviteModal.closeModal();
     } catch (err: unknown) {
-      setInviteError(err instanceof Error ? err.message : '邀请失败');
+      setInviteError(err instanceof Error ? err.message : t('channels.inviteFailed'));
     }
   }
 
@@ -231,7 +231,7 @@ export default function ChannelsView() {
       setChannels((prev) => [...prev, name]);
     }
     setActiveCh(name);
-    setMessages((prev) => [...prev, { id: Date.now(), role: 'system' as const, sender: '系统', text: `频道「#${name}」已创建`, time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }]);
+    setMessages((prev) => [...prev, { id: Date.now(), role: 'system' as const, sender: t('channels.systemSender'), text: t('channels.channelCreated', { channel: name }), time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }]);
     setNewChName('');
     createChModal.closeModal();
   }
@@ -282,7 +282,7 @@ export default function ChannelsView() {
           ))}
           <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs text-text-2">
             <User size={13} className="shrink-0 text-text-3" />
-            <span>{user?.name ?? '我'}</span>
+            <span>{user?.name ?? t('channels.me')}</span>
             <Circle size={6} className="ml-auto fill-success text-success" />
           </div>
         </div>

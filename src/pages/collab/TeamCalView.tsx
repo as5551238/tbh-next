@@ -6,8 +6,9 @@ import { useToast, ToastOverlay } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Clock, MapPin, Users, Plus, Trash2, Edit3 } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
+import { t } from '@/lib/i18n';
 
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+const WEEKDAYS = () => [t('teamCal.sun'), t('teamCal.mon'), t('teamCal.tue'), t('teamCal.wed'), t('teamCal.thu'), t('teamCal.fri'), t('teamCal.sat')];
 
 interface CalEvent {
   time: string;
@@ -83,7 +84,7 @@ export default function TeamCalView() {
     if (!form.title.trim()) return;
     await addEvent({ title: form.title, type: form.type, start_date: form.start_date, description: form.description } as Partial<ScheduleEventRow>);
     addModal.closeModal();
-    success(`日程"${form.title}"已创建`);
+    success(t('teamCal.eventCreated', { title: form.title }));
   };
 
   const handleEditOpen = (evt: typeof events[0]) => {
@@ -101,13 +102,13 @@ export default function TeamCalView() {
     if (!editId || !editForm.title.trim()) return;
     await editEvent(editId, editForm);
     editModal.closeModal();
-    success('日程已更新');
+    success(t('teamCal.eventUpdated'));
   };
 
   const handleDelete = async (id: string) => {
     await removeEvent(id);
     editModal.closeModal();
-    success('日程已删除');
+    success(t('teamCal.eventDeleted'));
   };
 
   return (
@@ -118,16 +119,16 @@ export default function TeamCalView() {
       <div className="flex flex-1 flex-col min-w-0 overflow-y-auto p-3 md:p-4">
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <ChevronLeft size={16} className="text-text-3 cursor-pointer hover:text-text" onClick={prevMonth} />
-          <span className="text-sm font-bold">{viewYear}年{viewMonth + 1}月</span>
+          <span className="text-sm font-bold">{t('teamCal.monthTitle', { year: viewYear, month: viewMonth + 1 })}</span>
           <ChevronRight size={16} className="text-text-3 cursor-pointer hover:text-text" onClick={nextMonth} />
-          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary-2">今天</span>
+          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary-2">{t('teamCal.today')}</span>
           <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={handleAddOpen}>
-            <Plus size={12} />新建日程
+            <Plus size={12} />{t('teamCal.newEvent')}
           </button>
         </div>
 
         <div className="grid grid-cols-7 gap-1 mb-1">
-          {WEEKDAYS.map((d) => (
+          {WEEKDAYS().map((d) => (
             <div key={d} className="text-center text-[9px] font-bold uppercase text-text-3 py-1">{d}</div>
           ))}
         </div>
@@ -168,12 +169,12 @@ export default function TeamCalView() {
       {/* Selected Day Events */}
       <div className="flex w-72 shrink-0 flex-col border-l border-border bg-surface overflow-y-auto">
         <div className="border-b border-border px-4 py-3 flex items-center">
-          <span className="text-xs font-bold">{viewMonth + 1}月{selectedDay}日</span>
-          <span className="ml-2 text-[10px] text-text-3">{todayDisplayEvents.length} 项</span>
+          <span className="text-xs font-bold">{t('teamCal.dayTitle', { month: viewMonth + 1, day: selectedDay })}</span>
+          <span className="ml-2 text-[10px] text-text-3">{t('teamCal.eventCount', { count: todayDisplayEvents.length })}</span>
         </div>
         <div className="p-3 space-y-2">
           {todayDisplayEvents.length === 0 ? (
-            <div className="py-8 text-center text-xs text-text-3">当日无日程安排</div>
+            <div className="py-8 text-center text-xs text-text-3">{t('teamCal.noEvents')}</div>
           ) : todayDisplayEvents.map((evt, i) => {
             const row = selectedEvents[i];
             return (
@@ -187,7 +188,7 @@ export default function TeamCalView() {
                   <span className={cn('ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-bold',
                     evt.type === 'meeting' ? 'bg-primary/10 text-primary-2' : evt.type === 'deadline' ? 'bg-danger/10 text-danger' : 'bg-warn/10 text-warn'
                   )}>
-                    {evt.type === 'meeting' ? '会议' : evt.type === 'deadline' ? '截止' : '提醒'}
+                    {evt.type === 'meeting' ? t('teamCal.typeMeeting') : evt.type === 'deadline' ? t('teamCal.typeDeadline') : t('teamCal.typeReminder')}
                   </span>
                   {row && (
                     <Edit3 size={10} className="text-text-3 hover:text-text" />
@@ -204,58 +205,58 @@ export default function TeamCalView() {
       </div>
 
       {/* Add Modal */}
-      <Modal open={addModal.open} onClose={addModal.closeModal} title="新建日程"
+      <Modal open={addModal.open} onClose={addModal.closeModal} title={t('teamCal.newEvent')}
         footer={
           <div className="flex flex-wrap gap-2">
-            <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleAddSave} disabled={!form.title.trim()}>创建</button>
+            <button className={btnSecondary} onClick={addModal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleAddSave} disabled={!form.title.trim()}>{t('common.create')}</button>
           </div>
         }>
-        <ModalField label="日程标题">
-          <input className={inputCls} placeholder="输入日程标题" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+        <ModalField label={t('teamCal.eventTitle')}>
+          <input className={inputCls} placeholder={t('teamCal.eventTitlePlaceholder')} value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="类型">
+        <ModalField label={t('teamCal.typeLabel')}>
           <select className={inputCls} value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
-            <option value="meeting">会议</option>
-            <option value="deadline">截止</option>
-            <option value="reminder">提醒</option>
+            <option value="meeting">{t('teamCal.typeMeeting')}</option>
+            <option value="deadline">{t('teamCal.typeDeadline')}</option>
+            <option value="reminder">{t('teamCal.typeReminder')}</option>
           </select>
         </ModalField>
-        <ModalField label="开始时间">
+        <ModalField label={t('teamCal.startTime')}>
           <input className={inputCls} type="datetime-local" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
         </ModalField>
-        <ModalField label="描述/地点">
-          <input className={inputCls} placeholder="会议室或描述" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
+        <ModalField label={t('teamCal.descLocation')}>
+          <input className={inputCls} placeholder={t('teamCal.descLocationPlaceholder')} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
         </ModalField>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑日程"
+      <Modal open={editModal.open} onClose={editModal.closeModal} title={t('teamCal.editEvent')}
         footer={
           <div className="flex flex-wrap gap-2">
             {editId && (
               <button className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={() => handleDelete(editId)}>
-                <Trash2 size={10} />删除
+                <Trash2 size={10} />{t('common.delete')}
               </button>
             )}
-            <button className={btnSecondary} onClick={editModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleEditSave} disabled={!editForm.title.trim()}>保存</button>
+            <button className={btnSecondary} onClick={editModal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleEditSave} disabled={!editForm.title.trim()}>{t('teamCal.save')}</button>
           </div>
         }>
-        <ModalField label="日程标题">
+        <ModalField label={t('teamCal.eventTitle')}>
           <input className={inputCls} value={editForm.title} onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="类型">
+        <ModalField label={t('teamCal.typeLabel')}>
           <select className={inputCls} value={editForm.type} onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value }))}>
-            <option value="meeting">会议</option>
-            <option value="deadline">截止</option>
-            <option value="reminder">提醒</option>
+            <option value="meeting">{t('teamCal.typeMeeting')}</option>
+            <option value="deadline">{t('teamCal.typeDeadline')}</option>
+            <option value="reminder">{t('teamCal.typeReminder')}</option>
           </select>
         </ModalField>
-        <ModalField label="开始时间">
+        <ModalField label={t('teamCal.startTime')}>
           <input className={inputCls} type="datetime-local" value={editForm.start_date} onChange={(e) => setEditForm((p) => ({ ...p, start_date: e.target.value }))} />
         </ModalField>
-        <ModalField label="描述/地点">
+        <ModalField label={t('teamCal.descLocation')}>
           <input className={inputCls} value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} />
         </ModalField>
       </Modal>
