@@ -5,12 +5,20 @@ import { Modal, useModal, btnPrimary, btnSecondary } from '@/components/Modal';
 import { Bell, Check, Trash2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { trackEvent } from '@/lib/behaviorTracker';
+import { t } from '@/lib/i18n';
 
 const TYPE_STYLES: Record<string, string> = {
   alert: 'bg-danger/10 text-danger',
   mention: 'bg-primary/10 text-primary-2',
   update: 'bg-accent/10 text-accent',
   system: 'bg-surface-2 text-text-3',
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  alert: 'notifications.typeAlert',
+  mention: 'notifications.typeMention',
+  update: 'notifications.typeUpdate',
+  system: 'notifications.typeSystem',
 };
 
 export default function NotificationsContent() {
@@ -33,7 +41,7 @@ export default function NotificationsContent() {
 
   function handleMarkAllRead() {
     setConfirmAction({
-      label: '将所有通知标记为已读',
+      label: t('notifications.markAllReadConfirm'),
       onConfirm: () => {
         markAllRead();
         confirmModal.closeModal();
@@ -43,23 +51,25 @@ export default function NotificationsContent() {
   }
 
   const displayMsg = (n: NotificationRow) => n.message ?? '';
-  const displaySource = (n: NotificationRow) => (n as unknown as Record<string, unknown>).source as string ?? n.related_type ?? '系统';
+  const displaySource = (n: NotificationRow) => (n as unknown as Record<string, unknown>).source as string ?? n.related_type ?? t('notifications.defaultSource');
   const displayTime = (n: NotificationRow) => (n as unknown as Record<string, unknown>).time as string ?? (n.created_at ? new Date(n.created_at).toLocaleString('zh-CN') : '');
+
+  const renderTypeLabel = (type: string) => t(TYPE_LABELS[type] ?? TYPE_LABELS.system);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <Bell size={16} className="text-primary-2" />
-        <span className="text-sm font-bold">通知</span>
+        <span className="text-sm font-bold">{t('notifications.title')}</span>
         {unreadCount > 0 && <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">{unreadCount}</span>}
         <div className="ml-auto flex flex-wrap gap-2">
           {(['all', 'unread', 'alert'] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)}
               className={cn('rounded-lg px-2.5 py-1 text-[10px] font-semibold transition-colors', filter === f ? 'bg-primary/10 text-primary-2' : 'text-text-3 hover:bg-surface-2')}
-            >{f === 'all' ? '全部' : f === 'unread' ? '未读' : '预警'}</button>
+            >{f === 'all' ? t('notifications.filterAll') : f === 'unread' ? t('notifications.filterUnread') : t('notifications.filterAlert')}</button>
           ))}
-          <button onClick={handleMarkAllRead} className="rounded-lg px-2.5 py-1 text-[10px] text-text-3 hover:bg-surface-2">全部已读</button>
-          {notifications.length > 0 && <button onClick={() => { setConfirmAction({ label: '将清空所有通知，此操作不可恢复', onConfirm: () => { clearAll(); confirmModal.closeModal(); } }); confirmModal.openModal(); }} className="rounded-lg px-2.5 py-1 text-[10px] text-danger hover:bg-danger/10">清空全部</button>}
+          <button onClick={handleMarkAllRead} className="rounded-lg px-2.5 py-1 text-[10px] text-text-3 hover:bg-surface-2">{t('notifications.markAllRead')}</button>
+          {notifications.length > 0 && <button onClick={() => { setConfirmAction({ label: t('notifications.clearAllConfirm'), onConfirm: () => { clearAll(); confirmModal.closeModal(); } }); confirmModal.openModal(); }} className="rounded-lg px-2.5 py-1 text-[10px] text-danger hover:bg-danger/10">{t('notifications.clearAll')}</button>}
         </div>
       </div>
 
@@ -70,13 +80,13 @@ export default function NotificationsContent() {
           <div key={notif.id} onClick={() => openDetail(notif)} className={cn('group rounded-xl border border-border bg-surface p-4 transition-all hover:shadow-lg cursor-pointer', !notif.read && 'border-l-2 border-l-primary')}>
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold', TYPE_STYLES[notif.type] ?? TYPE_STYLES.system)}>
-                {notif.type === 'alert' ? '预警' : notif.type === 'mention' ? '@我' : notif.type === 'update' ? '更新' : '系统'}
+                {renderTypeLabel(notif.type)}
               </span>
               <span className="text-xs font-semibold text-text">{notif.title}</span>
               {!notif.read && <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
               <div className="ml-auto flex flex-wrap gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                {!notif.read && <button onClick={() => markRead(notif.id)} className="rounded p-1 text-text-3 hover:text-success" aria-label="标记已读"><Check size={12} /></button>}
-                <button onClick={() => { setConfirmAction({ label: '确认删除此通知？', onConfirm: () => { removeNotification(notif.id); trackEvent('notification_dismiss', { id: notif.id }); confirmModal.closeModal(); } }); confirmModal.openModal(); }} className="rounded p-1 text-text-3 hover:text-danger" aria-label="删除"><Trash2 size={12} /></button>
+                {!notif.read && <button onClick={() => markRead(notif.id)} className="rounded p-1 text-text-3 hover:text-success" aria-label={t('notifications.markReadAria')}><Check size={12} /></button>}
+                <button onClick={() => { setConfirmAction({ label: t('notifications.deleteConfirm'), onConfirm: () => { removeNotification(notif.id); trackEvent('notification_dismiss', { id: notif.id }); confirmModal.closeModal(); } }); confirmModal.openModal(); }} className="rounded p-1 text-text-3 hover:text-danger" aria-label={t('notifications.deleteAria')}><Trash2 size={12} /></button>
               </div>
             </div>
             <p className="text-[11px] text-text-2 leading-relaxed">{displayMsg(notif)}</p>
@@ -89,12 +99,12 @@ export default function NotificationsContent() {
         ))}
       </div>
 
-      <Modal open={detailModal.open} onClose={detailModal.closeModal} title="通知详情"
+      <Modal open={detailModal.open} onClose={detailModal.closeModal} title={t('notifications.detailTitle')}
         footer={
           activeNotif ? (
             <>
-              <button onClick={() => { if (activeNotif) { removeNotification(activeNotif.id); detailModal.closeModal(); } }} className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10">删除</button>
-              <button onClick={detailModal.closeModal} className={btnPrimary}>关闭</button>
+              <button onClick={() => { if (activeNotif) { removeNotification(activeNotif.id); detailModal.closeModal(); } }} className="mr-auto rounded-lg px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/10">{t('common.delete')}</button>
+              <button onClick={detailModal.closeModal} className={btnPrimary}>{t('common.close')}</button>
             </>
           ) : undefined
         }>
@@ -102,9 +112,9 @@ export default function NotificationsContent() {
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold', TYPE_STYLES[activeNotif.type] ?? TYPE_STYLES.system)}>
-                {activeNotif.type === 'alert' ? '预警' : activeNotif.type === 'mention' ? '@我' : activeNotif.type === 'update' ? '更新' : '系统'}
+                {renderTypeLabel(activeNotif.type)}
               </span>
-              {!activeNotif.read && <span className="text-[10px] text-primary-2 font-semibold">未读</span>}
+              {!activeNotif.read && <span className="text-[10px] text-primary-2 font-semibold">{t('notifications.unread')}</span>}
             </div>
             <p className="text-sm font-semibold text-text">{activeNotif.title}</p>
             <p className="text-xs text-text-2 leading-relaxed">{displayMsg(activeNotif)}</p>
@@ -113,11 +123,11 @@ export default function NotificationsContent() {
         )}
       </Modal>
 
-      <Modal open={confirmModal.open} onClose={confirmModal.closeModal} title="确认操作"
+      <Modal open={confirmModal.open} onClose={confirmModal.closeModal} title={t('notifications.confirmTitle')}
         footer={
           <>
-            <button onClick={confirmModal.closeModal} className={btnSecondary}>取消</button>
-            <button onClick={confirmAction?.onConfirm} className={btnPrimary}>确认</button>
+            <button onClick={confirmModal.closeModal} className={btnSecondary}>{t('common.cancel')}</button>
+            <button onClick={confirmAction?.onConfirm} className={btnPrimary}>{t('common.confirm')}</button>
           </>
         }>
         <p className="text-xs text-text-2">{confirmAction?.label}</p>

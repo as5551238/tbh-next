@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { hasFeature } from '@/lib/subscription';
 import { StickyNote, Plus, Lock, Search, Pin } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
-import { t } from '@/lib/i18nCore';
+import { t } from '@/lib/i18n';
 
 const NOTE_COLORS = ['#7b6cf0', '#00d4aa', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899'];
 
@@ -26,14 +26,14 @@ export default function NotesContent() {
     const q = search.toLowerCase().trim();
     let list = notes.filter((n) => !n.pinned);
     if (q) {
-      list = list.filter((n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q) || (n.tags || []).some((t) => t.toLowerCase().includes(q)));
+      list = list.filter((n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q) || (n.tags || []).some((tag) => tag.toLowerCase().includes(q)));
     }
     return list;
   }, [notes, search]);
 
   const handleAdd = async () => {
     if (!newItem.title.trim()) return;
-    await addNote({ title: newItem.title, content: newItem.content, tags: newItem.tags.split(',').map((t) => t.trim()).filter(Boolean), color: newItem.color, pinned: newItem.pinned, member_id: null, team_id: '__default__' });
+    await addNote({ title: newItem.title, content: newItem.content, tags: newItem.tags.split(',').map((tag) => tag.trim()).filter(Boolean), color: newItem.color, pinned: newItem.pinned, member_id: null, team_id: '__default__' });
     success(t('notes.noteCreated'));
     setNewItem({ title: '', content: '', tags: '', color: NOTE_COLORS[0], pinned: false });
     addModal.closeModal();
@@ -97,7 +97,7 @@ export default function NotesContent() {
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <Pin size={12} className="text-accent" />
-            <span className="text-[11px] font-semibold text-accent">置顶</span>
+            <span className="text-[11px] font-semibold text-accent">{t('notes.pinned')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">{pinned.map(renderCard)}</div>
         </div>
@@ -107,30 +107,30 @@ export default function NotesContent() {
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-text-3">
             <StickyNote size={32} className="mb-2 opacity-30" />
-            <span className="text-xs">{search ? '无匹配笔记' : '暂无笔记'}</span>
+            <span className="text-xs">{search ? t('notes.noMatch') : t('notes.noNotes')}</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">{filtered.map(renderCard)}</div>
         )}
       </div>
 
-      <Modal open={addModal.open} onClose={addModal.closeModal} title="新建笔记"
+      <Modal open={addModal.open} onClose={addModal.closeModal} title={t('notes.newTitle')}
         footer={
           <div className="flex flex-wrap gap-2">
-            <button className={btnSecondary} onClick={addModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleAdd} disabled={!newItem.title.trim()}>创建</button>
+            <button className={btnSecondary} onClick={addModal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleAdd} disabled={!newItem.title.trim()}>{t('common.create')}</button>
           </div>
         }>
-        <ModalField label="标题">
-          <input className={inputCls} placeholder="笔记标题" value={newItem.title} onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))} />
+        <ModalField label={t('notes.titleLabel')}>
+          <input className={inputCls} placeholder={t('notes.titlePlaceholder')} value={newItem.title} onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="内容">
-          <textarea className={cn(inputCls, 'min-h-[80px]')} placeholder="笔记内容" value={newItem.content} onChange={(e) => setNewItem((p) => ({ ...p, content: e.target.value }))} />
+        <ModalField label={t('notes.contentLabel')}>
+          <textarea className={cn(inputCls, 'min-h-[80px]')} placeholder={t('notes.contentPlaceholder')} value={newItem.content} onChange={(e) => setNewItem((p) => ({ ...p, content: e.target.value }))} />
         </ModalField>
-        <ModalField label="标签（逗号分隔）">
-          <input className={inputCls} placeholder="标签1, 标签2" value={newItem.tags} onChange={(e) => setNewItem((p) => ({ ...p, tags: e.target.value }))} />
+        <ModalField label={t('notes.tagsLabel')}>
+          <input className={inputCls} placeholder={t('notes.tagsPlaceholder')} value={newItem.tags} onChange={(e) => setNewItem((p) => ({ ...p, tags: e.target.value }))} />
         </ModalField>
-        <ModalField label="颜色">
+        <ModalField label={t('notes.colorLabel')}>
           <div className="flex flex-wrap items-center gap-2">
             {NOTE_COLORS.map((c) => (
               <button key={c} type="button" onClick={() => setNewItem((p) => ({ ...p, color: c }))} className={cn('h-6 w-6 rounded-full border-2 transition-all', newItem.color === c ? 'border-white scale-110' : 'border-transparent')}>
@@ -139,34 +139,34 @@ export default function NotesContent() {
             ))}
           </div>
         </ModalField>
-        <ModalField label="置顶">
+        <ModalField label={t('notes.pinnedLabel')}>
           <label className="flex flex-wrap items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={newItem.pinned} onChange={(e) => setNewItem((p) => ({ ...p, pinned: e.target.checked }))} className="accent-primary" />
-            <span className="text-[11px] text-text-3">置顶显示</span>
+            <span className="text-[11px] text-text-3">{t('notes.pinnedDisplayLabel')}</span>
           </label>
         </ModalField>
       </Modal>
 
-      <Modal open={editModal.open} onClose={editModal.closeModal} title="编辑笔记"
+      <Modal open={editModal.open} onClose={editModal.closeModal} title={t('notes.editTitle')}
         footer={
           <div className="flex flex-wrap gap-2">
-            <button className="mr-auto rounded-lg bg-danger/10 px-4 py-2 text-xs font-semibold text-danger hover:bg-danger/20 transition-colors" onClick={() => { if (selectedNote) removeNote(selectedNote.id); editModal.closeModal(); }}>删除</button>
-            <button className={btnSecondary} onClick={editModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleEdit}>保存</button>
+            <button className="mr-auto rounded-lg bg-danger/10 px-4 py-2 text-xs font-semibold text-danger hover:bg-danger/20 transition-colors" onClick={() => { if (selectedNote) removeNote(selectedNote.id); editModal.closeModal(); }}>{t('common.delete')}</button>
+            <button className={btnSecondary} onClick={editModal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleEdit}>{t('common.save')}</button>
           </div>
         }>
         {selectedNote && (
           <div className="space-y-3">
-            <ModalField label="标题">
+            <ModalField label={t('notes.titleLabel')}>
               <input className={inputCls} value={selectedNote.title} onChange={(e) => setSelectedNote((p) => p ? { ...p, title: e.target.value } : p)} />
             </ModalField>
-            <ModalField label="内容">
+            <ModalField label={t('notes.contentLabel')}>
               <textarea className={cn(inputCls, 'min-h-[80px]')} value={selectedNote.content} onChange={(e) => setSelectedNote((p) => p ? { ...p, content: e.target.value } : p)} />
             </ModalField>
-            <ModalField label="标签（逗号分隔）">
-              <input className={inputCls} value={(selectedNote.tags || []).join(', ')} onChange={(e) => setSelectedNote((p) => p ? { ...p, tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) } : p)} />
+            <ModalField label={t('notes.tagsLabel')}>
+              <input className={inputCls} value={(selectedNote.tags || []).join(', ')} onChange={(e) => setSelectedNote((p) => p ? { ...p, tags: e.target.value.split(',').map((tag) => tag.trim()).filter(Boolean) } : p)} />
             </ModalField>
-            <ModalField label="颜色">
+            <ModalField label={t('notes.colorLabel')}>
               <div className="flex flex-wrap items-center gap-2">
                 {NOTE_COLORS.map((c) => (
                   <button key={c} type="button" onClick={() => setSelectedNote((p) => p ? { ...p, color: c } : p)} className={cn('h-6 w-6 rounded-full border-2 transition-all', selectedNote.color === c ? 'border-white scale-110' : 'border-transparent')}>
@@ -175,10 +175,10 @@ export default function NotesContent() {
                 ))}
               </div>
             </ModalField>
-            <ModalField label="置顶">
+            <ModalField label={t('notes.pinnedLabel')}>
               <label className="flex flex-wrap items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={selectedNote.pinned} onChange={(e) => setSelectedNote((p) => p ? { ...p, pinned: e.target.checked } : p)} className="accent-primary" />
-                <span className="text-[11px] text-text-3">置顶显示</span>
+                <span className="text-[11px] text-text-3">{t('notes.pinnedDisplayLabel')}</span>
               </label>
             </ModalField>
           </div>

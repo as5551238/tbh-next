@@ -14,6 +14,7 @@ import { useTasks, useGoals, useActionItems } from '@/hooks/useMatrix';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, Clock, AlertTriangle, Target, Zap, ListTodo } from 'lucide-react';
+import { t } from '@/lib/i18n';
 
 interface TaskCardProps {
   title: string;
@@ -37,7 +38,7 @@ function TaskCard({ title, status, priority, dueDate, goalTitle }: TaskCardProps
         {dueDate && (
           <span className={cn('flex items-center gap-0.5', isOverdue && 'text-danger font-semibold')}>
             <Clock size={10} />
-            {isOverdue ? '逾期' : dueDate}
+            {isOverdue ? t('myWork.overdue') : dueDate}
           </span>
         )}
         {goalTitle && (
@@ -78,13 +79,13 @@ export default function MyWorkView() {
   // Filter tasks assigned to me
   const myTasks = useMemo(() => {
     if (!user?.id) return tasks.slice(0, 10);
-    return tasks.filter((t) => t.assignee_id === user.id || t.leader_id === user.id);
+    return tasks.filter((item) => item.assignee_id === user.id || item.leader_id === user.id);
   }, [tasks, user?.id]);
 
-  const todayTasks = useMemo(() => myTasks.filter((t) => t.due_date === today && !t.done), [myTasks, today]);
-  const inProgressTasks = useMemo(() => myTasks.filter((t) => t.status === 'in_progress' && !t.done), [myTasks]);
-  const doneTasks = useMemo(() => myTasks.filter((t) => t.done).slice(0, 5), [myTasks]);
-  const overdueTasks = useMemo(() => myTasks.filter((t) => !t.done && t.due_date && t.due_date < today && t.status !== 'cancelled'), [myTasks, today]);
+  const todayTasks = useMemo(() => myTasks.filter((item) => item.due_date === today && !item.done), [myTasks, today]);
+  const inProgressTasks = useMemo(() => myTasks.filter((item) => item.status === 'in_progress' && !item.done), [myTasks]);
+  const doneTasks = useMemo(() => myTasks.filter((item) => item.done).slice(0, 5), [myTasks]);
+  const overdueTasks = useMemo(() => myTasks.filter((item) => !item.done && item.due_date && item.due_date < today && item.status !== 'cancelled'), [myTasks, today]);
   const myActionItems = useMemo(() => actionItems.filter((a) => a.status === 'open' || a.status === 'in_progress').slice(0, 5), [actionItems]);
 
   const goalMap = useMemo(() => {
@@ -97,8 +98,8 @@ export default function MyWorkView() {
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-bold text-text">我的工作</h1>
-        <p className="text-xs text-text-3 mt-0.5">聚焦你的任务和目标进展</p>
+        <h1 className="text-lg font-bold text-text">{t('myWork.title')}</h1>
+        <p className="text-xs text-text-3 mt-0.5">{t('myWork.subtitle')}</p>
       </div>
 
       {/* 今日3件事 — 集中精力最高优先级任务 */}
@@ -106,15 +107,15 @@ export default function MyWorkView() {
         <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-primary-2 mb-2.5">
             <Zap size={14} />
-            今日3件事
+            {t('myWork.todayTop3')}
           </div>
           <div className="space-y-1.5">
-            {todayTasks.slice(0, 3).map((t, i) => (
-              <div key={t.id} className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2">
+            {todayTasks.slice(0, 3).map((item, i) => (
+              <div key={item.id} className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary-2">{i + 1}</span>
-                <span className="text-xs font-medium text-text flex-1 truncate">{t.title}</span>
-                {t.priority === 'urgent' && <span className="rounded-full bg-danger/10 px-1.5 py-0.5 text-[9px] font-bold text-danger">紧急</span>}
-                {t.priority === 'high' && <span className="rounded-full bg-warn/10 px-1.5 py-0.5 text-[9px] font-bold text-warn">高优</span>}
+                <span className="text-xs font-medium text-text flex-1 truncate">{item.title}</span>
+                {item.priority === 'urgent' && <span className="rounded-full bg-danger/10 px-1.5 py-0.5 text-[9px] font-bold text-danger">{t('myWork.urgent')}</span>}
+                {item.priority === 'high' && <span className="rounded-full bg-warn/10 px-1.5 py-0.5 text-[9px] font-bold text-warn">{t('myWork.high')}</span>}
               </div>
             ))}
           </div>
@@ -126,7 +127,7 @@ export default function MyWorkView() {
         <div>
           <h2 className="text-sm font-semibold text-text mb-2 flex items-center gap-1.5">
             <Target size={14} className="text-primary-2" />
-            我的目标
+            {t('myWork.myGoals')}
           </h2>
           <div className="space-y-2">
             {goals.filter((g) => g.status === 'in_progress' || g.status === 'active').slice(0, 3).map((g) => {
@@ -150,10 +151,10 @@ export default function MyWorkView() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatCard label="今日待办" value={todayTasks.length} icon={ListTodo} color="bg-primary/10 text-primary-2" />
-        <StatCard label="进行中" value={inProgressTasks.length} icon={Clock} color="bg-warn/10 text-warn" />
-        <StatCard label="逾期" value={overdueTasks.length} icon={AlertTriangle} color="bg-danger/10 text-danger" />
-        <StatCard label="已完成" value={doneTasks.length} icon={CheckCircle2} color="bg-success/10 text-success" />
+        <StatCard label={t('myWork.todayPending')} value={todayTasks.length} icon={ListTodo} color="bg-primary/10 text-primary-2" />
+        <StatCard label={t('myWork.inProgress')} value={inProgressTasks.length} icon={Clock} color="bg-warn/10 text-warn" />
+        <StatCard label={t('myWork.overdue')} value={overdueTasks.length} icon={AlertTriangle} color="bg-danger/10 text-danger" />
+        <StatCard label={t('myWork.done')} value={doneTasks.length} icon={CheckCircle2} color="bg-success/10 text-success" />
       </div>
 
       {/* Overdue alerts */}
@@ -161,11 +162,11 @@ export default function MyWorkView() {
         <div className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-danger mb-2">
             <AlertTriangle size={13} />
-            {overdueTasks.length}个逾期任务
+            {t('myWork.overdueCount', { count: overdueTasks.length })}
           </div>
           <div className="space-y-1.5">
-            {overdueTasks.slice(0, 3).map((t) => (
-              <TaskCard key={t.id} title={t.title} status={t.status} priority={t.priority} dueDate={t.due_date} goalTitle={t.goal_id ? goalMap.get(t.goal_id) : undefined} />
+            {overdueTasks.slice(0, 3).map((item) => (
+              <TaskCard key={item.id} title={item.title} status={item.status} priority={item.priority} dueDate={item.due_date} goalTitle={item.goal_id ? goalMap.get(item.goal_id) : undefined} />
             ))}
           </div>
         </div>
@@ -176,11 +177,11 @@ export default function MyWorkView() {
         <div>
           <h2 className="text-sm font-semibold text-text mb-2 flex items-center gap-1.5">
             <ListTodo size={14} className="text-primary-2" />
-            今日待办
+            {t('myWork.todayTasks')}
           </h2>
           <div className="space-y-1.5">
-            {todayTasks.map((t) => (
-              <TaskCard key={t.id} title={t.title} status={t.status} priority={t.priority} dueDate={t.due_date} goalTitle={t.goal_id ? goalMap.get(t.goal_id) : undefined} />
+            {todayTasks.map((item) => (
+              <TaskCard key={item.id} title={item.title} status={item.status} priority={item.priority} dueDate={item.due_date} goalTitle={item.goal_id ? goalMap.get(item.goal_id) : undefined} />
             ))}
           </div>
         </div>
@@ -191,11 +192,11 @@ export default function MyWorkView() {
         <div>
           <h2 className="text-sm font-semibold text-text mb-2 flex items-center gap-1.5">
             <Clock size={14} className="text-warn" />
-            进行中
+            {t('myWork.inProgressTasks')}
           </h2>
           <div className="space-y-1.5">
-            {inProgressTasks.slice(0, 8).map((t) => (
-              <TaskCard key={t.id} title={t.title} status={t.status} priority={t.priority} dueDate={t.due_date} goalTitle={t.goal_id ? goalMap.get(t.goal_id) : undefined} />
+            {inProgressTasks.slice(0, 8).map((item) => (
+              <TaskCard key={item.id} title={item.title} status={item.status} priority={item.priority} dueDate={item.due_date} goalTitle={item.goal_id ? goalMap.get(item.goal_id) : undefined} />
             ))}
           </div>
         </div>
@@ -206,13 +207,13 @@ export default function MyWorkView() {
         <div>
           <h2 className="text-sm font-semibold text-text mb-2 flex items-center gap-1.5">
             <Zap size={14} className="text-accent" />
-            待办行动项
+            {t('myWork.actionItems')}
           </h2>
           <div className="space-y-1.5">
             {myActionItems.map((a) => (
               <div key={a.id} className="rounded-lg border border-border bg-surface-2 px-3 py-2">
                 <div className="text-xs text-text">{a.title}</div>
-                <div className="text-[10px] text-text-3 mt-0.5">优先级: {a.priority} / 状态: {a.status}</div>
+                <div className="text-[10px] text-text-3 mt-0.5">{t('myWork.priorityLabel')}: {a.priority} / {t('myWork.statusLabel')}: {a.status}</div>
               </div>
             ))}
           </div>
@@ -224,11 +225,11 @@ export default function MyWorkView() {
         <div>
           <h2 className="text-sm font-semibold text-text-3 mb-2 flex items-center gap-1.5">
             <CheckCircle2 size={14} className="text-success" />
-            最近完成
+            {t('myWork.recentlyCompleted')}
           </h2>
           <div className="space-y-1.5 opacity-60">
-            {doneTasks.map((t) => (
-              <TaskCard key={t.id} title={t.title} status={t.status} priority={t.priority} dueDate={t.due_date} goalTitle={t.goal_id ? goalMap.get(t.goal_id) : undefined} />
+            {doneTasks.map((item) => (
+              <TaskCard key={item.id} title={item.title} status={item.status} priority={item.priority} dueDate={item.due_date} goalTitle={item.goal_id ? goalMap.get(item.goal_id) : undefined} />
             ))}
           </div>
         </div>
@@ -238,8 +239,8 @@ export default function MyWorkView() {
       {myTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="text-4xl mb-3">📋</div>
-          <div className="text-sm font-semibold text-text">暂无任务</div>
-          <div className="text-xs text-text-3 mt-1">通过AI助手创建任务，或联系管理员分配</div>
+          <div className="text-sm font-semibold text-text">{t('myWork.noTasks')}</div>
+          <div className="text-xs text-text-3 mt-1">{t('myWork.noTasksHint')}</div>
         </div>
       )}
     </div>

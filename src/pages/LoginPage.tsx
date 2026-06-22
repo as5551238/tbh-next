@@ -48,23 +48,23 @@ export default function LoginPage() {
           <div className="flex items-center justify-center mb-8">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-2xl font-extrabold text-white shadow-lg shadow-primary/20">T</div>
           </div>
-          <h1 className="text-center text-2xl font-extrabold text-text mb-1">设置新密码</h1>
-          <p className="text-center text-sm text-text-3 mb-8">请输入您的新密码</p>
+          <h1 className="text-center text-2xl font-extrabold text-text mb-1">{t('login.setNewPassword')}</h1>
+          <p className="text-center text-sm text-text-3 mb-8">{t('login.enterNewPassword')}</p>
           <form onSubmit={handleSetNewPassword} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-text-2">新密码</label>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="至少6个字符"
+              <label className="mb-1.5 block text-xs font-semibold text-text-2">{t('login.newPassword')}</label>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t('login.minCharsPlaceholder')}
                 className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all placeholder:text-text-3 focus:border-primary focus:ring-2 focus:ring-primary/20" />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-text-2">确认新密码</label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="再次输入新密码"
+              <label className="mb-1.5 block text-xs font-semibold text-text-2">{t('login.confirmNewPassword')}</label>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={t('login.reEnterPasswordPlaceholder')}
                 className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all placeholder:text-text-3 focus:border-primary focus:ring-2 focus:ring-primary/20" />
             </div>
             {error && <div className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
             <button type="submit" disabled={loading}
               className={cn('w-full rounded-xl bg-gradient-to-r from-primary to-accent py-3 text-sm font-bold text-white transition-all', loading ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-primary/20')}>
-              {loading ? '提交中...' : '重置密码'}
+              {loading ? t('login.submitting') : t('login.resetPassword')}
             </button>
           </form>
         </div>
@@ -84,10 +84,10 @@ export default function LoginPage() {
           <div className="flex items-center justify-center mb-8">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-2xl font-extrabold text-white shadow-lg shadow-primary/20">T</div>
           </div>
-          <div className="rounded-lg bg-success/10 px-4 py-3 text-xs text-success text-center mb-4">密码重置成功！请使用新密码登录。</div>
+          <div className="rounded-lg bg-success/10 px-4 py-3 text-xs text-success text-center mb-4">{t('login.resetSuccess')}</div>
           <button onClick={() => { setIsRecovery(false); setRecoveryDone(false); setMode('login'); }}
             className="w-full rounded-xl border border-border bg-surface py-3 text-sm font-semibold text-text-2 hover:border-primary/30">
-            返回登录
+            {t('login.backToLogin')}
           </button>
         </div>
       </div>
@@ -152,16 +152,16 @@ export default function LoginPage() {
   async function handleSetNewPassword(e: FormEvent) {
     e.preventDefault();
     setError('');
-    if (newPassword.length < 6) { setError('密码至少6个字符'); return; }
-    if (newPassword !== confirmPassword) { setError('两次输入的密码不一致'); return; }
-    if (!supabase) { setError('Supabase 未配置'); return; }
+    if (newPassword.length < 6) { setError(t('login.errorMinChars')); return; }
+    if (newPassword !== confirmPassword) { setError(t('login.errorPasswordMismatch')); return; }
+    if (!supabase) { setError(t('login.errorSupabaseNotConfigured')); return; }
     setLoading(true);
     try {
       const { error: updateError } = await supabase!.auth.updateUser({ password: newPassword });
       if (updateError) throw updateError;
       setRecoveryDone(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '密码重置失败，请重新申请重置链接');
+      setError(err instanceof Error ? err.message : t('login.errorResetFailed'));
     } finally {
       setLoading(false);
     }

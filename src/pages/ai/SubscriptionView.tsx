@@ -23,23 +23,6 @@ const CHECKOUT_PLAN_NAME_KEYS: Record<string, string> = {
   enterprise_yearly: 'subscription.enterprisePlanYearly',
 };
 
-const FEAT_KEYS: Record<string, string> = {
-  '500次/天AI查询': 'subscription.feat500AiQueries',
-  '10个Agent': 'subscription.feat10Agents',
-  '50人团队': 'subscription.feat50Team',
-  '高级分析': 'subscription.featAdvancedAnalytics',
-  '自定义工作流': 'subscription.featCustomWorkflow',
-  '批量操作': 'subscription.featBatchOps',
-  '年付省17%': 'subscription.featYearlySave17',
-  '无限AI查询': 'subscription.featUnlimitedAiQueries',
-  '无限Agent': 'subscription.featUnlimitedAgents',
-  '无限团队': 'subscription.featUnlimitedTeam',
-  'SSO集成': 'subscription.featSso',
-  '审计导出': 'subscription.featAuditExport',
-  'API访问': 'subscription.featApiAccess',
-  '优先支持': 'subscription.featPrioritySupport',
-};
-
 function getPlanLabel(planKey: string): string {
   return t(PLAN_LABEL_KEYS[planKey] ?? 'subscription.freePlan');
 }
@@ -49,7 +32,7 @@ function getCheckoutPlanName(planId: string): string {
 }
 
 function getFeatureLabel(feat: string): string {
-  return FEAT_KEYS[feat] ? t(FEAT_KEYS[feat]) : feat;
+  return t(`subscription.${feat}`);
 }
 
 

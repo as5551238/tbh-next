@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 import { recordRender } from '@/lib/monitoring';
 import { IntentFallbackForm } from '@/components/IntentFallbackForm';
 import { Bot, Send, AlertTriangle } from 'lucide-react';
+import { t } from '@/lib/i18n';
 import { useChatMessages, getPreviousSessions, startNewSession } from './ai/chat/useChatMessages';
 import { useAgentLoop } from './ai/chat/useAgentLoop';
 import { ChatMessageItem } from './ai/chat/ChatMessageItem';
@@ -15,8 +16,8 @@ import { QuickActionCards } from './ai/chat/QuickActionCards';
 import { AgentSwitcherPanel } from './ai/chat/AgentSwitcherPanel';
 
 function getAiRouteLabel(): { label: string; color: string } {
-  if (isSupabaseConfigured()) return { label: 'AI代理', color: 'text-purple-400 bg-purple-400/10' };
-  return { label: '本地模式', color: 'text-warn bg-warn/10' };
+  if (isSupabaseConfigured()) return { label: t('chat.aiAgent'), color: 'text-purple-400 bg-purple-400/10' };
+  return { label: t('chat.localMode'), color: 'text-warn bg-warn/10' };
 }
 
 function MainChatView() {
@@ -58,25 +59,25 @@ function MainChatView() {
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
             <Bot size={14} className="text-primary-2" />
           </div>
-          <span className="text-sm font-bold">工作助手</span>
+          <span className="text-sm font-bold">{t('chat.workAssistant')}</span>
           {activeAgent ? (
             <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: activeAgent.color + '20', color: activeAgent.color }}>
               {activeAgent.icon} {activeAgent.name}
             </span>
           ) : (
-            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[9px] font-bold text-success">在线</span>
+            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[9px] font-bold text-success">{t('chat.online')}</span>
           )}
           {(() => { const r = getAiRouteLabel(); return <span className={`ml-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${r.color}`}>{r.label}</span>; })()}
           <span className="ml-2 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{industry} · {dept}</span>
-          <button onClick={() => { handleNewSession(); setMessages([]); }} className="ml-auto rounded-md bg-surface-3 px-2 py-0.5 text-[9px] font-semibold text-text-2 hover:bg-surface-3/80 transition-colors" aria-label="新对话">+ 新对话</button>
+          <button onClick={() => { handleNewSession(); setMessages([]); }} className="ml-auto rounded-md bg-surface-3 px-2 py-0.5 text-[9px] font-semibold text-text-2 hover:bg-surface-3/80 transition-colors" aria-label={t('chat.newConversation')}>+ {t('chat.newConversation')}</button>
         </div>
 
         {/* Offline mode banner */}
         {isOfflineMode && (
           <div className="flex items-center gap-2 bg-warn/10 border-b border-warn/20 px-4 py-1.5 text-[10px] text-warn">
             <AlertTriangle size={12} />
-            <span>AI服务不可用，当前为离线模式</span>
-            <button onClick={() => navTo('ai', 'subscription')} className="ml-auto rounded bg-warn/20 px-2 py-0.5 text-[9px] font-semibold hover:bg-warn/30">配置API Key</button>
+            <span>{t('chat.offlineBanner')}</span>
+            <button onClick={() => navTo('ai', 'subscription')} className="ml-auto rounded bg-warn/20 px-2 py-0.5 text-[9px] font-semibold hover:bg-warn/30">{t('chat.configureApiKey')}</button>
           </div>
         )}
 
@@ -116,9 +117,9 @@ function MainChatView() {
         {/* Agent Loop: Confirmation prompt */}
         {pendingConfirmation && (
           <div className="flex flex-wrap items-center gap-2 mx-4 my-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
-            <span className="text-[10px] text-primary-2 font-semibold">确认执行？</span>
-            <button onClick={handleConfirmExecution} className="rounded-md bg-primary px-3 py-1 text-[10px] text-white font-semibold hover:bg-primary/80 transition-colors">确认</button>
-            <button onClick={handleRejectExecution} className="rounded-md bg-surface-3 px-3 py-1 text-[10px] text-text-2 font-semibold hover:bg-surface-3/80 transition-colors">取消</button>
+            <span className="text-[10px] text-primary-2 font-semibold">{t('chat.confirmExecution')}</span>
+            <button onClick={handleConfirmExecution} className="rounded-md bg-primary px-3 py-1 text-[10px] text-white font-semibold hover:bg-primary/80 transition-colors">{t('common.confirm')}</button>
+            <button onClick={handleRejectExecution} className="rounded-md bg-surface-3 px-3 py-1 text-[10px] text-text-2 font-semibold hover:bg-surface-3/80 transition-colors">{t('common.cancel')}</button>
           </div>
         )}
 
@@ -127,11 +128,11 @@ function MainChatView() {
           {limitWarning && (
             <div className="mb-2 flex items-center justify-between rounded-lg bg-danger/10 px-3 py-2 text-[10px] text-danger">
               <span>{limitWarning}</span>
-              <button onClick={() => navTo('ai', 'subscription')} className="rounded-md bg-danger/20 px-2 py-0.5 text-[9px] font-semibold text-danger hover:bg-danger/30">升级方案</button>
+              <button onClick={() => navTo('ai', 'subscription')} className="rounded-md bg-danger/20 px-2 py-0.5 text-[9px] font-semibold text-danger hover:bg-danger/30">{t('chat.upgradePlan')}</button>
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
-            <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && onSend()} placeholder="问我任何关于你工作的事..." aria-label="AI聊天输入框" className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3" disabled={isTyping} />
+            <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && onSend()} placeholder={t('chat.inputPlaceholder')} aria-label={t('chat.inputAria')} className="flex-1 bg-transparent text-xs text-text outline-none placeholder:text-text-3" disabled={isTyping} />
             <button onClick={onSend} className="rounded-lg bg-primary p-1.5 text-white transition-opacity hover:opacity-80 disabled:opacity-50" disabled={isTyping || !chatInput.trim()} aria-label="发送">
               <Send size={14} />
             </button>

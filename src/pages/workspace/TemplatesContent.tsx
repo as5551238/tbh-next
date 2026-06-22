@@ -7,7 +7,7 @@ import { hasFeature } from '@/lib/subscription';
 import { FileCode2, Plus, Lock, Copy, Star, Pencil } from 'lucide-react';
 import { CardSkeleton } from '@/components/Skeleton';
 import { trackEvent } from '@/lib/behaviorTracker';
-import { t } from '@/lib/i18nCore';
+import { t } from '@/lib/i18n';
 
 const CATEGORIES = ['PRD', '报告', '流程', '评审', '其他'] as const;
 
@@ -40,11 +40,11 @@ export default function TemplatesContent() {
 
   const filtered = useMemo(() => {
     let list = templates;
-    if (filterCat !== 'all') list = list.filter((t) => t.category === filterCat);
+    if (filterCat !== 'all') list = list.filter((tpl) => tpl.category === filterCat);
     return [...list].sort((a, b) => b.usage_count - a.usage_count);
   }, [templates, filterCat]);
 
-  const selected = useMemo(() => templates.find((t) => t.id === selectedId) ?? null, [templates, selectedId]);
+  const selected = useMemo(() => templates.find((tpl) => tpl.id === selectedId) ?? null, [templates, selectedId]);
 
   const handleAdd = async () => {
     if (!newItem.name.trim()) return;
@@ -56,11 +56,11 @@ export default function TemplatesContent() {
   };
 
   const handleUse = async (id: string) => {
-    const t = templates.find((x) => x.id === id);
-    if (!t) return;
-    await editTemplate(id, { usage_count: t.usage_count + 1 });
-    trackEvent('template_use', { id, name: t.name });
-    success(t('templates.templateUsed', { name: t.name }));
+    const tpl = templates.find((x) => x.id === id);
+    if (!tpl) return;
+    await editTemplate(id, { usage_count: tpl.usage_count + 1 });
+    trackEvent('template_use', { id, name: tpl.name });
+    success(t('templates.templateUsed', { name: tpl.name }));
   };
 
   const handleEdit = () => {

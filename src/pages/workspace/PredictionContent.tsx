@@ -8,6 +8,7 @@ import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from 
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { CardSkeleton } from '@/components/Skeleton';
 import { chatCompletion, type ChatMessage } from '@/lib/aiService';
+import { t } from '@/lib/i18n';
 
 export default function PredictionContent() {
   const { showPaywall: pdShow, paywallReason: pdReason, paywallFeature: pdFeat, closePaywall: pdClose, requireFeature: pdRequire } = useGateCheck();
@@ -22,7 +23,6 @@ export default function PredictionContent() {
   const { toasts, success } = useToast();
   const PRED_STORAGE = 'tbh-predictions';
 
-  // Migrate localStorage items to DB on first load
   useEffect(() => {
     if (loading) return;
     try {
@@ -47,20 +47,20 @@ export default function PredictionContent() {
       impact: form.impact,
       probability: form.probability,
       trend: 'flat',
-      reason: form.reason || '用户自定义预测',
-      suggestion: form.suggestion || '待补充建议',
+      reason: form.reason || t('prediction.userCustomPredict'),
+      suggestion: form.suggestion || t('prediction.pendingSuggestion'),
     });
     modal.closeModal();
-    success(`预测"${form.title}"已创建`);
+    success(t('prediction.created', { title: form.title }));
   }, [form, modal.closeModal, addPrediction]);
 
   async function handleAiPredict() {
     setAiLoading(true);
     try {
-      const kpiSummary = cell.kpis.map((k) => `${k.name}: ${k.value} (${k.trend})`).join('、');
+      const kpiSummary = cell.kpis.map((k) => `${k.name}: ${k.value} (${k.trend})`).join(t('prediction.kpiSeparator'));
       const messages: ChatMessage[] = [
-        { role: 'system', content: '你是一个团队业务分析专家。根据提供的团队KPI数据，预测未来1-2周可能出现的关键趋势和风险。每个预测请用JSON数组返回，每个元素包含title、impact(positive/high/medium)、probability(0-100)、reason、suggestion字段。' },
-        { role: 'user', content: `基于当前团队数据，预测以下维度的趋势：${kpiSummary || '暂无KPI数据'}。请给出3-5个预测。只返回JSON数组，不要其他文字。` },
+        { role: 'system', content: t('prediction.aiSystemPrompt') },
+        { role: 'user', content: t('prediction.aiUserPrompt', { kpiSummary: kpiSummary || t('prediction.noKpiData') }) },
       ];
       const res = await chatCompletion(messages);
       const text = res.text ?? '';
@@ -69,20 +69,20 @@ export default function PredictionContent() {
         const preds = JSON.parse(jsonMatch[0]) as Array<{ title: string; impact: string; probability: number; reason: string; suggestion: string }>;
         for (const p of preds.slice(0, 5)) {
           await addPrediction({
-            title: p.title || 'AI预测',
+            title: p.title || t('prediction.aiPredictDefault'),
             impact: (['positive', 'high', 'medium'].includes(p.impact) ? p.impact : 'medium') as 'positive' | 'high' | 'medium',
             probability: Math.min(100, Math.max(0, p.probability || 50)),
             trend: 'flat',
-            reason: p.reason || 'AI分析',
-            suggestion: p.suggestion || '待补充建议',
+            reason: p.reason || t('prediction.aiAnalysis'),
+            suggestion: p.suggestion || t('prediction.pendingSuggestion'),
           });
         }
-        success(`AI已生成${Math.min(preds.length, 5)}个预测`);
+        success(t('prediction.aiGenCount', { count: Math.min(preds.length, 5) }));
       } else {
-        success('AI未能返回结构化预测，请手动添加');
+        success(t('prediction.aiStructFail'));
       }
     } catch {
-      success('AI预测生成失败，请手动添加');
+      success(t('prediction.aiGenFailed'));
     } finally {
       setAiLoading(false);
     }
@@ -105,14 +105,14 @@ export default function PredictionContent() {
       <ToastOverlay toasts={toasts} />
       <div className="flex flex-wrap items-center gap-2">
         <Brain size={18} style={{ color: indColor }} />
-        <span className="text-sm font-bold">预测引擎</span>
-        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>AI驱动</span>
-        <span className="text-[10px] text-text-3">基于 {cell.kpis.length} 个指标 · 每日更新</span>
-        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!pdRequire('advancedAnalytics', 'AI预测需要专业版或企业版')) return; handleOpen(); }}>
-          <Plus size={12} />自定义预测
+        <span className="text-sm font-bold">{t('prediction.title')}</span>
+        <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: indColor + '20', color: indColor }}>{t('prediction.aiDriven')}</span>
+        <span className="text-[10px] text-text-3">{t('prediction.basedOn', { count: cell.kpis.length })}</span>
+        <button className="ml-auto flex flex-wrap items-center gap-1 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary-2 hover:bg-primary/20" onClick={() => { if (!pdRequire('advancedAnalytics', t('prediction.paywallReason'))) return; handleOpen(); }}>
+          <Plus size={12} />{t('prediction.customPredict')}
         </button>
-        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-gradient-to-r from-primary to-accent px-3 py-1 text-[11px] font-bold text-white hover:shadow-lg disabled:opacity-50" onClick={() => { if (!pdRequire('advancedAnalytics', 'AI预测需要专业版或企业版')) return; handleAiPredict(); }} disabled={aiLoading}>
-          {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}AI 预测
+        <button className="flex flex-wrap items-center gap-1 rounded-lg bg-gradient-to-r from-primary to-accent px-3 py-1 text-[11px] font-bold text-white hover:shadow-lg disabled:opacity-50" onClick={() => { if (!pdRequire('advancedAnalytics', t('prediction.paywallReason'))) return; handleAiPredict(); }} disabled={aiLoading}>
+          {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}{t('prediction.aiPredict')}
         </button>
       </div>
 
@@ -127,14 +127,14 @@ export default function PredictionContent() {
               </svg>
               <span className="absolute inset-0 flex items-center justify-center text-lg font-extrabold">{positiveRatio}</span>
             </div>
-            <span className="text-[9px] text-text-3 mt-1">正向比例</span>
+            <span className="text-[9px] text-text-3 mt-1">{t('prediction.positiveRatio')}</span>
           </div>
           <div className="flex-1">
-            <div className="text-xs font-semibold text-text mb-1">综合预测概览</div>
+            <div className="text-xs font-semibold text-text mb-1">{t('prediction.overviewTitle')}</div>
             <p className="text-[11px] text-text-2 leading-relaxed">
               {allPredictions.length > 0
-                ? `共 ${allPredictions.length} 个预测项，${allPredictions.filter((p) => p.impact === 'high').length} 个高风险需关注，${allPredictions.filter((p) => p.impact === 'positive').length} 个利好趋势。`
-                : '暂无预测，点击"自定义预测"添加。'}
+                ? t('prediction.overviewDesc', { total: allPredictions.length, high: allPredictions.filter((p) => p.impact === 'high').length, positive: allPredictions.filter((p) => p.impact === 'positive').length })
+                : t('prediction.noPrediction')}
             </p>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function PredictionContent() {
                   p.impact === 'high' ? 'bg-danger/10 text-danger' :
                   'bg-warn/10 text-warn'
                 }`}>
-                  {p.impact === 'positive' ? '利好' : p.impact === 'high' ? '高风险' : '中风险'}
+                  {p.impact === 'positive' ? t('prediction.impactPositive') : p.impact === 'high' ? t('prediction.impactHigh') : t('prediction.impactMedium')}
                 </span>
                 {p.trend === 'up' && <ArrowUpRight size={12} className={p.impact === 'positive' ? 'text-success' : 'text-danger'} />}
               </div>
@@ -171,7 +171,7 @@ export default function PredictionContent() {
               </span>
             </div>
             <div className="rounded-lg bg-surface-2/50 p-2.5 mb-2">
-              <div className="text-[10px] font-semibold text-text-3 mb-1">原因分析</div>
+              <div className="text-[10px] font-semibold text-text-3 mb-1">{t('prediction.reasonAnalysis')}</div>
               <p className="text-[11px] text-text-2">{p.reason}</p>
             </div>
             <div className="flex flex-wrap items-start gap-1.5">
@@ -185,52 +185,52 @@ export default function PredictionContent() {
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
         <div className="flex flex-wrap items-center gap-2 text-xs text-primary-2">
           <Brain size={14} />
-          <span className="font-semibold">预测引擎说明</span>
+          <span className="font-semibold">{t('prediction.engineNote')}</span>
         </div>
         <p className="mt-1 text-[11px] text-text-2 leading-relaxed">
-          预测基于历史数据趋势、资源分配状态和行业基准综合计算。置信度越高，预测越可靠。建议重点关注概率 &gt; 60% 的风险项。
+          {t('prediction.engineNoteDesc')}
         </p>
       </div>
 
-      <Modal open={modal.open} onClose={modal.closeModal} title="自定义预测"
+      <Modal open={modal.open} onClose={modal.closeModal} title={t('prediction.customPredictTitle')}
         footer={
           <div className="flex flex-wrap gap-2">
-            <button className={btnSecondary} onClick={modal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleSave} disabled={!form.title.trim()}>创建</button>
+            <button className={btnSecondary} onClick={modal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleSave} disabled={!form.title.trim()}>{t('common.create')}</button>
           </div>
         }>
-        <ModalField label="预测标题">
-          <input className={inputCls} placeholder="输入预测标题" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+        <ModalField label={t('prediction.predictTitle')}>
+          <input className={inputCls} placeholder={t('prediction.predictTitlePlaceholder')} value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="影响级别">
+        <ModalField label={t('prediction.impactLevel')}>
           <select className={inputCls} value={form.impact} onChange={(e) => setForm((p) => ({ ...p, impact: e.target.value as 'positive' | 'high' | 'medium' }))}>
-            <option value="positive">利好</option>
-            <option value="medium">中风险</option>
-            <option value="high">高风险</option>
+            <option value="positive">{t('prediction.impactPositive')}</option>
+            <option value="medium">{t('prediction.impactMedium')}</option>
+            <option value="high">{t('prediction.impactHigh')}</option>
           </select>
         </ModalField>
-        <ModalField label={`概率 (${form.probability}%)`}>
+        <ModalField label={t('prediction.probabilityLabel', { value: form.probability })}>
           <input type="range" min="0" max="100" value={form.probability} className="w-full accent-primary" onChange={(e) => setForm((p) => ({ ...p, probability: Number(e.target.value) }))} />
         </ModalField>
-        <ModalField label="原因分析">
-          <textarea className={inputCls} rows={2} placeholder="输入原因分析" value={form.reason} onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))} />
+        <ModalField label={t('prediction.reasonLabel')}>
+          <textarea className={inputCls} rows={2} placeholder={t('prediction.reasonPlaceholder')} value={form.reason} onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))} />
         </ModalField>
-        <ModalField label="建议措施">
-          <textarea className={inputCls} rows={2} placeholder="输入建议措施" value={form.suggestion} onChange={(e) => setForm((p) => ({ ...p, suggestion: e.target.value }))} />
+        <ModalField label={t('prediction.suggestionLabel')}>
+          <textarea className={inputCls} rows={2} placeholder={t('prediction.suggestionPlaceholder')} value={form.suggestion} onChange={(e) => setForm((p) => ({ ...p, suggestion: e.target.value }))} />
         </ModalField>
       </Modal>
 
       <ItemDetailModal
         open={editModal.open}
         onClose={editModal.closeModal}
-        title="编辑预测"
+        title={t('prediction.editTitle')}
         fields={[
-          { key: 'title', label: '标题', type: 'text' },
-          { key: 'impact', label: '类型', type: 'select', options: [
-            { value: 'positive', label: '趋势利好' }, { value: 'high', label: '高风险' }, { value: 'medium', label: '中风险' },
+          { key: 'title', label: t('prediction.titleLabel'), type: 'text' },
+          { key: 'impact', label: t('prediction.typeLabel'), type: 'select', options: [
+            { value: 'positive', label: t('prediction.trendPositive') }, { value: 'high', label: t('prediction.impactHigh') }, { value: 'medium', label: t('prediction.impactMedium') },
           ]},
-          { key: 'probability', label: '置信度', type: 'number' },
-          { key: 'reason', label: '描述', type: 'textarea' },
+          { key: 'probability', label: t('prediction.confidenceLabel'), type: 'number' },
+          { key: 'reason', label: t('prediction.descLabel'), type: 'textarea' },
         ]}
         data={selectedPred as Record<string, unknown> | null}
         commentTarget={selectedPred?.id ? { type: 'prediction', id: String(selectedPred.id) } : null}

@@ -80,8 +80,8 @@ export default function MyToday() {
 
   const [now, setNow] = useState(new Date());
 
-  const tasks: QuickTask[] = useMemo(() => dbTasks.map((t) => ({
-    id: t.id, title: t.title, priority: t.priority ?? 'medium', status: t.status, due_date: t.due_date ?? '',
+  const tasks: QuickTask[] = useMemo(() => dbTasks.map((item) => ({
+    id: item.id, title: item.title, priority: item.priority ?? 'medium', status: item.status, due_date: item.due_date ?? '',
   })), [dbTasks]);
 
   const goals: GoalSummary[] = useMemo(() => dbGoals.map((g) => ({
@@ -118,11 +118,11 @@ export default function MyToday() {
   const insights = useMemo(() => {
     const items: string[] = [];
     const atRiskGoals = goals.filter((g) => g.status === 'at_risk' || g.status === 'off_track');
-    if (atRiskGoals.length > 0) items.push(`目标"${atRiskGoals[0].title}"进度滞后，建议本周聚焦推进`);
-    const pendingHigh = tasks.filter((t) => t.priority === 'high' && t.status !== 'done');
-    if (pendingHigh.length > 0) items.push(`有 ${pendingHigh.length} 个紧急任务待处理，建议优先安排`);
-    const doneRate = tasks.length > 0 ? Math.round((tasks.filter((t) => t.status === 'done').length / tasks.length) * 100) : 0;
-    if (tasks.length > 0) items.push(`当前任务完成率 ${doneRate}%，持续保持专注`);
+    if (atRiskGoals.length > 0) items.push(t('myToday.insightGoalBehind', { title: atRiskGoals[0].title }));
+    const pendingHigh = tasks.filter((item) => item.priority === 'high' && item.status !== 'done');
+    if (pendingHigh.length > 0) items.push(t('myToday.insightPendingUrgent', { count: pendingHigh.length }));
+    const doneRate = tasks.length > 0 ? Math.round((tasks.filter((item) => item.status === 'done').length / tasks.length) * 100) : 0;
+    if (tasks.length > 0) items.push(t('myToday.insightCompletionRate', { rate: doneRate }));
     return items;
   }, [tasks, goals]);
 
@@ -131,8 +131,8 @@ export default function MyToday() {
     return () => clearInterval(timer);
   }, []);
 
-  const pendingTasks = tasks.filter((t) => t.status !== 'done');
-  const completedTasks = tasks.filter((t) => t.status === 'done');
+  const pendingTasks = tasks.filter((item) => item.status !== 'done');
+  const completedTasks = tasks.filter((item) => item.status === 'done');
   const completionRate = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
 
   function goToModule(iface: string, mod: string) {
@@ -154,14 +154,14 @@ export default function MyToday() {
             {getGreeting()}
           </h1>
           <p className="text-text-muted mt-1">
-            {now.toLocaleDateString('zh-CN', {
+            {now.toLocaleDateString(t('myToday.dateLocale'), {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
               weekday: 'long',
             })}
             &nbsp;&middot;&nbsp;
-            {now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+            {now.toLocaleTimeString(t('myToday.dateLocale'), { hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
         <div className="text-right">
@@ -220,7 +220,7 @@ export default function MyToday() {
               onClick={() => goToModule('workspace', 'overview')}
               className="text-sm text-brand-accent hover:underline"
             >
-              全部 →
+              {t('myToday.viewAll')}
             </button>
           </div>
           <div className="space-y-2">
@@ -274,7 +274,7 @@ export default function MyToday() {
               onClick={() => goToModule('workspace', 'tasks')}
               className="text-sm text-brand-accent hover:underline"
             >
-              查看全部 →
+              {t('myToday.viewAllTasks')}
             </button>
           </div>
 
@@ -286,7 +286,7 @@ export default function MyToday() {
                 onClick={() => goToModule('workspace', 'tasks')}
                 className="rounded-lg bg-brand-accent px-4 py-2 text-xs font-semibold text-white hover:bg-brand-accent/80 transition-colors"
               >
-                创建第一个任务
+                {t('myToday.createFirstTask')}
               </button>
             </div>
           ) : (
@@ -346,7 +346,7 @@ export default function MyToday() {
                 onClick={() => goToModule('workspace', 'goals')}
                 className="text-sm text-brand-accent hover:underline"
               >
-                全部 →
+                {t('myToday.viewAll')}
               </button>
             </div>
 
@@ -359,7 +359,7 @@ export default function MyToday() {
                     onClick={() => goToModule('workspace', 'goals')}
                     className="rounded-lg bg-accent px-3 py-1.5 text-[10px] font-semibold text-surface-deep hover:bg-accent/80 transition-colors"
                   >
-                    创建目标
+                    {t('myToday.createGoal')}
                   </button>
                 </div>
               ) : goals.map((goal) => (
@@ -399,7 +399,7 @@ export default function MyToday() {
                 onClick={() => goToModule('ai', 'morning')}
                 className="text-sm text-brand-accent hover:underline"
               >
-                早安简报 →
+                {t('myToday.morningBrief')}
               </button>
             </div>
 
@@ -408,7 +408,7 @@ export default function MyToday() {
                 <div className="bg-surface border border-border-2 rounded-lg p-3">
                   <div className="flex flex-wrap items-start gap-2">
                     <span className="text-brand-accent text-sm mt-0.5">💡</span>
-                    <p className="text-sm text-text-muted leading-relaxed">{t('myToday.createGoal')}和任务后，AI 将为你提供智能洞察和建议</p>
+                    <p className="text-sm text-text-muted leading-relaxed">{t('myToday.noInsights')}</p>
                   </div>
                 </div>
               ) : insights.map((insight, i) => (

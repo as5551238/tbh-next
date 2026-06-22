@@ -11,6 +11,7 @@
 import { useState } from 'react';
 import { useMatrixCell } from '@/hooks/useMatrix';
 import { cn } from '@/lib/utils';
+import { t } from '@/lib/i18n';
 
 interface ModulePageProps {
   title: string;
@@ -86,7 +87,7 @@ export default function ModulePageStub({ title, icon, description, plannedFor }:
 
         {/* Industry context */}
         <div className="rounded-xl border border-border bg-surface p-3 md:p-4 text-left">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">当前行业关联</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-text-3 mb-2">{t('moduleStub.industryContext')}</div>
           <div className="flex flex-wrap gap-1.5">
             {cell.kpis.slice(0, 3).map((kpi) => (
               <span key={kpi.name} className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] text-text-2">
@@ -101,7 +102,7 @@ export default function ModulePageStub({ title, icon, description, plannedFor }:
           <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
             <div className="flex items-center gap-2 justify-center">
               <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-xs text-primary-2">计划于 {plannedFor} 上线</span>
+              <span className="text-xs text-primary-2">{t('moduleStub.plannedFor', { plannedFor })}</span>
             </div>
           </div>
         )}
@@ -118,7 +119,7 @@ export default function ModulePageStub({ title, icon, description, plannedFor }:
             )}
           >
             <span>{voted ? '👍' : '🗳️'}</span>
-            <span>{voted ? '已投票' : '优先开发'}</span>
+            <span>{voted ? t('moduleStub.voted') : t('moduleStub.votePriority')}</span>
             {voteCount > 0 && <span className="text-text-3">({voteCount})</span>}
           </button>
           <button
@@ -126,7 +127,7 @@ export default function ModulePageStub({ title, icon, description, plannedFor }:
             className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text-3 hover:border-primary/50 hover:text-text-2 transition-all"
           >
             <span>💡</span>
-            <span>建议功能</span>
+            <span>{t('moduleStub.suggestFeature')}</span>
           </button>
         </div>
 
@@ -137,25 +138,25 @@ export default function ModulePageStub({ title, icon, description, plannedFor }:
               value={suggestion}
               onChange={(e) => setSuggestion(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSuggest()}
-              placeholder="我希望这个模块能..."
+              placeholder={t('moduleStub.suggestPlaceholder')}
               className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-xs text-text placeholder:text-text-3/50 focus:outline-none focus:border-primary/50"
             />
             <button
               onClick={handleSuggest}
               className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
             >
-              提交
+              {t('moduleStub.submit')}
             </button>
           </div>
         )}
         {submitted && (
-          <p className="mt-1.5 text-[11px] text-accent">感谢你的建议！</p>
+          <p className="mt-1.5 text-[11px] text-accent">{t('moduleStub.thanks')}</p>
         )}
 
         {/* Recent suggestions */}
         {suggestions.length > 0 && (
           <div className="mt-3 text-left">
-            <div className="text-[10px] text-text-3 mb-1">社区建议:</div>
+            <div className="text-[10px] text-text-3 mb-1">{t('moduleStub.communitySuggestions')}</div>
             <div className="flex flex-wrap gap-1">
               {suggestions.slice(-3).map((s, i) => (
                 <span key={i} className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-text-2">

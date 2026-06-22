@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { cn } from '@/lib/utils';
 import { isSupabaseConfigured, saveSupabaseConfig } from '@/lib/supabase';
+import { t } from '@/lib/i18n';
 
 export default function SupabaseSetupPage() {
   const navigate = useNavigate();
@@ -37,8 +38,8 @@ export default function SupabaseSetupPage() {
         <div className="absolute -top-1/4 -left-1/4 w-[500px] h-[500px] rounded-full bg-accent/5 blur-3xl" />
       </div>
       <div className="relative z-10 w-full max-w-md">
-        <h1 className="text-xl font-bold text-text mb-1">连接 Supabase</h1>
-        <p className="text-sm text-text-3 mb-6">输入你的 Supabase 凭据以连接现有数据库</p>
+        <h1 className="text-xl font-bold text-text mb-1">{t('setup.title')}</h1>
+        <p className="text-sm text-text-3 mb-6">{t('setup.subtitle')}</p>
 
         <div className="space-y-4">
           <div>
@@ -68,22 +69,22 @@ export default function SupabaseSetupPage() {
             <button onClick={handleTest} disabled={status === 'testing'} className={cn('rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-text-2 transition-all hover:bg-surface-2',
               status === 'testing' && 'opacity-50 cursor-not-allowed'
             )}>
-              {status === 'testing' ? '测试中...' : '测试连接'}
+              {status === 'testing' ? t('setup.testing') : t('setup.testConnection')}
             </button>
             {status === 'ok' && (
-              <span className="flex items-center text-sm text-success font-semibold">✅ 连接成功</span>
+              <span className="flex items-center text-sm text-success font-semibold">✅ {t('setup.connectSuccess')}</span>
             )}
             {status === 'fail' && (
-              <span className="flex items-center text-sm text-danger font-semibold">❌ 连接失败</span>
+              <span className="flex items-center text-sm text-danger font-semibold">❌ {t('setup.connectFail')}</span>
             )}
           </div>
 
           <button onClick={handleSave} className="w-full rounded-xl bg-gradient-to-r from-primary to-accent py-3 text-sm font-bold text-white transition-all hover:shadow-lg hover:shadow-primary/20">
-            保存并进入
+            {t('setup.saveAndEnter')}
           </button>
 
           <button onClick={() => navigate('/workspace/overview')} className="w-full text-center text-xs text-text-3 hover:text-text transition-colors">
-            跳过，使用离线模式
+            {t('setup.skipOffline')}
           </button>
         </div>
       </div>

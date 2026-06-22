@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Target, FolderKanban, ListTodo, ChevronRight, ChevronDown, AlertTriangle, CheckCircle2, Circle, Edit3, Trash2, Link2, Unlink } from 'lucide-react';
 import { Modal, useModal, ModalField, inputCls, btnPrimary, btnSecondary } from '@/components/Modal';
 import { CardSkeleton } from '@/components/Skeleton';
+import { t } from '@/lib/i18n';
 
 interface TreeNode {
   id: string;
@@ -70,14 +71,14 @@ export default function PenetrationView() {
     const orphanTasks = taskByGoal['__none__'] ?? [];
     if (orphanTasks.length > 0) {
       goalNodes.push({
-        id: '__orphan_tasks__', type: 'goal', title: '未关联目标的任务', progress: 0,
+        id: '__orphan_tasks__', type: 'goal', title: t('penetration.orphanTasks'), progress: 0,
         status: 'active', children: orphanTasks, endDate: null,
       });
     }
 
     if (projectNodes.length > 0) {
       goalNodes.push({
-        id: '__projects__', type: 'goal', title: '项目列表', progress: 0,
+        id: '__projects__', type: 'goal', title: t('penetration.projectList'), progress: 0,
         status: 'active', children: projectNodes, endDate: null,
       });
     }
@@ -109,7 +110,7 @@ export default function PenetrationView() {
       await editProject(editNode.id, { title: editForm.title, status: editForm.status });
     }
     editModal.closeModal();
-    success(`${editNode.title} 已更新`);
+    success(t('penetration.updated', { title: editNode.title }));
   }, [editNode, editForm, editGoal, editTask, editProject, editModal, success]);
 
   const handleDelete = useCallback(async () => {
@@ -122,7 +123,7 @@ export default function PenetrationView() {
       await removeProject(editNode.id);
     }
     editModal.closeModal();
-    success(`${editNode.title} 已删除`);
+    success(t('penetration.deleted', { title: editNode.title }));
   }, [editNode, removeGoal, removeTask, removeProject, editModal, success]);
 
   const handleLinkOpen = useCallback((taskId: string, currentGoalId?: string) => {
@@ -135,7 +136,7 @@ export default function PenetrationView() {
     if (!linkTaskId) return;
     await editTask(linkTaskId, { goal_id: linkGoalId || null });
     linkModal.closeModal();
-    success(linkGoalId ? '任务已关联目标' : '任务已取消关联');
+    success(linkGoalId ? t('penetration.taskLinked') : t('penetration.taskUnlinked'));
   }, [linkTaskId, linkGoalId, editTask, linkModal, success]);
 
   if (goalsLoading) {
@@ -190,11 +191,11 @@ export default function PenetrationView() {
           {/* Action buttons — visible on hover */}
           {!isVirtualNode && (
             <div className="flex flex-wrap items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-              <button onClick={(e) => { e.stopPropagation(); handleEditOpen(node); }} className="rounded p-0.5 hover:bg-surface-2/80" aria-label="编辑">
+              <button onClick={(e) => { e.stopPropagation(); handleEditOpen(node); }} className="rounded p-0.5 hover:bg-surface-2/80" aria-label={t('penetration.editAria')}>
                 <Edit3 size={10} className="text-text-3" />
               </button>
               {node.type === 'task' && (
-                <button onClick={(e) => { e.stopPropagation(); handleLinkOpen(node.id, node.goalId); }} className="rounded p-0.5 hover:bg-surface-2/80" aria-label="关联目标">
+                <button onClick={(e) => { e.stopPropagation(); handleLinkOpen(node.id, node.goalId); }} className="rounded p-0.5 hover:bg-surface-2/80" aria-label={t('penetration.linkAria')}>
                   <Link2 size={10} className="text-text-3" />
                 </button>
               )}
@@ -215,16 +216,16 @@ export default function PenetrationView() {
       <ToastOverlay toasts={toasts} />
       <div className="flex flex-wrap items-center gap-2">
         <Target size={18} className="text-primary-2" />
-        <span className="text-sm font-bold">三级穿透视图</span>
-        <span className="text-[10px] text-text-3 ml-1">Goal → Project → Task</span>
+        <span className="text-sm font-bold">{t('penetration.title')}</span>
+        <span className="text-[10px] text-text-3 ml-1">{t('penetration.subtitle')}</span>
       </div>
 
       <div className="grid grid-cols-4 gap-2">
         {[
-          { label: '目标', value: stats.goalCount, color: 'text-primary-2' },
-          { label: '项目', value: stats.projCount, color: 'text-accent' },
-          { label: '任务', value: stats.taskCount, color: 'text-text-2' },
-          { label: '完成率', value: `${stats.completionRate}%`, color: 'text-success' },
+          { label: t('penetration.goalLabel'), value: stats.goalCount, color: 'text-primary-2' },
+          { label: t('penetration.projectLabel'), value: stats.projCount, color: 'text-accent' },
+          { label: t('penetration.taskLabel'), value: stats.taskCount, color: 'text-text-2' },
+          { label: t('penetration.completionRate'), value: `${stats.completionRate}%`, color: 'text-success' },
         ].map((s) => (
           <div key={s.label} className="rounded-lg bg-surface-2/50 p-2 text-center">
             <div className={cn('text-sm font-bold', s.color)}>{s.value}</div>
@@ -237,7 +238,7 @@ export default function PenetrationView() {
         {tree.length === 0 ? (
           <div className="text-center py-8">
             <Target size={24} className="mx-auto text-text-3 mb-2" />
-            <div className="text-xs text-text-3">暂无目标数据</div>
+            <div className="text-xs text-text-3">{t('penetration.noGoals')}</div>
           </div>
         ) : (
           tree.map((node) => renderNode(node, 0))
@@ -245,53 +246,53 @@ export default function PenetrationView() {
       </div>
 
       {/* Edit Modal */}
-      <Modal open={editModal.open} onClose={editModal.closeModal} title={`编辑${editNode?.type === 'goal' ? '目标' : editNode?.type === 'task' ? '任务' : '项目'}`}
+      <Modal open={editModal.open} onClose={editModal.closeModal} title={editNode?.type === 'goal' ? t('penetration.editGoal') : editNode?.type === 'task' ? t('penetration.editTask') : t('penetration.editProject')}
         footer={
           <div className="flex flex-wrap gap-2">
             {editNode && !editNode.id.startsWith('__') && (
               <button className="flex flex-wrap items-center gap-1 rounded-lg bg-danger/10 px-3 py-1.5 text-[10px] text-danger hover:bg-danger/20 mr-auto" onClick={handleDelete}>
-                <Trash2 size={10} />删除
+                <Trash2 size={10} />{t('common.delete')}
               </button>
             )}
-            <button className={btnSecondary} onClick={editModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleEditSave} disabled={!editForm.title.trim()}>保存</button>
+            <button className={btnSecondary} onClick={editModal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleEditSave} disabled={!editForm.title.trim()}>{t('common.save')}</button>
           </div>
         }>
-        <ModalField label="名称">
+        <ModalField label={t('penetration.nameLabel')}>
           <input className={inputCls} value={editForm.title} onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))} />
         </ModalField>
-        <ModalField label="状态">
+        <ModalField label={t('penetration.statusLabel')}>
           <select className={inputCls} value={editForm.status} onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}>
-            <option value="active">进行中</option>
-            <option value="completed">已完成</option>
-            <option value="paused">暂停</option>
-            <option value="at_risk">有风险</option>
-            <option value="blocked">阻塞</option>
-            <option value="todo">待办</option>
-            <option value="in_progress">执行中</option>
-            <option value="done">已完成</option>
+            <option value="active">{t('penetration.statusActive')}</option>
+            <option value="completed">{t('penetration.statusCompleted')}</option>
+            <option value="paused">{t('penetration.statusPaused')}</option>
+            <option value="at_risk">{t('penetration.statusAtRisk')}</option>
+            <option value="blocked">{t('penetration.statusBlocked')}</option>
+            <option value="todo">{t('penetration.statusTodo')}</option>
+            <option value="in_progress">{t('penetration.statusInProgress')}</option>
+            <option value="done">{t('penetration.statusDone')}</option>
           </select>
         </ModalField>
       </Modal>
 
       {/* Link Task to Goal Modal */}
-      <Modal open={linkModal.open} onClose={linkModal.closeModal} title="关联目标"
+      <Modal open={linkModal.open} onClose={linkModal.closeModal} title={t('penetration.linkGoal')}
         footer={
           <div className="flex flex-wrap gap-2">
-            <button className={btnSecondary} onClick={linkModal.closeModal}>取消</button>
-            <button className={btnPrimary} onClick={handleLinkSave}>关联</button>
+            <button className={btnSecondary} onClick={linkModal.closeModal}>{t('common.cancel')}</button>
+            <button className={btnPrimary} onClick={handleLinkSave}>{t('penetration.linkGoal')}</button>
           </div>
         }>
-        <ModalField label="选择目标">
+        <ModalField label={t('penetration.selectGoal')}>
           <select className={inputCls} value={linkGoalId || '__EMPTY__'} onChange={(e) => setLinkGoalId(e.target.value === '__EMPTY__' ? '' : e.target.value)}>
-            <option value="__EMPTY__">-- 无关联 --</option>
+            <option value="__EMPTY__">{t('penetration.noLink')}</option>
             {goals.map((g) => (
               <option key={g.id} value={g.id}>{g.title}</option>
             ))}
           </select>
         </ModalField>
         {linkGoalId && (
-          <div className="text-[10px] text-text-3 mt-1">任务将关联到: {goals.find((g) => g.id === linkGoalId)?.title}</div>
+          <div className="text-[10px] text-text-3 mt-1">{t('penetration.linkTo', { title: goals.find((g) => g.id === linkGoalId)?.title })}</div>
         )}
       </Modal>
     </div>
