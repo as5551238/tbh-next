@@ -1,0 +1,1 @@
+import{r as n}from"./vendor-Db-FVUbi.js";import{b as t}from"./index-J9lhzwU3.js";import{g as a}from"./permissions-B1en4Ivr.js";function h(i){const e=t(o=>o.authUser)?.role??"member",r=e==="admin"||e==="owner",s=n.useMemo(()=>a(e),[e]);return{can:n.useMemo(()=>o=>r?!0:s.has(o),[s,r]),permissions:s,role:e,isAdmin:r,canValue:!1}}export{h as u};

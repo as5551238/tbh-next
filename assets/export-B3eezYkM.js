@@ -1,0 +1,3 @@
+function u(n,t,i){const o=[];o.push(n.map(r).join(","));for(const c of t)o.push(n.map(e=>r(String(c[e]??""))).join(","));s(o.join(`
+`),`${i}.csv`,"text/csv;charset=utf-8;")}function a(n,t){s(JSON.stringify(n,null,2),`${t}.json`,"application/json")}function r(n){return n.includes(",")||n.includes('"')||n.includes(`
+`)?`"${n.replace(/"/g,'""')}"`:n}function s(n,t,i){const o=new Blob(["\uFEFF"+n],{type:i}),c=URL.createObjectURL(o),e=document.createElement("a");e.href=c,e.download=t,document.body.appendChild(e),e.click(),document.body.removeChild(e),URL.revokeObjectURL(c)}function f(n){if(!n)return"";const t=typeof n=="string"?new Date(n):n;return t instanceof Date&&!isNaN(t.getTime())?t.toISOString().slice(0,10):""}export{a,u as e,f};
